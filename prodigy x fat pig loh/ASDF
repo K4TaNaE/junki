@@ -1172,9 +1172,9 @@ local _script = coroutine.create(function()
   end
 local function telegram_webhook(msg) -- logs and prints (for change)
   local body = HttpService:JSONEncode({
-    chat_id=_G.InternalConfig.TelegramChatId,
-    text = msg,
-    parse_mode = "HMTL"
+	chat_id=_G.InternalConfig.TelegramChatId,
+	text = msg,
+	parse_mode = "HMTL"
   })
   local ok, res = pcall(function() 
     return request({
@@ -1185,17 +1185,17 @@ local function telegram_webhook(msg) -- logs and prints (for change)
 	})
   end)
   if not ok then
-    print("❌ Unsuccessed to send telegram webhook.")
-    Cooldown.Webhooks.TelegramWebhookSendDelay = 60
+	print("❌ Unsuccessed to send telegram webhook.")
+	Cooldown.Webhooks.TelegramWebhookSendDelay = 60
   end
   local data
   pcall(function() 
 	data = HttpService:JSONDecode(res.Body)
   end)
   if data and data.ok then
-	  print("☑️ Telegram webhook sent.")
+	print("☑️ Telegram webhook sent.")
   else
-	  print("❌ Telegram error while trying to send webhook:", data and data.description or "Unknown error")
+	print("❌ Telegram error while trying to send webhook:", data and data.description or "Unknown error")
   end
 end
   local function Webhook(title, description)
@@ -1307,14 +1307,14 @@ end
     actual_pet.is_egg = (name:lower()):match("egg") ~= nil
   end
   
-  ;(function() 
-    for k, v in pairs(getupvalue(require(ReplicatedStorage.ClientModules.Core:WaitForChild("RouterClient"):WaitForChild("RouterClient")).init, 7)) do
-      v.Name = k
-    end
-    WriteConsoleLog("API dehashed", "[+] API dehashed.", "DEBUG")
-    WriteFileLog("API dehashed", "DEBUG")
-    GUI.Notify("Info", "Api dehashed.", "INFO", "file-code")
-  end)()
+  -- ;(function() 
+  --   for k, v in pairs(getupvalue(require(ReplicatedStorage.ClientModules.Core:WaitForChild("RouterClient"):WaitForChild("RouterClient")).init, 7)) do
+  --     v.Name = k
+  --   end
+  --   WriteConsoleLog("API dehashed", "[+] API dehashed.", "DEBUG")
+  --   WriteFileLog("API dehashed", "DEBUG")
+  --   GUI.Notify("Info", "Api dehashed.", "INFO", "file-code")
+  -- end)()
   ;(function()
     SafeFire("SettingsAPI/SetSetting", "tutorial_completed", true)
     SafeFire("SettingsAPI/SetSetting", "pet_radial_menu", true)
@@ -4399,44 +4399,43 @@ end
         return
       end
       Registry.RunTask("telegram_webhook_send_manually_handler", function(v)
-        local msg = string.format([[
-        **Farm-Log**
-        <code>%s</code>
-        <b>💸 Money Earned</b> – <code>%d</code>
-        <b>📈 Pets Full-grown</b> – <code>%d</code>
-        <b>🐶 Pet Needs Completed</b> – <code>%d</code>
-        <b>🧪 Potions Farmed</b> – <code>%d</code>
-        <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
-        <b>👶 Baby Needs Completed</b> – <code>%d</code>
-        <b>🥚 Eggs Hatched</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>💸 Total Bucks</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>⏰ Runtime</b> – <code>%s</code>
-        ]],
-        LocalPlayer.Name,
-        farmed.money,
-        farmed.pets_fullgrown,
-        farmed.ailments,
-        farmed.potions,
-        farmed.friendship_levels,
-        farmed.baby_ailments,
-        farmed.eggs_hatched,
-        ClientData.get("money"),
-        format_time(farmed.time)
-        )
-        local ok, _ = pcall(telegram_webhook, msg)
-        if ok then
-          GUI.Notify("Info", "Telegram webhook sent.", "INFO", "mail-check")
-          WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
-          WriteFileLog("Telegram webhook sent", "DEBUG")
-        else
-          WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
-          WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
-          GUI.Notify("Error", "Something went wrong while trying to send telegram webhook", "ERROR", "mail-minus")
-        end
-      end)
+      local msg = string.format([[
+      **Farm-Log**
+      <code>%s</code>
+      <b>💸 Money Earned</b> – <code>%d</code>
+      <b>📈 Pets Full-grown</b> – <code>%d</code>
+      <b>🐶 Pet Needs Completed</b> – <code>%d</code>
+      <b>🧪 Potions Farmed</b> – <code>%d</code>
+      <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
+      <b>👶 Baby Needs Completed</b> – <code>%d</code>
+      <b>🥚 Eggs Hatched</b> – <code>%d</code>
+      -----------------------------------------------
+      <b>💸 Total Bucks</b> – <code>%d</code>
+      -----------------------------------------------
+      <b>⏰ Runtime</b> – <code>%s</code>
+      ]],
+      LocalPlayer.Name,
+      farmed.money,
+      farmed.pets_fullgrown,
+      farmed.ailments,
+      farmed.potions,
+      farmed.friendship_levels,
+      farmed.baby_ailments,
+      farmed.eggs_hatched,
+      ClientData.get("money"),
+      format_time(farmed.time)
+      )
+    local ok, _ = pcall(telegram_webhook, msg)
+    if ok then
+      GUI.Notify("Info", "Telegram webhook sent.", "INFO", "mail-check")
+      WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
+      WriteFileLog("Telegram webhook sent", "DEBUG")
+    else
+      WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
+      WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
+      GUI.Notify("Error", "Something went wrong while trying to send telegram webhook", "ERROR", "mail-minus")
     end
+  end)
   end
 
   GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramBotApiKey = function(v) 
