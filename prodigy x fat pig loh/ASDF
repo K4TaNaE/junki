@@ -269,7 +269,7 @@ local _script = coroutine.create(function()
   _G.InternalConfig = {PetFarmDLib = {}, AutoTradeDLib = {}, RecyclerDLib = {}}
   _G.HeadCashed = nil
   _G.mystery = false
-  local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+  local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/jensonhirst/Rayfield/refs/heads/main/source'))()
   local RunService = game:GetService("RunService")
   local NetworkClient = game:GetService("NetworkClient")
   local TeleportService = game:GetService("TeleportService")
