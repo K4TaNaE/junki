@@ -1396,12 +1396,12 @@ end
   GUI.InitToggleButton(MainTab, "Anti AFK", false, "antiafktogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.TriggerAntiAfk(v) end)
   GUI.InitToggleButton(MainTab, "Auto Reconnect", false, "autoreconnecttogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.TriggerNetworkHook(v) end)
   GUI.InitDivider(MainTab)
-  GUI.InitButton(MainTab, "Join Discord", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.CopyDiscordUrl(v) end)
+  GUI.InitButton(MainTab, "Join Discord", GUI.Tabs.Main.Sections.Utilities.Callbacks.CopyDiscordUrl)
   GUI.InitToggleButton(MainTab, "Write Console Logs (Debug)", false, "consolelogstogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.ToggleConsoleDebug(v) end)
   GUI.InitToggleButton(MainTab, "Write File Logs (Debug) (Workspace/Arcanic/logs.txt)", false, "filelogstogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.ToggleFileDebug(v) end)
 
   GUI.InitSection(MainTab, "- Configuration -")
-  GUI.InitButton(MainTab, "Load Configuration", function() GUI.Tabs.Main.Sections.Configuration.Callbacks.LoadConfiguration() end)
+  GUI.InitButton(MainTab, "Load Configuration", GUI.Tabs.Main.Sections.Configuration.Callbacks.LoadConfiguration)
 
   -- AutoFarm Tab
   GUI.InitSection(AutofarmTab, "- Pet AutoFarm -")
@@ -1443,10 +1443,10 @@ end
 
   --done
   GUI.InitSection(AutofarmTab, "- Auto Neon -")
-  local AutoNeonButton = GUI.InitButton(AutoFarmTab, "Make Pets Neon", function() GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleNeon() end)
+  local AutoNeonButton = GUI.InitButton(AutoFarmTab, "Make Pets Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetNeon)
   local PetToNeonDropdown = GUI.InitDropdown(AutoFarmTab, "Pets To Neon", {}, {""}, true, "pettoneondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon(v) end)
   GUI.InitSection(AutoFarmTab, "- Auto Mega Neon -")
-  local AutoMegaNeonButton = GUI.InitButton(AutoFarmTab, "Make Pets Mega Neon", function() GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleMegaNeon() end)
+  local AutoMegaNeonButton = GUI.InitButton(AutoFarmTab, "Make Pets Mega Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon)
   local PetToMegaNeonDropdown = GUI.InitDropdown(AutoFarmTab, "Pets To Mega Neon", {}, {""}, true, "pettomeganeondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon(v) end)
   
   GUI.InitSection(AutofarmTab, "- Auto Give Potion -")
@@ -3997,9 +3997,9 @@ end
             GUI.Notify("Info", string.format("Failed to make pet %s neon", k), "INFO", "circle-check")
           end
           task.wait(1.5)
+          LocationQueue.Complete(_task)
         end
         _G.InternalConfig.PetsToNeon = nil
-        LocationQueue.Complete(_task)
         NeonAndMegaNeonInstantListUpdate()
     end)
   end
@@ -4044,9 +4044,9 @@ end
             GUI.Notify("Info", string.format("Failed to make pet %s mega-neon", k), "INFO", "circle-check")
           end
           task.wait(1.5)
+          LocationQueue.Complete(_task)
         end
         _G.InternalConfig.PetsToMegaNeon = nil
-        LocationQueue.Complete(_task)
         NeonAndMegaNeonInstantListUpdate()
     end)
 
