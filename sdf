@@ -479,6 +479,7 @@ local _script = coroutine.create(function()
   end
 
   function GUI.InitButton(tab, title :string, callback :Callback)
+    setthreadidentity(7)
     return tab:CreateButton({
       Name = title,
       Callback = callback
