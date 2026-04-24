@@ -479,7 +479,6 @@ local _script = coroutine.create(function()
   end
 
   function GUI.InitButton(tab, title :string, callback :Callback)
-    setthreadidentity(7)
     return tab:CreateButton({
       Name = title,
       Callback = callback
@@ -1444,10 +1443,10 @@ end
 
   --done
   GUI.InitSection(AutofarmTab, "- Auto Neon -")
-  local AutoNeonButton = GUI.InitButton(AutoFarmTab, "Make Pets Neon", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleNeon() end)
+  local AutoNeonButton = GUI.InitButton(AutoFarmTab, "Make Pets Neon", function() GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleNeon() end)
   local PetToNeonDropdown = GUI.InitDropdown(AutoFarmTab, "Pets To Neon", {}, {""}, true, "pettoneondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon(v) end)
   GUI.InitSection(AutoFarmTab, "- Auto Mega Neon -")
-  local AutoMegaNeonButton = GUI.InitButton(AutoFarmTab, "Make Pets Mega Neon", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleMegaNeon() end)
+  local AutoMegaNeonButton = GUI.InitButton(AutoFarmTab, "Make Pets Mega Neon", function() GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleMegaNeon() end)
   local PetToMegaNeonDropdown = GUI.InitDropdown(AutoFarmTab, "Pets To Mega Neon", {}, {""}, true, "pettomeganeondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon(v) end)
   
   GUI.InitSection(AutofarmTab, "- Auto Give Potion -")
