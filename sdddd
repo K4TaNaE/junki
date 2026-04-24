@@ -1443,11 +1443,11 @@ end
 
   --done
   GUI.InitSection(AutofarmTab, "- Auto Neon -")
-  local AutoNeonButton = GUI.InitButton(AutoFarmTab, "Make Pets Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetNeon)
-  local PetToNeonDropdown = GUI.InitDropdown(AutoFarmTab, "Pets To Neon", {}, {""}, true, "pettoneondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon(v) end)
-  GUI.InitSection(AutoFarmTab, "- Auto Mega Neon -")
-  local AutoMegaNeonButton = GUI.InitButton(AutoFarmTab, "Make Pets Mega Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon)
-  local PetToMegaNeonDropdown = GUI.InitDropdown(AutoFarmTab, "Pets To Mega Neon", {}, {""}, true, "pettomeganeondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon(v) end)
+  GUI.InitButton(AutofarmTab, "Make Pets Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetNeon)
+  local PetToNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Neon", {}, {""}, true, "pettoneondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon(v) end)
+  GUI.InitSection(AutofarmTab, "- Auto Mega Neon -")
+  GUI.InitButton(AutofarmTab, "Make Pets Mega Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon)
+  local PetToMegaNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Mega Neon", {}, {""}, true, "pettomeganeondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon(v) end)
   
   GUI.InitSection(AutofarmTab, "- Auto Give Potion -")
   local AutoGivePotionToggleButton = GUI.InitToggleButton(AutofarmTab, "Auto Give Potion", false, "autogivepotiontogglebutton", function(v) end)
@@ -4016,7 +4016,7 @@ end
     end
   end
 
-  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon = function(v) 
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon = function() 
     WriteConsoleLog("Make pet mega neon triggered", nil, "DEBUG")
     WriteFileLog("Make pet mega neon triggered", "DEBUG")
       Registry.RunTask("make_pet_mega_neon_handler", function()
