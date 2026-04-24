@@ -1172,9 +1172,9 @@ local _script = coroutine.create(function()
   end
 local function telegram_webhook(msg) -- logs and prints (for change)
   local body = HttpService:JSONEncode({
-	chat_id=_G.InternalConfig.TelegramChatId,
-	text = msg,
-	parse_mode = "HMTL"
+    chat_id=_G.InternalConfig.TelegramChatId,
+    text = msg,
+    parse_mode = "HMTL"
   })
   local ok, res = pcall(function() 
     return request({
@@ -1185,17 +1185,17 @@ local function telegram_webhook(msg) -- logs and prints (for change)
 	})
   end)
   if not ok then
-	print("❌ Unsuccessed to send telegram webhook.")
-	Cooldown.Webhooks.TelegramWebhookSendDelay = 60
+    print("❌ Unsuccessed to send telegram webhook.")
+    Cooldown.Webhooks.TelegramWebhookSendDelay = 60
   end
   local data
   pcall(function() 
 	data = HttpService:JSONDecode(res.Body)
   end)
   if data and data.ok then
-	print("☑️ Telegram webhook sent.")
+	  print("☑️ Telegram webhook sent.")
   else
-	print("❌ Telegram error while trying to send webhook:", data and data.description or "Unknown error")
+	  print("❌ Telegram error while trying to send webhook:", data and data.description or "Unknown error")
   end
 end
   local function Webhook(title, description)
@@ -1307,14 +1307,14 @@ end
     actual_pet.is_egg = (name:lower()):match("egg") ~= nil
   end
   
-  -- ;(function() 
-  --   for k, v in pairs(getupvalue(require(ReplicatedStorage.ClientModules.Core:WaitForChild("RouterClient"):WaitForChild("RouterClient")).init, 7)) do
-  --     v.Name = k
-  --   end
-  --   WriteConsoleLog("API dehashed", "[+] API dehashed.", "DEBUG")
-  --   WriteFileLog("API dehashed", "DEBUG")
-  --   GUI.Notify("Info", "Api dehashed.", "INFO", "file-code")
-  -- end)()
+--   ;(function() 
+--     for k, v in pairs(getupvalue(require(ReplicatedStorage.ClientModules.Core:WaitForChild("RouterClient"):WaitForChild("RouterClient")).init, 7)) do
+--       v.Name = k
+--     end
+--     WriteConsoleLog("API dehashed", "[+] API dehashed.", "DEBUG")
+--     WriteFileLog("API dehashed", "DEBUG")
+--     GUI.Notify("Info", "Api dehashed.", "INFO", "file-code")
+--   end)()
   ;(function()
     SafeFire("SettingsAPI/SetSetting", "tutorial_completed", true)
     SafeFire("SettingsAPI/SetSetting", "pet_radial_menu", true)
@@ -2842,180 +2842,180 @@ end
     WriteFileLog("Configuration loaded", "DEBUG")
   end
   
-  GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.TogglePetAutoFarm = function(v) 
-    WriteConsoleLog("Pet auto farm triggered", nil, "DEBUG")
-    WriteFileLog("Pet auto farm triggered", "DEBUG")
-    if v then
-      Cooldown.AutoFarm.PetAutoFarm = 0
-      if table.unpack(PetAutoFarmFarmTypeDropdown.CurrentValue) == "automated" then
-        Registry.RegisterTask("automated_pet_auto_farm_handler", __init_automated_pet_farm,
-        function()
-          return Cooldown.AutoFarm.PetAutoFarm == 0
-        end,
-        function()
-          Cooldown.AutoFarm.PetAutoFarm = 5
-        end)
-      else
-        if not _G.InternalConfig.PetFarmDLib.PetToFarm then
-          GUI.ToggleButtonSetValue(PetAutoFarmPotionFarmToggleButton, false)
-          GUI.Notify("Warning", "Set Pet To Farm first.")
-          return
-        end
-        Registry.RegisterTask("manual_pet_auto_farm_handler", __init_manual_pet_farm,
-        function()
-          return Cooldown.AutoFarm.PetAutoFarm == 0
-        end,
-        function()
-          Cooldown.AutoFarm.PetAutoFarm = 5
-        end)
-      end
-      WriteConsoleLog("Pet auto farm enabled", nil, "DEBUG")
-      WriteFileLog("Pet auto farm enabled", "DEBUG")
-    else
-      Registry.UnregisterTask("automated_pet_auto_farm_handler")
-      Registry.UnregisterTask("manual_pet_auto_farm_handler")
-      table.clear(actual_pet)
-      Cooldown.AutoFarm.PetAutoFarm = nil
-      ClearPetFarmCache()
-      WriteConsoleLog("Pet auto farm disabled", nil, "DEBUG")
-      WriteFileLog("Pet auto farm disabled", "DEBUG")
-    end
-  end
+--   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.TogglePetAutoFarm = function(v) 
+--     WriteConsoleLog("Pet auto farm triggered", nil, "DEBUG")
+--     WriteFileLog("Pet auto farm triggered", "DEBUG")
+--     if v then
+--       Cooldown.AutoFarm.PetAutoFarm = 0
+--       if table.unpack(PetAutoFarmFarmTypeDropdown.CurrentValue) == "automated" then
+--         Registry.RegisterTask("automated_pet_auto_farm_handler", __init_automated_pet_farm,
+--         function()
+--           return Cooldown.AutoFarm.PetAutoFarm == 0
+--         end,
+--         function()
+--           Cooldown.AutoFarm.PetAutoFarm = 5
+--         end)
+--       else
+--         if not _G.InternalConfig.PetFarmDLib.PetToFarm then
+--           GUI.ToggleButtonSetValue(PetAutoFarmPotionFarmToggleButton, false)
+--           GUI.Notify("Warning", "Set Pet To Farm first.")
+--           return
+--         end
+--         Registry.RegisterTask("manual_pet_auto_farm_handler", __init_manual_pet_farm,
+--         function()
+--           return Cooldown.AutoFarm.PetAutoFarm == 0
+--         end,
+--         function()
+--           Cooldown.AutoFarm.PetAutoFarm = 5
+--         end)
+--       end
+--       WriteConsoleLog("Pet auto farm enabled", nil, "DEBUG")
+--       WriteFileLog("Pet auto farm enabled", "DEBUG")
+--     else
+--       Registry.UnregisterTask("automated_pet_auto_farm_handler")
+--       Registry.UnregisterTask("manual_pet_auto_farm_handler")
+--       table.clear(actual_pet)
+--       Cooldown.AutoFarm.PetAutoFarm = nil
+--       ClearPetFarmCache()
+--       WriteConsoleLog("Pet auto farm disabled", nil, "DEBUG")
+--       WriteFileLog("Pet auto farm disabled", "DEBUG")
+--     end
+--   end
 
-  GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.ToggleDetect2DKitty = function(v)
-    WriteConsoleLog("Detect 2d-kitty triggered", nil, "DEBUG")
-    WriteFileLog("Detect 2d-kitty triggered", "DEBUG")
-    if v then
-      if table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) ~= "manual" then
-        _G.InternalConfig.PetFarmDLib.Detect2DKitty = true
-        WriteConsoleLog("Detect 2d-kitty enabled", nil, "DEBUG")
-        WriteFileLog("Detect 2d-kitty enabled", "DEBUG")
-      else
-        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.')
-        GUI.ToggleButtonSetValue(PetAutoFarmDetect2DKittyToggleButton, false)
-      end
-    else
-      _G.InternalConfig.PetFarmDLib.Detect2DKitty = false
-      WriteConsoleLog("Detect 2d-kitty disabled", nil, "DEBUG")
-      WriteFileLog("Detect 2d-kitty disabled", "DEBUG")
-    end
-  end
+--   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.ToggleDetect2DKitty = function(v)
+--     WriteConsoleLog("Detect 2d-kitty triggered", nil, "DEBUG")
+--     WriteFileLog("Detect 2d-kitty triggered", "DEBUG")
+--     if v then
+--       if table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) ~= "manual" then
+--         _G.InternalConfig.PetFarmDLib.Detect2DKitty = true
+--         WriteConsoleLog("Detect 2d-kitty enabled", nil, "DEBUG")
+--         WriteFileLog("Detect 2d-kitty enabled", "DEBUG")
+--       else
+--         GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.')
+--         GUI.ToggleButtonSetValue(PetAutoFarmDetect2DKittyToggleButton, false)
+--       end
+--     else
+--       _G.InternalConfig.PetFarmDLib.Detect2DKitty = false
+--       WriteConsoleLog("Detect 2d-kitty disabled", nil, "DEBUG")
+--       WriteFileLog("Detect 2d-kitty disabled", "DEBUG")
+--     end
+--   end
 
-  GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.ToggleOppositeFarm = function(v) 
-    WriteConsoleLog("Opposite farm triggered", nil, "DEBUG")
-    WriteFileLog("Opposite farm triggered", "DEBUG")
-    if v then
-      if table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) ~= "manual" then
-        _G.InternalConfig.PetFarmDLib.OppositeFarm = true 
-        WriteConsoleLog("Opposite farm enabled", nil, "DEBUG")
-        WriteFileLog("Opposite farm enabled", "DEBUG")
-      else
-        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.')
-        GUI.ToggleButtonSetValue(PetAutoFarmOpoositeFarmToggleButton, false)
-      end
-    else
-      _G.InternalConfig.PetFarmDLib.OppositeFarm = false
-      if actual_pet.unique and _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
-        actual_pet.unique = nil
-      end
-      WriteConsoleLog("Opposite farm disabled", nil, "DEBUG")
-      WriteFileLog("Opposite farm disabled", "DEBUG")
-    end
-  end
+--   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.ToggleOppositeFarm = function(v) 
+--     WriteConsoleLog("Opposite farm triggered", nil, "DEBUG")
+--     WriteFileLog("Opposite farm triggered", "DEBUG")
+--     if v then
+--       if table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) ~= "manual" then
+--         _G.InternalConfig.PetFarmDLib.OppositeFarm = true 
+--         WriteConsoleLog("Opposite farm enabled", nil, "DEBUG")
+--         WriteFileLog("Opposite farm enabled", "DEBUG")
+--       else
+--         GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.')
+--         GUI.ToggleButtonSetValue(PetAutoFarmOpoositeFarmToggleButton, false)
+--       end
+--     else
+--       _G.InternalConfig.PetFarmDLib.OppositeFarm = false
+--       if actual_pet.unique and _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
+--         actual_pet.unique = nil
+--       end
+--       WriteConsoleLog("Opposite farm disabled", nil, "DEBUG")
+--       WriteFileLog("Opposite farm disabled", "DEBUG")
+--     end
+--   end
   
-  GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.TogglePotionFarm = function(v)
-    WriteConsoleLog("Potion Farm triggered", nil, "DEBUG")
-    WriteFileLog("Potion farm triggered", "DEBUG")
-    if v then
-      if table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) ~= "manual" then
-        _G.InternalConfig.PetFarmDLib.PotionFarm = true
-        WriteConsoleLog("Potion farm enabled", nil, "DEBUG")
-        WriteFileLog("Potion farm enabled", "DEBUG")
-      else
-        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.')
-        GUI.ToggleButtonSetValue(PetAutoFarmPotionFarmToggleButton, false)
-      end
-    else
-      _G.InternalConfig.PetFarmDLib.PotionFarm = false
-      WriteConsoleLog("Potion farm disabled", nil, "DEBUG")
-      WriteFileLog("Potion farm disabled", "DEBUG")
-    end
-  end
+--   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.TogglePotionFarm = function(v)
+--     WriteConsoleLog("Potion Farm triggered", nil, "DEBUG")
+--     WriteFileLog("Potion farm triggered", "DEBUG")
+--     if v then
+--       if table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) ~= "manual" then
+--         _G.InternalConfig.PetFarmDLib.PotionFarm = true
+--         WriteConsoleLog("Potion farm enabled", nil, "DEBUG")
+--         WriteFileLog("Potion farm enabled", "DEBUG")
+--       else
+--         GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.')
+--         GUI.ToggleButtonSetValue(PetAutoFarmPotionFarmToggleButton, false)
+--       end
+--     else
+--       _G.InternalConfig.PetFarmDLib.PotionFarm = false
+--       WriteConsoleLog("Potion farm disabled", nil, "DEBUG")
+--       WriteFileLog("Potion farm disabled", "DEBUG")
+--     end
+--   end
   
-  GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmPriority = function(v) 
-    WriteConsoleLog("Farm priority triggered", nil, "DEBUG")
-    WriteFileLog("Farm priority triggered", "DEBUG")
-    if #v == 1 and tostring(v[1]):match("^%s*$") then
-      return
-    end
-    if table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) ~= "manual" then
-      local var = table.unpack(v)
-      local list = {} 
-      if var == "eggs" then    
-        for k_,v in pairs(GetOwnedEggs()) do
-          table.insert(list, v.remote)
-        end 
-        GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, list)
-        GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, {""})
-      else
-        for _,v in pairs(GetOwnedPets()) do
-          if InventoryDB["pets"][v.remote].is_egg == true then
-            table.insert(list, v.remote)
-          end
-        end 
-        GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, list)
-        GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, {""})
-      end
-    else
-      GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.')
-      GUI.DropdownSetValue(PetAutoFarmFarmPriorityDropdown, {""})
-    end
-    actual_pet.unique = nil -- чтобы скрипт выбрал нового пета
-  end
+--   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmPriority = function(v) 
+--     WriteConsoleLog("Farm priority triggered", nil, "DEBUG")
+--     WriteFileLog("Farm priority triggered", "DEBUG")
+--     if #v == 1 and tostring(v[1]):match("^%s*$") then
+--       return
+--     end
+--     if table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) ~= "manual" then
+--       local var = table.unpack(v)
+--       local list = {} 
+--       if var == "eggs" then    
+--         for k_,v in pairs(GetOwnedEggs()) do
+--           table.insert(list, v.remote)
+--         end 
+--         GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, list)
+--         GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, {""})
+--       else
+--         for _,v in pairs(GetOwnedPets()) do
+--           if InventoryDB["pets"][v.remote].is_egg == true then
+--             table.insert(list, v.remote)
+--           end
+--         end 
+--         GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, list)
+--         GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, {""})
+--       end
+--     else
+--       GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.')
+--       GUI.DropdownSetValue(PetAutoFarmFarmPriorityDropdown, {""})
+--     end
+--     actual_pet.unique = nil -- чтобы скрипт выбрал нового пета
+--   end
 
-  GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmType = function(v) 
-    WriteConsoleLog("Farm type triggered", nil, "DEBUG")
-    WriteFileLog("Farm type triggered", "DEBUG")
-    if #v == 1 and tostring(v[1]):match("^%s*$") then
-      return
-    end
-    if table.unpack(v) == "manual" then
-      GUI.ToggleButtonSetValue(PetAutoFarmPotionFarmToggleButton, false)
-      GUI.ToggleButtonSetValue(PetAutoFarmDetect2DKittyToggleButton, false)
-      GUI.ToggleButtonSetValue(PetAutoFarmOpoositeFarmToggleButton, false)
-      GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
-      GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, {})
-      GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, "set Farm Priority")
-      GUI.DropdownSetValue(PetAutoFarmFarmPriorityDropdown, {""})
-      AutoFarmUpdatePetList(PetAutoFarmPetToFarmDropdown, false)
-    else
-      GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
-      GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, {})
-      GUI.DropdownSetValue(PetAutoFarmPetToFarmDropdown, "set Farm Type to manual")
-      _G.InternalConfig.PetFarmDLib.PetToFarm = false
-    end
-  end
+--   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmType = function(v) 
+--     WriteConsoleLog("Farm type triggered", nil, "DEBUG")
+--     WriteFileLog("Farm type triggered", "DEBUG")
+--     if #v == 1 and tostring(v[1]):match("^%s*$") then
+--       return
+--     end
+--     if table.unpack(v) == "manual" then
+--       GUI.ToggleButtonSetValue(PetAutoFarmPotionFarmToggleButton, false)
+--       GUI.ToggleButtonSetValue(PetAutoFarmDetect2DKittyToggleButton, false)
+--       GUI.ToggleButtonSetValue(PetAutoFarmOpoositeFarmToggleButton, false)
+--       GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
+--       GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, {})
+--       GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, "set Farm Priority")
+--       GUI.DropdownSetValue(PetAutoFarmFarmPriorityDropdown, {""})
+--       AutoFarmUpdatePetList(PetAutoFarmPetToFarmDropdown, false)
+--     else
+--       GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
+--       GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, {})
+--       GUI.DropdownSetValue(PetAutoFarmPetToFarmDropdown, "set Farm Type to manual")
+--       _G.InternalConfig.PetFarmDLib.PetToFarm = false
+--     end
+--   end
 
-  GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetToFarm = function(v) 
-    WriteConsoleLog("Pet to farm triggered", nil, "DEBUG")
-    WriteFileLog("Pet to farm triggered", "DEBUG")  
-    if #v == 1 and tostring(v[1]):match("^%s*$") or #v == 1 and tostring(v[1]):match("set Farm Type to manual") then
-      return
-    end
-    _G.InternalConfig.PetFarmDLib.PetToFarm = InvGetCategoryUnique("pets", string.split(table.unpack(v), " | ")[1])
-  end
+--   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetToFarm = function(v) 
+--     WriteConsoleLog("Pet to farm triggered", nil, "DEBUG")
+--     WriteFileLog("Pet to farm triggered", "DEBUG")  
+--     if #v == 1 and tostring(v[1]):match("^%s*$") or #v == 1 and tostring(v[1]):match("set Farm Type to manual") then
+--       return
+--     end
+--     _G.InternalConfig.PetFarmDLib.PetToFarm = InvGetCategoryUnique("pets", string.split(table.unpack(v), " | ")[1])
+--   end
   
-  GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetsToExclude = function(v) 
-    WriteConsoleLog("Pets to exclude triggered", nil, "DEBUG")
-    WriteFileLog("Pets to exclude triggered", "DEBUG")
-    if #v == 1 and tostring(v[1]):match("^%s*$") or #v == 1 and tostring(v[1]):match("set Farm Priority") then
-      _G.InternalConfig.PetFarmDLib.PetsToExclude = false
-      return
-    end
-    for _,v in v do
-      _G.InternalConfig.PetFarmDLib.PetsToExclude[v] = true  
-    end
-  end
+--   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetsToExclude = function(v) 
+--     WriteConsoleLog("Pets to exclude triggered", nil, "DEBUG")
+--     WriteFileLog("Pets to exclude triggered", "DEBUG")
+--     if #v == 1 and tostring(v[1]):match("^%s*$") or #v == 1 and tostring(v[1]):match("set Farm Priority") then
+--       _G.InternalConfig.PetFarmDLib.PetsToExclude = false
+--       return
+--     end
+--     for _,v in v do
+--       _G.InternalConfig.PetFarmDLib.PetsToExclude[v] = true  
+--     end
+--   end
 
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleLureboxFarm = function(v)
     WriteConsoleLog("Lurebox auto farm triggered", nil, "DEBUG")
@@ -4399,43 +4399,44 @@ end
         return
       end
       Registry.RunTask("telegram_webhook_send_manually_handler", function(v)
-      local msg = string.format([[
-      **Farm-Log**
-      <code>%s</code>
-      <b>💸 Money Earned</b> – <code>%d</code>
-      <b>📈 Pets Full-grown</b> – <code>%d</code>
-      <b>🐶 Pet Needs Completed</b> – <code>%d</code>
-      <b>🧪 Potions Farmed</b> – <code>%d</code>
-      <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
-      <b>👶 Baby Needs Completed</b> – <code>%d</code>
-      <b>🥚 Eggs Hatched</b> – <code>%d</code>
-      -----------------------------------------------
-      <b>💸 Total Bucks</b> – <code>%d</code>
-      -----------------------------------------------
-      <b>⏰ Runtime</b> – <code>%s</code>
-      ]],
-      LocalPlayer.Name,
-      farmed.money,
-      farmed.pets_fullgrown,
-      farmed.ailments,
-      farmed.potions,
-      farmed.friendship_levels,
-      farmed.baby_ailments,
-      farmed.eggs_hatched,
-      ClientData.get("money"),
-      format_time(farmed.time)
-      )
-    local ok, _ = pcall(telegram_webhook, msg)
-    if ok then
-      GUI.Notify("Info", "Telegram webhook sent.", "INFO", "mail-check")
-      WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
-      WriteFileLog("Telegram webhook sent", "DEBUG")
-    else
-      WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
-      WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
-      GUI.Notify("Error", "Something went wrong while trying to send telegram webhook", "ERROR", "mail-minus")
+        local msg = string.format([[
+        **Farm-Log**
+        <code>%s</code>
+        <b>💸 Money Earned</b> – <code>%d</code>
+        <b>📈 Pets Full-grown</b> – <code>%d</code>
+        <b>🐶 Pet Needs Completed</b> – <code>%d</code>
+        <b>🧪 Potions Farmed</b> – <code>%d</code>
+        <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
+        <b>👶 Baby Needs Completed</b> – <code>%d</code>
+        <b>🥚 Eggs Hatched</b> – <code>%d</code>
+        -----------------------------------------------
+        <b>💸 Total Bucks</b> – <code>%d</code>
+        -----------------------------------------------
+        <b>⏰ Runtime</b> – <code>%s</code>
+        ]],
+        LocalPlayer.Name,
+        farmed.money,
+        farmed.pets_fullgrown,
+        farmed.ailments,
+        farmed.potions,
+        farmed.friendship_levels,
+        farmed.baby_ailments,
+        farmed.eggs_hatched,
+        ClientData.get("money"),
+        format_time(farmed.time)
+        )
+        local ok, _ = pcall(telegram_webhook, msg)
+        if ok then
+          GUI.Notify("Info", "Telegram webhook sent.", "INFO", "mail-check")
+          WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
+          WriteFileLog("Telegram webhook sent", "DEBUG")
+        else
+          WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
+          WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
+          GUI.Notify("Error", "Something went wrong while trying to send telegram webhook", "ERROR", "mail-minus")
+        end
+      end)
     end
-  end)
   end
 
   GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramBotApiKey = function(v) 
