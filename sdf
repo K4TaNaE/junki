@@ -479,7 +479,6 @@ local _script = coroutine.create(function()
   end
 
   function GUI.InitButton(tab, title :string, callback :Callback)
-    setthreadidentity(7)
     return tab:CreateButton({
       Name = title,
       Callback = callback
@@ -1397,12 +1396,12 @@ end
   GUI.InitToggleButton(MainTab, "Anti AFK", false, "antiafktogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.TriggerAntiAfk(v) end)
   GUI.InitToggleButton(MainTab, "Auto Reconnect", false, "autoreconnecttogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.TriggerNetworkHook(v) end)
   GUI.InitDivider(MainTab)
-  GUI.InitButton(MainTab, "Join Discord", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.CopyDiscordUrl(v) end)
+  GUI.InitButton(MainTab, "Join Discord", GUI.Tabs.Main.Sections.Utilities.Callbacks.CopyDiscordUrl)
   GUI.InitToggleButton(MainTab, "Write Console Logs (Debug)", false, "consolelogstogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.ToggleConsoleDebug(v) end)
   GUI.InitToggleButton(MainTab, "Write File Logs (Debug) (Workspace/Arcanic/logs.txt)", false, "filelogstogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.ToggleFileDebug(v) end)
 
   GUI.InitSection(MainTab, "- Configuration -")
-  GUI.InitButton(MainTab, "Load Configuration", function() GUI.Tabs.Main.Sections.Configuration.Callbacks.LoadConfiguration() end)
+  GUI.InitButton(MainTab, "Load Configuration", GUI.Tabs.Main.Sections.Configuration.Callbacks.LoadConfiguration)
 
   -- AutoFarm Tab
   GUI.InitSection(AutofarmTab, "- Pet AutoFarm -")
@@ -1444,11 +1443,11 @@ end
 
   --done
   GUI.InitSection(AutofarmTab, "- Auto Neon -")
-  local AutoNeonButton = GUI.InitButton(AutoFarmTab, "Make Pets Neon", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleNeon() end)
-  local PetToNeonDropdown = GUI.InitDropdown(AutoFarmTab, "Pets To Neon", {}, {""}, true, "pettoneondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon(v) end)
-  GUI.InitSection(AutoFarmTab, "- Auto Mega Neon -")
-  local AutoMegaNeonButton = GUI.InitButton(AutoFarmTab, "Make Pets Mega Neon", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleMegaNeon() end)
-  local PetToMegaNeonDropdown = GUI.InitDropdown(AutoFarmTab, "Pets To Mega Neon", {}, {""}, true, "pettomeganeondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon(v) end)
+  GUI.InitButton(AutofarmTab, "Make Pets Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetNeon)
+  local PetToNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Neon", {}, {""}, true, "pettoneondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon(v) end)
+  GUI.InitSection(AutofarmTab, "- Auto Mega Neon -")
+  GUI.InitButton(AutofarmTab, "Make Pets Mega Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon)
+  local PetToMegaNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Mega Neon", {}, {""}, true, "pettomeganeondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon(v) end)
   
   GUI.InitSection(AutofarmTab, "- Auto Give Potion -")
   local AutoGivePotionToggleButton = GUI.InitToggleButton(AutofarmTab, "Auto Give Potion", false, "autogivepotiontogglebutton", function(v) end)
@@ -1506,8 +1505,8 @@ end
   local TradeBlacklistPropertyDropdown = GUI.InitDropdown(AutoTradeTab, "Property", {["rideable"]="rideable", ["flyable"]="flyable", ["neon"]="neon", ["meganeon"]="meganeon"}, {""}, true, "tradeblacklistpropertydropdown", function(v) GUI.Tabs.AutoTrade.Sections.Blacklist.Callbacks.HandleProperties(v) end)
   local TradeBlacklistSpecificPetsDropdown = GUI.InitDropdown(AutoTradeTab, "Specific Pets", {}, {""}, true, "tradespecificpetsdropdown", function(v) GUI.Tabs.AutoTrade.Sections.Blacklist.Callbacks.HandleSpecificPets(v) end)
   GUI.InitSection(AutoTradeTab, "- Statistics -")
-  local TradeSuccessfulTradesLabel = GUI.InitLabel(AutoTrade, "0 : Successful Trades", "book-check", Color3.fromRGB(203, 92, 255), false) -- not handled
-  local TradeUnsuccessfulTradesLabel = GUI.InitLabel(AutoTrade, "0 : Unsuccessful Trades", "book-minus", Color3.fromRGB(203, 92, 255), false) -- not handled
+  local TradeSuccessfulTradesLabel = GUI.InitLabel(AutoTradeTab, "0 : Successful Trades", "book-check", Color3.fromRGB(203, 92, 255), false) -- not handled
+  local TradeUnsuccessfulTradesLabel = GUI.InitLabel(AutoTradeTab, "0 : Unsuccessful Trades", "book-minus", Color3.fromRGB(203, 92, 255), false) -- not handled
 
   -- Statistics Tab
   -- Active Pet Section
@@ -3768,7 +3767,7 @@ end
           WriteFileLog(string.format("[Auto Trade]: Trade with {%s} successed", user), "DEBUG")
           GUI.Notify("Success", string.format("Trade with %s successed", user), "SUCCESS", "circle-check")
             farmed.successful_trades += 1 
-            GUI.LabelUpdate(TradeUnsuccessfulTradesLabel, string.format("%d : Successful Trades", farmed.successful_trades), "book-check", Color3.fromRGB(203, 92, 255), false)
+            GUI.LabelUpdate(TradeSuccessfulTradesLabel, string.format("%d : Successful Trades", farmed.successful_trades), "book-check", Color3.fromRGB(203, 92, 255), false)
             if _G.InternalConfig.TradeDLib.DiscordWebhookLog then 
               if _G.InternalConfig.TradeDLib.DiscordWebhookUrl then 
                 webhook("Trade-Log", "```diff\n+ Trade with " .. user .. " succeeded.\n```")		
@@ -3998,9 +3997,9 @@ end
             GUI.Notify("Info", string.format("Failed to make pet %s neon", k), "INFO", "circle-check")
           end
           task.wait(1.5)
+          LocationQueue.Complete(_task)
         end
         _G.InternalConfig.PetsToNeon = nil
-        LocationQueue.Complete(_task)
         NeonAndMegaNeonInstantListUpdate()
     end)
   end
@@ -4017,7 +4016,7 @@ end
     end
   end
 
-  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon = function(v) 
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon = function() 
     WriteConsoleLog("Make pet mega neon triggered", nil, "DEBUG")
     WriteFileLog("Make pet mega neon triggered", "DEBUG")
       Registry.RunTask("make_pet_mega_neon_handler", function()
@@ -4045,9 +4044,9 @@ end
             GUI.Notify("Info", string.format("Failed to make pet %s mega-neon", k), "INFO", "circle-check")
           end
           task.wait(1.5)
+          LocationQueue.Complete(_task)
         end
         _G.InternalConfig.PetsToMegaNeon = nil
-        LocationQueue.Complete(_task)
         NeonAndMegaNeonInstantListUpdate()
     end)
 
