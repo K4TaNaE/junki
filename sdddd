@@ -209,15 +209,15 @@ local _script = coroutine.create(function()
     _running = false
   }
   local EggRemotes = {
-    ["Endangered Egg - 750$"] = 750,
-    ["Pet Egg - 600$"] = 600,
-    ["Royal Egg - 1450$"] = 1450,
-    ["Cracked Egg - 350$"] = 350,
+    ["Endangered Egg - 750$"] = {"endangered_2026_endangered_egg", 750},
+    ["Pet Egg - 600$"] = {"regular_pet_egg", 600},
+    ["Royal Egg - 1450$"] = {"royal_egg", 1450},
+    ["Cracked Egg - 350$"] = {"cracked_egg", 350},
   }
   local GiftRemotes = {
-    ["Small Gift - 70$"] = 70,
-    ["Big Gift - 199$"] = 199,
-    ["Massive Gift - 499$"] = 499,
+    ["Small Gift - 70$"] = {"smallgift", 70},
+    ["Big Gift - 199$"] = {"biggift", 199},
+    ["Massive Gift - 499$"] = {"massivegift", 499},
   }
   _G.CONNECTIONS = {}
   local formatted_pet = {
@@ -1416,19 +1416,19 @@ end
   GUI.InitDivider(AutofarmTab)
   local PetAutoFarmPetToFarmDropdown = GUI.InitDropdown(AutofarmTab, "Pet To Farm (manual farm type)", {}, {"set Farm Type to manual"}, false, "petautofarmpettofarmdropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetToFarm(v) end)
   
-
-  GUI.InitSection(AutofarmTab, "- Baby AutoFarm -")--done
+-- fully fixed 
+  GUI.InitSection(AutofarmTab, "- Baby AutoFarm -")
   GUI.InitToggleButton(AutofarmTab, "Baby Auto Farm", false, "babyautofarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleBabyAutoFarm(v) end) 
-  GUI.InitSection(AutofarmTab, "- Lurebox AutoFarm -") --done
+  GUI.InitSection(AutofarmTab, "- Lurebox AutoFarm -")
   GUI.InitToggleButton(AutofarmTab, "Lurebox Auto Farm", false, "lureboxautofarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleLureboxFarm(v) end)
-  GUI.InitSection(AutofarmTab, "- Dailies -") --done
+  GUI.InitSection(AutofarmTab, "- Dailies -") 
   GUI.InitToggleButton(AutofarmTab, "Auto Claim Dailies", false, "autoclaimdailiestogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleDailiesAutoCollect(v) end)
-  GUI.InitSection(AutofarmTab, "- Gifts -") --done
-  local GiftAutoOpenToggleButton = GUI.InitToggleButton(AutofarmTab, "Gift Auto Open", false, "giftsautoopentogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleGiftAutoOpen(v) end)
-  local SpecificGiftToOpenDropdown = GUI.InitDropdown(AutofarmTab, "Specific Gifts To Open", {["all"]="all", ["smallgift"]="Small Gift", ["biggift"]="Big Gift", ["massivegift"]="Massive Gift", ["chests"]="Chests"}, {"all"}, true, "specificgiftstoopendropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleSpecificGiftToOpen(v) end)
+  GUI.InitSection(AutofarmTab, "- Gifts -") 
+  GUI.InitToggleButton(AutofarmTab, "Gift Auto Open", false, "giftsautoopentogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleGiftAutoOpen(v) end)
+  GUI.InitDropdown(AutofarmTab, "Specific Gifts To Open", {"all", "Small Gift", "Big Gift", "Massive Gift", "Chests"}, {"all"}, true, "specificgiftstoopendropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleSpecificGiftToOpen(v) end)
 
--- done
-  local EggAutoBuySection = GUI.InitSection(AutofarmTab, "- Auto Buy -")
+-- fully fixed
+  GUI.InitSection(AutofarmTab, "- Auto Buy -")
   local EggAutoBuyToggleButton = GUI.InitToggleButton(AutofarmTab, "Egg Auto Buy", false, "eggautobuytogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.EggAutoBuyLoopHandler(v) end)
   local EggToBuyDropdown = GUI.InitDropdown(AutofarmTab, "Egg To Buy", {"Endangered Egg - 750$", "Pet Egg - 600$", "Royal Egg - 1450$", "Cracked Egg - 350$"}, "", false, "eggtobuytextfield", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.EggToBuyHandler(v) end)
   local EggBuyCountTextField = GUI.InitTextField(AutofarmTab, "Buy count", "", "     ", false, "eggbuycounttextfield", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.EggBuyCountHandler(v) end)
@@ -1457,9 +1457,9 @@ end
   local AutoGivePotionPetToGivePotionDropdown = GUI.InitDropdown(AutofarmTab, "Pet To Give Potion", {}, {"set Mode to manual"}, true, "autogivepotionpettogivepotiondropdown", function(v) end)
   GUI.InitDivider(AutofarmTab)
   local AutoGivePotionBlacklistedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {["common"]="common", ["uncommon"]="uncommon", ["rare"]="rare", ["ultra_rare"]="ultra-rare", ["legendary"]="legendary"}, {""}, true, "autogivepotionblacklistedraritiesdropdown", function(v) end)
-  local AutoGivePotionBlacklistedAgeDropdown = GUI.InitDropdown(AutoTradeTab, "Blacklisted Ages", {["newborn"]="newborn", ["junior"]="junior", ["preteen"]="pre-teen", ["teen"]="teen", ["postteen"]="post-teen", ["fullgrown"]="fullgrown"}, {""}, true, "autogivepotionblacklistedagesdropdown", function(v) end)
-  local AutoGivePotionBlacklistedPropertyDropdown = GUI.InitDropdown(AutoTradeTab, "Blacklisted Properties", {["rideable"]="rideable", ["flyable"]="flyable", ["neon"]="neon", ["meganeon"]="meganeon"}, {""}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) end)
-  local AutoGivePotionBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutoTradeTab, "Blacklisted Specific Pets", {}, {""}, true, "autogivepotionblacklistedspecificpetsdropdown", function(v) end)
+  local AutoGivePotionBlacklistedAgeDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {["newborn"]="newborn", ["junior"]="junior", ["preteen"]="pre-teen", ["teen"]="teen", ["postteen"]="post-teen", ["fullgrown"]="fullgrown"}, {""}, true, "autogivepotionblacklistedagesdropdown", function(v) end)
+  local AutoGivePotionBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {["rideable"]="rideable", ["flyable"]="flyable", ["neon"]="neon", ["meganeon"]="meganeon"}, {""}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) end)
+  local AutoGivePotionBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {""}, true, "autogivepotionblacklistedspecificpetsdropdown", function(v) end)
   GUI.InitDivider(AutofarmTab)
   local AutoGivePotionAgePotionsUsedLabel = GUI.InitLabel(AutofarmTab, "0 : Age Potions Used", "coffee", Color3.fromRGB(203, 92, 255), false)
   local AutoGivePotionTinyAgePotionsUsedLabel = GUI.InitLabel(AutofarmTab, "0 : Tiny Age Potions Used", "milk", Color3.fromRGB(203, 92, 255), false)
@@ -1490,7 +1490,7 @@ end
   -- done
   GUI.InitSection(AutoTradeTab, "- Auto Trade -")
   local AutoTradeToggleButton = GUI.InitToggleButton(AutoTradeTab, "Auto Trade", false, "autotradetogglebutton", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.ToggleAutoTrade(v) end)
-  local PlayerTradeWithTextField = GUI.InitTextField(AutoTradeTab, "Player Trade With", "", ".        ", false, "playertradewithtextfield", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandlePlayerTradeWith(v) end)
+  local PlayerTradeWithTextField = GUI.InitTextField(AutoTradeTab, "Player Trade With", "", "        ", false, "playertradewithtextfield", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandlePlayerTradeWith(v) end)
   local TradePriorityDropdown = GUI.InitDropdown(AutoTradeTab, "Trade Priority", {"pets", "eggs", "any"}, {"any"}, false, "tradeprioritydropdown", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandleTradePriority(v) end)
   local TradeFarmedToggleButton = GUI.InitToggleButton(AutoTradeTab, "Trade Farmed", false, "tradefarmedtogglebutton", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.ToggleTradeFarmed(v) end)
   local TradeDelayTextField = GUI.InitTextField(AutoTradeTab, "Trade Delay (delay for next trade)", "3600", "     ", false, "tradedelaytextfield", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandleTradeDelay(v) end)
@@ -3207,35 +3207,53 @@ end
           return
         end
         local _opened = 0
-        local to_open = GiftsHelper[table.unpack(SpecificGiftToOpenDropdown.CurrentOption)]
-        if to_open == "chests" then
+        if not _G.InternalConfig.SpecificGiftsToOpen then
           for k,v in pairs(GetOwnedCategory("gifts")) do
             local r = v.remote:lower()
-            if r:match("chest") then
+            if r:match("box") or r:match("chest") then
               safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
               _opened += 1
-            end
-          end
-        elseif to_open == "all" then
-          for k,v in pairs(GetOwnedCategory("gifts")) do
-            local r = v.remote:lower()
-              if r:match("box") or r:match("chest") then
-                safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
-                _opened += 1
-              else
-                safeInvoke("ShopAPI/OpenGift", k)
-                _opened += 1
-              end
-          end
-        else
-          for k,v in pairs(GetOwnedCategory("gifts")) do
-            if v.id == to_open then
+            else
               safeInvoke("ShopAPI/OpenGift", k)
               _opened += 1
             end
           end
+        else
+          for k,_ in _G.InternalConfig.SpecificGiftsToOpen do
+            if k == "all" then
+              for k,v in pairs(GetOwnedCategory("gifts")) do
+                local r = v.remote:lower()
+                if r:match("box") or r:match("chest") then
+                  safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
+                  _opened += 1
+                else
+                  safeInvoke("ShopAPI/OpenGift", k)
+                  _opened += 1
+                end
+              end
+              break
+            end
+            if k == "chests" then
+              for k,v in pairs(GetOwnedCategory("gifts")) do
+                local r = v.remote:lower()
+                if r:match("chest") then
+                  safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
+                  _opened += 1
+                end
+              end
+            end
+            if k == "Massive Gift" or k == "Big Gift" or k == "Small Gift" then
+              for k,v in pairs(GetOwnedCategory("gifts")) do
+                if (k == "Massive Gift" and v.id == "massivegift") or (k == "Big Gift" and v.id == "biggift") or (k == "Small Gift" and v.id == "smallgift") then
+                  safeInvoke("ShopAPI/OpenGift", k)
+                  _opened += 1
+                end
+              end
+            end
+          end
         end
-        local _type = ("gifts/chests" and to_open == "all") or ("chests" and to_open == "chests") or "gifts"
+
+        local _type = ("gifts/chests" and _G.InternalConfig.SpecificGiftsToOpen["all"]) or ("chests" and _G.InternalConfig.SpecificGiftsToOpen["chests"]) or "gifts" 
         GUI.Notify("Info", string.format("Opened %d %s", _opened, _type), "INFO", "circle-check")
         WriteConsoleLog(string.format("Opened %d %s", _opened, _type), string.format("[📦]:[✅] Opened %d %s!", _opened, _type), "DEBUG")
         WriteFileLog(string.format("Opened %d %s", _opened, _type), "DEBUG")
@@ -3257,6 +3275,14 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleSpecificGiftToOpen = function(v) 
     WriteConsoleLog("Specific gift to open triggered", nil, "DEBUG")
     WriteFileLog("Specific gift to open triggered", "DEBUG")
+    if count(v) == 0 then
+      _G.InternalConfig.SpecificGiftsToOpen = nil
+      return
+    end
+    _G.InternalConfig.SpecificGiftsToOpen = {}
+    for k,v in table.unpack(v) do
+      _G.InternalConfig.SpecificGiftsToOpen[v] = true
+    end
   end
 
 
@@ -3288,12 +3314,12 @@ end
         WriteFileLog("[Registry]: {egg_auto_buy_handler} runned", "DEBUG")
         local money = ClientData.get("money")
         local egg = table.unpack(EggToBuyDropdown.CurrentOption) 
-        local can_afford = math.floor(money / EggRemotes[egg]) 
+        local can_afford = math.floor(money / EggRemotes[egg][2]) 
         local bc = math.min(can_afford, _G.InternalConfig.EggsToBuyLeft, 99) 
         GUI.Notify("Info", "Buying eggs..", "INFO", "info")
         SafeInvoke("ShopAPI/BuyItem",
           "pets",
-          egg,
+          egg[1],
           {
             buy_count = bc
           }
@@ -3391,12 +3417,12 @@ end
         WriteFileLog("[Registry]: {gift_auto_buy_handler} runned", "DEBUG")
         local money = ClientData.get("money")
         local gift = table.unpack(GiftToBuyDropdown.CurrentOption) 
-        local can_afford = math.floor(money / EggRemotes[egg]) 
+        local can_afford = math.floor(money / EggRemotes[egg][2]) 
         local bc = math.min(can_afford, _G.InternalConfig.GiftsToBuyLeft, 99) 
         GUI.Notify("Info", "Buying gifts..", "INFO", "info")
         SafeInvoke("ShopAPI/BuyItem",
           "gifts",
-          gift,
+          gift[1],
           {
             buy_count = bc
           }
