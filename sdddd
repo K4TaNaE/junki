@@ -66,8 +66,9 @@ local InteriorsM = loader("InteriorsM")
 local HouseClient = loader("HouseClient")
 local PetActions = loader("PetActions")
 local StateManagerClient = loader("StateManagerClient")
-local AilmentsDB = require(ReplicatedStorage.new.modules.Ailments.AilmentsDB)
 local LiveOpsTime = loader("LiveOpsTime")
+local Calculator = require(ReplicatedStorage.new.modules.PetRecycler.PetRecyclerCalculator)
+local AilmentsDB = require(ReplicatedStorage.new.modules.Ailments.AilmentsDB)
 local StateDB = {
   total_fullgrowned = {},
   starter_value = ClientData.get("money") or 0,
@@ -94,12 +95,17 @@ local farmed = {
 local Cooldown = {
   init_autofarm = 0,
   init_baby_autofarm = 0,
-  init_lurebox_farm = 2,
   init_auto_buy = 0,
+  init_auto_recycle = 0,
+  init_auto_trade = 0,
+  init_lurebox_farm = 2,
+  init_gift_autoopen = 0,
+  init_auto_give_potion = 0,
   watchdog = 0,
-  webhook_send_delay = 3600,
   awaiting_currency_update = 0,
   daily_rewards_cooldown = 0,
+  auto_neon = 15,
+  auto_mega_neon = 20,
 }
 formatted_pet = {
   ["camping"] = "🏕️ Task [camping] detected for:",
@@ -133,12 +139,34 @@ formatted_baby = {
   ["sleepy"] = "🛏️ Task [sleepy] detected for baby!",
   ["pizza_party"] = "🍕 Task [pizza-party] detected for baby!",
 }
+local PetRarities = {
+  ["common"] = true,
+  ["uncommon"] = true,
+  ["rare"] = true,
+  ["ultra_rare"] = true,
+  ["legendary"] = true,
+}
 local Rarities = {
   [1] = "common",
   [2] = "uncommon",
   [3] = "rare",
   [4] = "ultra_rare",
   [5] = "legendary",
+}
+local PetAges = {
+  ["newborn"] = 1,
+  ["junior"] = 2,
+  ["preteen"] = 3,
+  ["teen"] = 4,
+  ["postteen"] = 5,
+  ["fullgrown"] = 6,
+}
+local TASKS_BY_RARITY = {
+  common = 25,
+  uncommon = 36,
+  rare = 54,
+  ultra_rare = 107,
+  legendary = 183,
 }
 Recycler_values = {
   base_values = {
@@ -176,12 +204,13 @@ local parts = {
 local furn = {}
 _G.potionfarm = false
 _G.InternalConfig = {}
+_G.flag_if_no_one_to_farm = false
 CONNECTIONS = {}
 _G.Looping = {}
 CLEANUP_INSTANCES = {}
 _G.HeadCashed = nil
-_G.mystery = false
 _G.CLIENT_HARD_LOCK = false
+_G.mystery = false
 local function init_part(name, xyz) 
   if game.Workspace:FindFirstChild(name) then return end
   local main = Instance.new("Part")
@@ -193,11 +222,13 @@ local function init_part(name, xyz)
   local gui = Instance.new("SurfaceGui")
   gui.Face = Enum.NormalId.Top
   gui.Parent = main
-  local img = Instance.new("ImageLabel")
-  img.Size = UDim2.new(1, 0, 1, 0)
-  img.BackgroundTransparency=  1
-  img.Image = _G.asset
-  img.Parent = gui
+  if _G.asset then 
+	local img = Instance.new("ImageLabel")
+	img.Size = UDim2.new(1, 0, 1, 0)
+	img.BackgroundTransparency=  1
+	img.Image = _G.asset
+	img.Parent = gui
+  end
 end
 local function safeInvoke(api, ...)
   local args = { ... }
@@ -233,6 +264,12 @@ local function gotopart(name)
   	return true
   end
   LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(part.Position + Vector3.new(0, 5, 0))
+end
+local function format_time(sec)
+  local hours = math.floor(sec / 3600)
+  local minutes = math.floor((sec % 3600) / 60)
+  local seconds = sec % 60
+  return string.format("%02d:%02d:%02d", hours, minutes, seconds)
 end
 local function get_current_location()
   return InteriorsM.get_current_location()["destination_id"]
@@ -288,6 +325,16 @@ local function get_owned_eggs()
 	if (info.name:lower()):match("egg") then
 	  result[unique] = true
 	end
+  end
+  return result
+end
+local function get_owned_category(category)
+  local inv = ClientData.get("inventory")
+  local cat = inv and inv[category]
+  if not cat then return {} end
+  local result = {}
+  for unique, v in pairs(cat) do
+  	result[unique] = { remote = v.id, unique = unique }
   end
   return result
 end
@@ -480,7 +527,29 @@ local function check_pet_owned(remote)
   	return true
   end
   return false
-end   
+end
+local function send_trade_request(user)  
+  safeFire("TradeAPI/SendTradeRequest", game.Players[user])
+  print("⚙️ Trade request to user sent!")
+  local deadline = os.clock() + 120
+  local declined = false
+  local ev = API["MsgAPI/HintSent"].OnClientEvent:Connect(function(...)
+	if select(1, ...)["text"]:match("declined your trade request.") then
+	  declined = true
+	end
+ end)
+  while not UIManager.is_visible("TradeApp") and os.clock() < deadline and not declined do
+  	task.wait(1)
+  end
+  ev:Disconnect()
+  if declined then 
+	return "declined"
+  end
+  if not UIManager.is_visible("TradeApp") or os.clock() > deadline then
+  	return "No response"
+  end
+  return true  
+end 
 local function count_of_product(category, remote)
   local inv = ClientData.get("inventory")
   local cat = inv and inv[category]
@@ -500,11 +569,72 @@ local function count(t)
   end
   return n
 end
-local function format_time(sec)
-  local hours = math.floor(sec / 3600)
-  local minutes = math.floor((sec % 3600) / 60)
-  local seconds = sec % 60
-  return string.format("%02d:%02d:%02d", hours, minutes, seconds)
+local function shallow_keys_copy(t)
+  local r = {}
+  for k,_ in pairs(t) do
+  	r[k] = true
+  end
+  return r
+end
+local function get_potions() 
+  local big = {}
+  local tiny = {}
+  for k,v in pairs(get_owned_category("food")) do
+	if (v.remote:lower()):match("tiny_pet_age_potion") then
+	  tiny[k] = true
+	elseif (v.remote:lower()):match("pet_age_potion") then
+	  big[k] = true
+	end
+  end
+  if count(big) == 0 then big = nil end
+  if count(tiny) == 0 then tiny = nil end
+  return { big, tiny }
+end
+local function calculate_optimal_potions_by_rarity(age, rarity, potions)
+  local total_tasks = TASKS_BY_RARITY[rarity:lower()]
+  local remaining = total_tasks - age
+  if remaining <= 0 then
+  	return { {}, {}, }
+  end
+  local _age = potions[1] and shallow_keys_copy(potions[1]) or {}  
+  local _tiny = potions[2] and shallow_keys_copy(potions[2]) or {}
+  local big_up = count(_age)
+  local tiny_up = count(_tiny)
+  local use_age = math.floor(remaining / 30)
+  local leftover = remaining % 30
+  local use_tiny = 0
+  if leftover > 0 then
+  	if leftover <= 3 and tiny_up > 0 then
+  	  use_tiny = 1
+  	else
+  	  use_age += 1
+  	end
+  end
+  local original_age = use_age
+  use_age = math.min(use_age, big_up)
+  if use_age < original_age and tiny_up > 0 then
+  	local missing_age = original_age - use_age
+  	local tiny_needed = math.ceil((missing_age * 30) / 3)
+  	use_tiny = math.min(tiny_needed, tiny_up)
+  end
+  use_tiny = math.min(use_tiny, tiny_up)
+  if use_age > 0 and big_up > use_age then
+  	for k,_ in pairs(_age) do 
+  	  _age[k] = nil
+  	  if count(_age) == use_age then
+  		break
+  	  end
+  	end
+  end
+  if use_tiny > 0 and tiny_up > use_tiny then
+  	for k,_ in pairs(_tiny) do 
+  	  _tiny[k] = nil
+  	  if count(_tiny) == use_tiny then
+  		break
+  	  end
+  	end
+  end
+  return { _age, _tiny }
 end
 local function Avatar()
   local success, response = pcall(function()
@@ -552,7 +682,7 @@ local function webhook(title, description)
   	avatar_url = "https://i.imageupload.app/936d8d1617445f2a3fbd.png",
   	attachments = {}
   }
-  pcall(function()
+  local ok, _ = pcall(function()
   	request({
   	  Url = url,
   	  Method = "POST",
@@ -560,6 +690,40 @@ local function webhook(title, description)
   	  Body = HttpService:JSONEncode(payload)
   	})
   end)
+  if ok then
+	print("☑️ Discord webhook sent.")
+  else
+	print("❌ Unsuccessed to send discord webhook.")
+	Cooldown.discord_webhook_send_delay = 60
+  end
+end
+local function telegram_webhook(msg)
+  local body = HttpService:JSONEncode({
+	chat_id=_G.InternalConfig.TelegramChatId,
+	text = msg,
+	parse_mode = "HMTL"
+  })
+  local ok, res = pcall(function() 
+    return request({
+      Url = "https://api.telegram.org/bot" .. _G.InternalConfig.TelegramBotApiKey .. "/sendMessage",
+	  Method = "POST",
+	  Headers = { ["Content-Type"] = "application/json" },
+	  Body = body
+	})
+  end)
+  if not ok then
+	print("❌ Unsuccessed to send telegram webhook.")
+	Cooldown.telegram_webhook_send_delay = 60
+  end
+  local data
+  pcall(function() 
+	data = HttpService:JSONDecode(res.Body)
+  end)
+  if data and data.ok then
+	print("☑️ Telegram webhook sent.")
+  else
+	print("❌ Telegram error while trying to send webhook:", data and data.description or "Unknown error")
+  end
 end
 local function update_gui(label, val) 
   task.spawn(function()
@@ -612,7 +776,7 @@ local function enstat(age, friendship, money, ailment, baby_has_ailment)
 	while money == ClientData.get("money") and os.clock() < deadline do
 	  task.wait(.1)
 	end
-	calculate_money()
+    calculate_money()
   else
 	task.wait(.5)
   end
@@ -1103,7 +1267,7 @@ local pet_ailments = {
 	print(string.format("🟩 Task pizza-party for %s - done!", actual_pet.remote)) 
 	enstat(age, friendship, money, "pizza_party", baby_has_ailment)  
   end,
-	["pet_me"] = function()
+  ["pet_me"] = function()
 	local pet = ClientData.get("pet_char_wrappers")[1]
 	local cdata = ClientData.get("inventory").pets[actual_pet.unique]
 	local friendship = cdata.properties.friendship_level
@@ -1601,7 +1765,7 @@ local function init_autofarm()
 	  pet_update()
 	  task.wait(.2)
 	  if actual_pet.unique then
-		print("🐨 New pet to farm detected:", actual_pet.remote)
+		  print("🐨 New pet to farm detected:", actual_pet.remote)
 	  end
 	end
   end 
@@ -1672,6 +1836,240 @@ local function init_auto_buy()
   	print("[🥚]:[❌] cost of egg: %s not found, cannot buy it..")
   end
 end
+local function init_auto_recycle() 
+  if not _G.pet_recycler_precessing then 
+    local pets_to_exchange = {}
+    local owned_pets = get_owned_pets()
+    local value = 0
+    for k,v in owned_pets do
+      if v.remote == "practice_dog" then continue end
+      if _G.InternalConfig.PetExchangeRarityBlacklist and _G.InternalConfig.PetExchangeRarityBlacklist[v.rarity] then continue end
+      if _G.InternalConfig.PetExchangeAgeBlacklist and _G.InternalConfig.PetExchangeAgeBlacklist[v.age] then continue end
+      if (v.name:lower()):match("egg") then continue end
+      local ok, val = pcall(Calculator.get_pet_value, 
+        { 
+          kind = v.remote, 
+          properties = {
+            age = v.age,
+            neon = v.neon,
+            mega_neon = v.mega_neon,
+            rideable = v.rideable,
+            flyable = v.flyable
+          },
+        }
+      ) 
+      if ok then 
+        value += val 
+        pets_to_exchange[k] = true
+      end
+    end
+	local val = (value + (ClientData.get("pet_recycler_manager").saved_points or 0)) 
+    if val >= 4500 then 
+      emulate_location("Nursery")
+      if not ClientData.get("pet_recycler_manager").timestamp then
+        safeInvoke("HousingAPI/ActivateInteriorFurniture",
+          "f-9",
+    	  "UseBlock",
+    	  {
+    	    action = "use",
+    	    uniques = pets_to_exchange
+    	  },
+    	  LocalPlayer.Character
+    	)
+  	  task.wait(1)
+	  _G.pet_recycler_precessing = true
+	  local tmps = ClientData.get("pet_recycler_manager").timestamp
+	  local ok, tms = pcall(LiveOpsTime.get_time_until, tmps)
+	  if not ok or not tms then 
+		tms = 300
+	  end
+	  Cooldown.init_auto_recycle = tms + 5
+	  return
+      end
+	else
+  	  print(string.format("[♻️]:[❌] Not enough points to use pet recycler (%d of 4500). Next try in [1200]s.", val))
+	  Cooldown.init_auto_recycle = 300 
+	  return
+	end
+  end
+  local timestamp = ClientData.get("pet_recycler_manager").timestamp 
+  if timestamp and LiveOpsTime.get_time_until(timestamp) > 1 then	
+	local expr = ClientData.get("pet_recycler_manager").expected_rewards 
+	if expr and expr.reward_kinds then
+	  local rewards = {}
+	  for _,v in ClientData.get("pet_recycler_manager").expected_rewards.reward_kinds or {} do
+	  	table.insert(rewards, v)
+	  end
+	  emulate_location("Nursery")    
+	  safeInvoke("HousingAPI/ActivateInteriorFurniture",
+	    "f-9",
+	    "UseBlock",
+	    {
+	      action = "claim"
+	    },
+	    LocalPlayer.Character
+	  )
+	  task.wait(1)
+	  if not ClientData.get("pet_recycler_manager").expected_rewards or count((ClientData.get("pet_recycler_manager").expected_rewards or {})) == 0 then
+        print("[♻️]:[🎁] Successfully received rewards from pet recycler:", table.unpack(rewards) .. ". Next recycle after [5]s.")
+	    _G.pet_recycler_precessing = false
+	    Cooldown.init_auto_recycle = 5
+	    return		
+	  else
+        Cooldown.init_auto_recycle = 5
+	    return
+	  end	
+    end
+  end
+end
+local function init_auto_trade() 
+  local user = _G.InternalConfig.AutoTradeFilter.PlayerTradeWith 
+  local need_repeat = false
+  local pets_to_send = {}
+  local confirmed = false
+  if game.Players:FindFirstChild(user) then
+  	if not game.Players[user].Character or not game.Players[user].Character.Humanoid then
+  	  Cooldown.init_auto_trade = 5
+  	  print("[🔄] Waiting for player loads the game.")
+  	  return 
+  	end
+  	local owned_pets = get_owned_pets()
+  	for k,v in owned_pets do
+  	  if v.remote ~= "practice_dog" then
+  	  	if _G.InternalConfig.AutoTradeFilter.TradeFarmed and StateDB.total_fullgrowned[k] then
+  	  	  pets_to_send[k] = true
+  	  	  continue
+  	  	end
+  	  	if _G.InternalConfig.AutoTradeFilter.TradePriority == "eggs" and not (v.name:lower()):match("egg") then
+  	  	  continue
+  	  	elseif _G.InternalConfig.AutoTradeFilter.TradePriority == "pets" and (v.name:lower()):match("egg") then
+  	  	  continue
+  	  	end
+  	  	if _G.InternalConfig.AutoTradeFilter.Blacklist.Rarity then
+  	  	  if _G.InternalConfig.AutoTradeFilter.Blacklist.Rarity[v.rarity] then
+  	  		continue
+  	  	  end
+  	  	end
+  	  	if _G.InternalConfig.AutoTradeFilter.Blacklist.Age then
+  	  	  if _G.InternalConfig.AutoTradeFilter.Blacklist.Age[v.age] then
+  	  	  	continue
+  	  	  end
+  	  	end
+  	  	if _G.InternalConfig.AutoTradeFilter.Blacklist.Property then
+  	  	  if v.neon and _G.InternalConfig.AutoTradeFilter.Blacklist.Property["n"] then continue end
+  	  	  if v.mega_neon and _G.InternalConfig.AutoTradeFilter.Blacklist.Property["m"] then continue end
+  	  	  if v.flyable and _G.InternalConfig.AutoTradeFilter.Blacklist.Property["f"] then continue end
+  	  	  if v.rideable and _G.InternalConfig.AutoTradeFilter.Blacklist.Property["r"] then continue end
+  	  	end
+  	  	if _G.InternalConfig.AutoTradeFilter.Blacklist.Friendly then
+  	  	  if v.friendship > 0 then
+  	  		continue
+  	  	  end
+  	  	end
+  	  	if _G.InternalConfig.AutoTradeFilter.Blacklist.Pets then
+  	  	  if _G.InternalConfig.AutoTradeFilter.Blacklist.Pets[v.remote] then
+  	  	 	continue
+  	  	  end
+  	  	end
+  	  	pets_to_send[k] = true
+  	  end
+  	end
+  	if count(pets_to_send) == 0 then
+  	  Cooldown.init_auto_trade = 1200
+  	  print("[🔄]:[‼️] Internal pet list to trade is empty. Cooldown: [1200]s.")
+  	  return
+  	elseif count(pets_to_send) > 18 then
+  	  for k in pairs(pets_to_send) do
+  	  	pets_to_send[k] = nil
+  	  	if count(pets_to_send) <= 18 then
+  	  	  need_repeat = true
+  	  	  break
+  	  	end
+  	  end
+  	end
+  	local r = send_trade_request(user)
+  	if r == "No response" then
+  	  print("[🔄]:[‼️] No response from:", user)
+  	  Cooldown.init_auto_trade = _G.InternalConfig.AutoTradeFilter.TradeDelay
+  	  return
+  	elseif r == "declined" then
+  	  print("[🔄]:[‼️] Trade declined by", user)
+  	  Cooldown.init_auto_trade = _G.InternalConfig.AutoTradeFilter.TradeDelay
+  	  return 
+  	end
+  	task.wait(1)
+  	local deadline = os.clock() + 180
+  	local ui = UIManager.apps.TradeApp
+  	if ui.visible then -- dodelat
+  	  ui.negotiation_decline_button.mouse_button1_click = function() print("[-] Decline button is locked for script better working.") end 
+  	  ui.confirmation_decline_button.mouse_button1_click = function() print("[-] Cancel button is locked for script better working.") end 
+  	  ui.negotiation_accept_button.mouse_button1_click  = function() print("[-] Accept button is locked for script better working.") end 
+  	  ui.confirmation_accept_button.mouse_button1_click  = function() print("[-] Confirm button is locked for script better working.") end 
+  	  ui.my_negotiation_offer_pane.add_item_callback = function() print("[-] Add item button is locked for script better working.") end
+  	  pcall(function()
+  	  	for k,_ in pairs(pets_to_send) do 
+  	  	  safeFire("TradeAPI/AddItemToOffer", k)
+  	  	  task.wait(.25)
+  	  	end
+  	  end)
+  	  while task.wait(1) and ui.visible and os.clock() < deadline do
+  	  	if ui:_get_current_trade_stage() == "negotiation" then
+  	  	  if ui:_get_partner_offer().negotiated then
+  	  	  	safeFire("TradeAPI/AcceptNegotiation")
+  	  	  else
+  	  	  	continue
+  	  	  end
+  	  	elseif ui:_get_current_trade_stage() == "confirmation" then
+  	  	  if ui:_get_partner_offer().confirmed then
+  	  	  	safeFire("TradeAPI/ConfirmTrade")
+  	  	  	confirmed = true
+  	  	  else
+  	  	  	continue
+  	  	  end
+  	  	end
+  	  end
+  	  if os.clock() > deadline then
+  	  	print("[🔄]:[‼️] Trade is taking longer than expected. Repeating after", string.format("[%d]s.", _G.InternalConfig.AutoTradeFilter.TradeDelay))
+  	  	safeFire("TradeAPI/DeclineTrade")
+  	  	Cooldown.init_auto_trade = _G.InternalConfig.AutoTradeFilter.TradeDelay
+  	  	return
+  	  end
+  	else
+  	  Cooldown.init_auto_trade = _G.InternalConfig.AutoTradeFilter.TradeDelay
+  	  return
+  	end
+  	if not confirmed then
+  	  print(string.format("[🔄]:[❌] Trade unsuccessed. Timeout: [%d]s.", _G.InternalConfig.AutoTradeFilter.TradeDelay))
+  	  Cooldown.init_auto_trade = _G.InternalConfig.AutoTradeFilter.TradeDelay
+  	  if _G.InternalConfig.AutoTradeFilter.WebhookEnabled then 
+  	  	webhook(
+  	  	  "Trade-Log",
+  	  	  "```diff\n- Trade with " 
+  	  	  .. user 
+  	  	  .. " unsuccessed. Timeout: [" 
+  	  	  .. _G.InternalConfig.AutoTradeFilter.TradeDelay 
+  	  	  .. "]s.\n```"
+  	  	)
+		telegram_webhook(string.format([[
+		<code>Trade-Log</code>
+	    <b>Trade with %s unsuccessed. Timeout: [%d]s.</b>
+		]], user, _G.InternalConfig.AutoTradeFilter.TradeDelay))
+  	  	return
+  	  end
+  	end
+  	print("[🔄]:[✅] Trade successed.")
+  	if _G.InternalConfig.AutoTradeFilter.WebhookEnabled then
+  	  webhook("Trade-Log", "```diff\n+ Trade with " .. user .. " succeeded.\n```")		
+  	  Cooldown.init_auto_trade = 3600
+  	end
+  	  if need_repeat then
+  	  print("⚙️ Detected more than 18 pets to trade. Trade will be repeated soon.")
+  	  Cooldown.init_auto_trade = 5	
+  	end
+  else
+  	Cooldown.init_auto_trade = 60
+  end
+end
 local function init_lurebox_farm() 
   if count(ClientData.get("lures_2023_lure_manager").lures_map) == 0 then 
   	safeInvoke("HousingAPI/ActivateFurniture",
@@ -1701,13 +2099,12 @@ local function init_lurebox_farm()
   else
     local l = ClientData.get("lures_2023_lure_manager").lures_map.BasicLure or {}
     if not l.finished then
-	  local tmps = ClientData.get("lures_2023_lure_manager").lure_start_timestamp 
-	  local ok, tms = pcall(LiveOpsTime.get_time_until, tmps)
-	  if not ok or not tms then 
-	    tms = 3600 
-	  end
-	  Cooldown.init_lurebox_farm = tms + 5    
-	else
+    local tmps = ClientData.get("lures_2023_lure_manager").lure_start_timestamp 
+    local ok, tms = pcall(LiveOpsTime.get_time_until, tmps)
+	if not ok or not tms then 
+	  tms = 3600 
+	end
+    Cooldown.init_lurebox_farm = tms + 5    else
       local reward = l.reward or {kind="Unidentified reward", amount=1}
   	  safeInvoke("HousingAPI/ActivateFurniture",
   	    LocalPlayer,
@@ -1728,7 +2125,230 @@ local function init_lurebox_farm()
     end 
   end
 end
-local function init_send_webhook() 
+local function init_gift_autoopen() 
+  if count(get_owned_category("gifts")) < 1 then
+  	print("📦 No gifts/chests detected.")
+  	Cooldown.init_gift_autoopen = 3600
+  	return
+  end
+  local gifts = 0
+  local chests = 0
+  for k,v in pairs(get_owned_category("gifts")) do
+    local r = v.remote:lower()
+  	  safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
+  	  safeInvoke("ShopAPI/OpenGift", k)
+  	  gifts += 1
+  	task.wait(.1) 
+  end
+  print(string.format("📦 Opened %d gifts and %d chests!", gifts, chests))
+  Cooldown.init_gift_autoopen = 3600 
+end
+local function init_auto_give_potion()
+  local pet_to_grow = {}
+  local owned_pets = get_owned_pets()
+  local _repeat = false
+  if _G.InternalConfig.AutoGivePotion ~= "any" then
+  	for id,_ in pairs(_G.InternalConfig.AutoGivePotion) do
+  	  local unique = inv_get_category_unique("pets", id)
+  	  if unique then
+  	  	local pet = owned_pets[unique]
+  	  	if pet and pet.age < 6 and not (pet.name:lower()):match("egg") then
+  	  	  table.insert(pet_to_grow, { unique, pet.age, pet.rarity, pet.remote, })
+  	  	end 
+  	  end
+  	end
+  else
+  	for k,v in pairs(owned_pets) do
+  	  if v.age < 6 and not (v.name:lower()):match("egg") then
+  	  	table.insert(pet_to_grow, { k, v.age, v.rarity, v.remote, })
+  	  end
+  	end
+  end
+  if #pet_to_grow == 0 then 
+  	print("🧪 No pets to grow up. Cooldown: [900]s.")
+  	Cooldown.init_auto_give_potion = 900
+  	return
+  elseif #pet_to_grow > 1 then
+  	_repeat = true
+  	for k,_ in ipairs(pet_to_grow) do
+  	  pet_to_grow[k] = nil
+  	  if #pet_to_grow == 1 then
+  	  	break
+  	  end
+  	end
+  end
+  local potions = get_potions()
+  if not potions[1] and not potions[2] then 
+  	print("🧪 No potions to use. Cooldown: [900]s.")
+  	Cooldown.init_auto_give_potion = 900
+  	return
+  end	
+  local potions_to_give = calculate_optimal_potions_by_rarity(pet_to_grow[1][2], pet_to_grow[1][3], potions)
+  print(string.format("⚙️ Calculated optimal count of potion to use based on total potions count and pet rarity: [%d Age potions] and [%d Tiny age potions].", potions_to_give[1], potions_to_give[2]))
+  local equiped_pet = ClientData.get("pet_char_wrappers")[1]
+  if equiped_pet then
+  	safeInvoke("ToolAPI/Unequip",
+  	  equiped_pet.pet_unique,
+  	  {
+  	 	use_sound_delay = true,
+  		equip_as_last = false
+  	  }
+  	)
+  end
+  task.wait(1)
+  safeInvoke("ToolAPI/Equip",
+  	pet_to_grow[1][1],
+  	{
+  	  use_sound_delay = true,
+  	  equip_as_last = false
+  	}
+  )
+  if count(potions_to_give[1]) > 0 then
+  	local main = nil
+  	local others = {}
+  	for k,_ in pairs(potions_to_give[1]) do
+  	  if main then 
+  	  	table.insert(others, k)
+  	  else 
+  	  	main = k 
+  	  end
+  	end
+  	safeInvoke("PetObjectAPI/CreatePetObject",
+  	  "__Enum_PetObjectCreatorType_2",
+  	  {
+  	  	additional_consume_uniques = {
+  	  	  table.unpack(others)
+  	  	},
+  	  	pet_unique = pet_to_grow[1][1],
+  	  	unique_id = main
+  	  }
+  	)
+  	task.wait(15)
+  end
+  if count(potions_to_give[2]) > 0 then
+  	task.wait(5)
+  	local main = nil
+  	local others = {}
+  	for k,_ in pairs(potions_to_give[2]) do
+  	  if main then 
+  	  	table.insert(others, k)
+  	  else 
+  	  	main = k 
+  	  end
+  	end
+  	safeInvoke("PetObjectAPI/CreatePetObject",
+  	  "__Enum_PetObjectCreatorType_2",
+  	  {
+  	  	additional_consume_uniques = {
+  	  	  table.unpack(others)
+  	  	},
+  	  	pet_unique = pet_to_grow[1][1],
+  	  	unique_id = main
+  	  }
+  	)
+  	task.wait(12)
+  end
+  print("🧪 potions used on pet:", pet_to_grow[1][4])
+  if cur_unique() == pet_to_grow[1][1] and ClientData.get("pet_char_wrappers")[1].pet_progression.age == 6 then
+  	print("✅", pet_to_grow[1][4], "now full-grown!")
+  	farmed.pets_fullgrown += 1
+  	update_gui("fullgrown", farmed.pets_fullgrown)
+  end
+  safeInvoke("ToolAPI/Equip",
+  	equiped_pet.pet_unique or actual_pet.unique or "",
+  	{
+  	  use_sound_delay = true,
+  	  equip_as_last = false
+  	}
+  )
+  if _repeat then 
+  	print("⚙️ Detected more than 1 pet to grow up.")
+  	Cooldown.init_auto_give_potion = 1
+  	return
+  end
+  Cooldown.init_auto_give_potion = 900
+end
+local function init_auto_neon()
+  local owned = get_owned_pets()
+  local internal_expected = _G.InternalConfig.AutoNeon
+  local internal_to_process = {}
+  for k,_ in pairs(internal_expected) do
+    if count_of_product("pets", k) > 3 then
+	  internal_to_process[k] = {}
+	end
+  end
+  if count(internal_to_process) == 0 then
+	print("[🧿]:[❌] Expected pets for make Neon not found.")
+    Cooldown.auto_neon = 900
+	return  
+  end
+  for k,v in pairs(internal_to_process) do
+    local count = 0
+	local _index = k
+	local _temp_unique_set = {}
+	for a,b in pairs(owned) do
+	  if b.remote == v and b.age == 6 then
+		count += 1
+		table.insert(_temp_unique_set, a)
+	  end
+	end
+	if count > 3 then
+	  internal_to_process[_index] = _temp_unique_set
+	else
+	  internal_to_process[_index] = nil
+	end
+  end
+  for _,v in pairs(internal_to_process) do
+	emulate_location("Cave")
+    local ok, _ = safeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
+	task.wait(2)
+	if ok then 
+	  print("[🧿]:[✅] Pet is Neon now!")
+	end
+  end
+  Cooldown.auto_neon = 1800
+end
+local function init_auto_mega_neon()
+  local owned = get_owned_pets()
+  local internal_expected = _G.InternalConfig.AutoNeon
+  local internal_to_process = {}
+  for k,_ in pairs(internal_expected) do
+    if count_of_product("pets", k) > 3 then
+	  internal_to_process[k] = {}
+	end
+  end
+  if count(internal_to_process) == 0 then
+	print("[🧿]:[❌] Expected pets for make MegaNeon not found.")
+    Cooldown.auto_mega_neon = 900
+	return  
+  end
+  for k,v in pairs(internal_to_process) do
+    local count = 0
+	local _index = k
+	local _temp_unique_set = {}
+	for a,b in pairs(owned) do
+	  if b.remote == v and b.neon then
+		count += 1
+		table.insert(_temp_unique_set, a)
+	  end
+	end
+	if count > 3 then
+	  internal_to_process[_index] = _temp_unique_set
+	else
+	  internal_to_process[_index] = nil
+	end
+  end
+  for _,v in pairs(internal_to_process) do
+	emulate_location("Cave")
+    local ok, _ = safeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
+	task.wait(2)
+	if ok then 
+	  print("[🧿]:[✅] Pet is MegaNeon now!")
+	end
+  end
+  Cooldown.auto_mega_neon = 1800
+end
+local function init_send_webhook_discord() 
   local desc = string.format([[
   > 💸 Money Earned - [ **%d** ]
   > 📈 Pets Full-grown - [ **%d** ]
@@ -1756,7 +2376,37 @@ webhook(
   "Farm-Log",
   desc
 )
-  Cooldown.webhook_send_delay = 3600
+  Cooldown.discord_webhook_send_delay = _G.InternalConfig.WebhookSendDelay
+end
+local function init_send_webhook_telegram()
+  local msg = string.format([[
+  **Farm-Log**
+  <code>%s</code>
+  <b>💸 Money Earned</b> – <code>%d</code>
+  <b>📈 Pets Full-grown</b> – <code>%d</code>
+  <b>🐶 Pet Needs Completed</b> – <code>%d</code>
+  <b>🧪 Potions Farmed</b> – <code>%d</code>
+  <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
+  <b>👶 Baby Needs Completed</b> – <code>%d</code>
+  <b>🥚 Eggs Hatched</b> – <code>%d</code>
+  -----------------------------------------------
+  <b>💸 Total Bucks</b> – <code>%d</code>
+  -----------------------------------------------
+  <b>⏰ Runtime</b> – <code>%s</code>
+  ]],
+  LocalPlayer.Name,
+  farmed.money,
+  farmed.pets_fullgrown,
+  farmed.ailments,
+  farmed.potions,
+  farmed.friendship_levels,
+  farmed.baby_ailments,
+  farmed.eggs_hatched,
+  ClientData.get("money"),
+  format_time(farmed.time)
+  )
+  telegram_webhook(msg)
+  Cooldown.telegram_webhook_send_delay = _G.InternalConfig.WebhookSendDelay
 end
 function collect_dailies()
   print("[📋] Looking and processing vanilla dailies..")
@@ -1797,29 +2447,77 @@ local function __init_babypet_autofarm()
       end
     end
   end
+  if _G.InternalConfig.AutoGivePotion then
+    if Cooldown.init_auto_give_potion and Cooldown.init_auto_give_potion <= 0 then
+      Cooldown.init_auto_give_potion = nil
+      local res = pcall(init_auto_give_potion)
+      if not res then
+       Cooldown.init_auto_give_potion = 900
+      end
+    end
+  end
 end
 local function __init()
+  Cooldown.discord_webhook_send_delay = _G.InternalConfig.WebhookSendDelay 
+  Cooldown.telegram_webhook_send_delay = _G.InternalConfig.WebhookSendDelay
   while task.wait(1) do
 	local cd = Cooldown
 	cd.init_auto_buy = cd.init_auto_buy and math.max(0, cd.init_auto_buy - 1)
-	cd.webhook_send_delay = cd.webhook_send_delay and math.max(0, cd.webhook_send_delay - 1)
+	cd.init_auto_recycle = cd.init_auto_recycle and math.max(0, cd.init_auto_recycle - 1)
+	cd.init_auto_trade = cd.init_auto_trade and math.max(0, cd.init_auto_trade - 1)
+	cd.init_lurebox_farm = cd.init_lurebox_farm and math.max(0, cd.init_lurebox_farm - 1)
+	cd.init_gift_autoopen = cd.init_gift_autoopen and math.max(0, cd.init_gift_autoopen - 1)
+	cd.discord_webhook_send_delay = cd.discord_webhook_send_delay and math.max(0, cd.discord_webhook_send_delay - 1)
+	cd.telegram_webhook_send_delay = cd.telegram_webhook_send_delay and math.max(0, cd.telegram_webhook_send_delay - 1)
 	cd.watchdog = cd.watchdog and math.max(0, cd.watchdog - 1)
 	cd.init_autofarm = cd.init_autofarm and math.max(0, cd.init_autofarm - 1)
 	cd.init_baby_autofarm = cd.init_baby_autofarm and math.max(0, cd.init_baby_autofarm - 1)
-	cd.init_lurebox_farm = cd.init_lurebox_farm and math.max(0, cd.init_lurebox_farm - 1)
+	cd.init_auto_give_potion = cd.init_auto_give_potion and math.max(0, cd.init_auto_give_potion - 1)
+	cd.auto_neon = cd.auto_neon and math.max(0, cd.auto_neon - 1)
+	cd.auto_mega_neon = cd.auto_mega_neon and math.max(0, cd.auto_mega_neon - 1)
 	cd.awaiting_currency_update = cd.awaiting_currency_update and math.max(0, cd.awaiting_currency_update - 1)
 	cd.daily_rewards_cooldown = cd.daily_rewards_cooldown and math.max(0, cd.daily_rewards_cooldown - 1)
 	if _G.CLIENT_HARD_LOCK then continue end
+	if _G.InternalConfig.LureboxFarm and cd.init_lurebox_farm == 0 then
+	  cd.init_lurebox_farm = nil
+	  task.spawn(function()
+		  pcall(init_lurebox_farm)
+	  end)
+	end
 	if _G.InternalConfig.AutoFarmFilter.EggAutoBuy and cd.init_auto_buy == 0 then
 	  cd.init_auto_buy = nil
 	  task.spawn(function() 
 		pcall(init_auto_buy)
 	  end)
 	end
-	if _G.InternalConfig.LureboxFarm and cd.init_lurebox_farm == 0 then
-	  cd.init_lurebox_farm = nil
+	if _G.InternalConfig.GiftsAutoOpen and cd.init_gift_autoopen == 0 then
+	  cd.init_gift_autoopen = nil
 	  task.spawn(function()
-	    pcall(init_lurebox_farm)
+		pcall(init_gift_autoopen)
+      end)
+	end
+	if _G.InternalConfig.AutoRecyclePet and cd.init_auto_recycle == 0 then
+	  cd.init_auto_recycle = nil
+	  task.spawn(function()   
+		pcall(init_auto_recycle)
+	  end)
+	end
+	if _G.InternalConfig.AutoNeon and cd.auto_neon == 0 then
+	  cd.auto_neon = nil
+	  task.spawn(function() 
+	    pcall(init_auto_neon)
+	  end)
+	end
+	if _G.InternalConfig.AutoMegaNeon and cd.auto_mega_neon == 0 then
+	  cd.auto_mega_neon = nil
+	  task.spawn(function() 
+	    pcall(init_auto_mega_neon)
+	  end)
+	end
+	if _G.InternalConfig.PetAutoTrade and cd.init_auto_trade == 0 then
+	  cd.init_auto_trade = nil
+	  task.spawn(function() 
+		pcall(init_auto_trade)
 	  end)
 	end
 	if cd.awaiting_currency_update == 0 then
@@ -1834,10 +2532,16 @@ local function __init()
 		pcall(collect_dailies)
 	  end)
 	end
-	if _G.InternalConfig.DiscordWebhookURL and cd.webhook_send_delay == 0 then
-	  cd.webhook_send_delay = nil
+	if _G.InternalConfig.DiscordWebhookURL and cd.discord_webhook_send_delay == 0 then
+	  cd.discord_webhook_send_delay = nil
 	  task.spawn(function()
-	    pcall(init_send_webhook)
+	  	pcall(init_send_webhook_discord)
+	  end)
+	end
+	if _G.InternalConfig.DiscordWebhookURL and cd.telegram_webhook_send_delay == 0 then
+	  cd.telegram_webhook_send_delay = nil
+	  task.spawn(function()
+	  	pcall(init_send_webhook_telegram)
 	  end)
 	end
 	if cd.watchdog == 0 then
@@ -1896,11 +2600,11 @@ end)()
 				end 
 			  end
 			  if not found then
-			   print(string.format("[auto_farm_filter.pets_to_exclude] Wrong [%s] name.", v))
+			   print(string.format("[!] [auto_farm_filter.pets_to_exclude] Wrong [%s] name.", v))
 			  end
 			end
   	  	  	if count(_G.InternalConfig.AutoFarmFilter.PetsToExclude) == 0 then
-  	  	  	  print("[auto_farm_filter.pets_to_exclude] No valid pet names provided. Option is disabled.")
+  	  	  	  print("[!] [auto_farm_filter.pets_to_exclude] No valid pet names provided. Option is disabled.")
   	  	  	  _G.InternalConfig.AutoFarmFilter.PetsToExclude = {}
   	  	  	end
   	  	  end
@@ -1917,11 +2621,10 @@ end)()
   	  	  end
   	  	else 
   	  	  LocalPlayer:Kick("[auto_farm_filter.potion_farm] Wrong datatype. Exiting.")
-  		  error("", 0)
+		  error("", 0)
   	  	end
   	  	if type(Config.auto_farm_filter.egg_auto_buy) == "string" then
   	  	  if not (Config.auto_farm_filter.egg_auto_buy):match("^%s*$") then 
-			_G.InternalConfig.AutoFarmFilter.EggAutoBuy = {}
 			local found = false
 			local name = Config.auto_farm_filter.egg_auto_buy:lower()
 			for id,tab in pairs(InventoryDB.pets) do
@@ -1933,7 +2636,7 @@ end)()
 			end
 			if not found then
 			  _G.InternalConfig.AutoFarmFilter.EggAutoBuy = false
-			  print(string.format("[auto_farm_filter.egg_auto_buy] Wrong [%s] name. Option is disabled.", Config.auto_farm_filter.egg_auto_buy))
+			  print(string.format("[!] [auto_farm_filter.egg_auto_buy] Wrong [%s] name. Option is disabled.", Config.AutoFarmFilter.EggAutoBuy))
 			end
 		  else
 			_G.InternalConfig.AutoFarmFilter.EggAutoBuy = false
@@ -1961,23 +2664,163 @@ end)()
   else  
   	LocalPlayer:Kick("[farm_priority] Wrong datatype. Exiting.")
 	error("", 0)
-  end
-  if type(Config.baby_auto_farm) == "boolean" then
-    _G.InternalConfig.BabyAutoFarm = Config.baby_auto_farm
+  end  
+  if type(Config.baby_auto_farm) == "boolean" then 
+  	_G.InternalConfig.BabyAutoFarm = Config.baby_auto_farm
   else
-    LocalPlayer:Kick("[baby_auto_farm] Wrong datatype. Exiting.")
+  	LocalPlayer:Kick("[baby_auto_farm] Wrong datatype. Exiting.")
 	error("", 0)
   end
   if type(Config.lurebox_farm) == "boolean" then
-	_G.InternalConfig.LureboxFarm = Config.lurebox_farm
+  	_G.InternalConfig.LureboxFarm = Config.lurebox_farm
   else
-	LocalPlayer:Kick("[lurebox_farm] Wrong datatype. Exiting.")
+  	LocalPlayer:Kick("[lurebox_farm] Wrong datatype. Exiting.")
 	error("", 0)
   end
-  if type(Config.disable_3d_rendering) == "boolean" then
-    _G.InternalConfig.Disable3DRendering = Config.disable_3d_rendering
+  if type(Config.gifts_auto_open) == "boolean" then
+  	_G.InternalConfig.GiftsAutoOpen = Config.gifts_auto_open
   else
-    LocalPlayer:Kick("[disable_3d_rendering] Wrong datatype. Exiting.")
+  	LocalPlayer:Kick("[gifts_auto_open] Wrong datatype. Exiting.")
+	error("", 0)
+  end
+  if type(Config.auto_give_potion) == "string" then
+  	if not (Config.auto_give_potion):match("^%s*$") then 	
+	  if Config.auto_give_potion == "any" then
+		_G.InternalConfig.AutoGivePotion = "any"	
+	  else
+	    _G.InternalConfig.AutoGivePotion = {}
+		for v in Config.auto_give_potion:gmatch("([^;]+)") do
+		  local found = false
+		  local name = v:lower()
+		  for id,tab in pairs(InventoryDB.pets) do
+		    if tab.name:lower() == name then
+			  _G.InternalConfig.AutoGivePotion[id] = true
+			  found = true
+		 	  break
+			end 
+		  end
+		  if not found then
+		   print(string.format("[!] [auto_give_potion] Wrong [%s] name.", v))
+		  end
+		end
+		if count(_G.InternalConfig.AutoGivePotion) == 0 then
+		  print("[!] [auto_give_potion] No valid pet names provided. Option is disabled.")
+		  _G.InternalConfig.AutoGivePotion = false
+		end
+	  end
+  	else
+  	  _G.InternalConfig.AutoGivePotion = false
+  	end
+  else
+  	LocalPlayer:Kick("[auto_give_potion] Wrong datatype. Exiting.")
+	error("", 0)
+  end
+  if type(Config.auto_neon) == "string" then
+  	if not (Config.auto_neon):match("^%s*$") then 	
+	  _G.InternalConfig.AutoNeon = {}
+	  for v in Config.auto_neon:gmatch("([^;]+)") do
+	    local found = false
+	    local name = v:lower()
+	    for id,tab in pairs(InventoryDB.pets) do
+	      if tab.name:lower() == name then
+	  	    _G.InternalConfig.AutoNeon[id] = {}
+	  	    found = true
+	   	    break
+	  	  end 
+	    end
+	    if not found then
+	      print(string.format("[!] [auto_neon] Wrong [%s] name.", v))
+	    end
+	  end
+	  if count(_G.InternalConfig.AutoNeon) == 0 then
+	    print("[!] [auto_neon] No valid pet names provided. Option is disabled.")
+	    _G.InternalConfig.AutoNeon = false
+	  end  
+  	else
+  	  _G.InternalConfig.AutoNeon = false
+  	end
+  else
+  	LocalPlayer:Kick("[auto_neon] Wrong datatype. Exiting.")
+	error("", 0)
+  end
+  if type(Config.auto_mega_neon) == "string" then
+  	if not (Config.auto_mega_neon):match("^%s*$") then 	
+	  _G.InternalConfig.AutoMegaNeon = {}
+	  for v in Config.auto_mega_neon:gmatch("([^;]+)") do
+	    local found = false
+	    local name = v:lower()
+	    for id,tab in pairs(InventoryDB.pets) do
+	      if tab.name:lower() == name then
+	  	    _G.InternalConfig.AutoMegaNeon[id] = {}
+	  	    found = true
+	   	    break
+	  	  end 
+	    end
+	    if not found then
+	      print(string.format("[!] [auto_mega_neon] Wrong [%s] name.", v))
+	    end
+	  end
+	  if count(_G.InternalConfig.AutoNeon) == 0 then
+	    print("[!] [auto_mega_neon] No valid pet names provided. Option is disabled.")
+	    _G.InternalConfig.AutoMegaNeon = false
+	  end  
+  	else
+  	  _G.InternalConfig.AutoMegaNeon = false
+  	end
+  else
+  	LocalPlayer:Kick("[auto_mega_neon] Wrong datatype. Exiting.")
+	error("", 0)
+  end
+  if type(Config.auto_recycle_pet) == "boolean" then 
+  	if Config.auto_recycle_pet then
+  	  _G.InternalConfig.AutoRecyclePet = true
+  	  if type(Config.pet_exchange_rarity_blacklist) == "string" then 
+  	  	if not Config.pet_exchange_rarity_blacklist:match("^%s*$") then 
+  	  	  _G.InternalConfig.PetExchangeRarityBlacklist = {}
+  	  	  for v in Config.pet_exchange_rarity_blacklist:gmatch("([^;]+)") do
+  	  	  	if PetRarities[v:lower()] then
+  	  	  	  _G.InternalConfig.PetExchangeRarityBlacklist[v:lower()] = true
+  	  	  	else
+  	  	  	  print(string.format("[!] [pet_exchange_rarity_blacklist] Wrong [%s] rarity.", v))
+  	  	  	end
+  	  	  end
+  	  	  if count(_G.InternalConfig.PetExchangeRarityBlacklist) == 0 then
+  	  	  	print("[!] [pet_exchange_rarity_blacklist] No valid rarities provided. Option is disabled.")
+  	  	  	_G.InternalConfig.PetExchangeRarityBlacklist = false
+  	  	  end
+  	  	else
+  	  	  _G.InternalConfig.PetExchangeRarityBlacklist = false
+  	  	end
+  	  else
+  	  	LocalPlayer:Kick("[pet_exchange_rarity_blacklist] Wrong datatype. Exiting.")
+		error("", 0)
+  	  end
+  	  if type(Config.pet_exchange_age_blacklist) == "string" then 
+  	  	if not (Config.pet_exchange_age_blacklist):match("^%s*$") then 
+  	  	  _G.InternalConfig.PetExchangeAgeBlacklist = {}
+  	  	  for v in Config.pet_exchange_age_blacklist:gmatch("([^;]+)") do
+  	  	  	if PetAges[v:lower()] then
+  	  	  	  _G.InternalConfig.PetExchangeAgeBlacklist[v:lower()] = true
+  	  	  	else
+  	  	  	  print(string.format("[!] [pet_exchange_age_blacklist] Wrong [%s] age.", v))
+  	  	  	end
+  	  	  end
+  	  	  if count(_G.InternalConfig.PetExchangeAgeBlacklist) == 0 then
+  	  	  	print("[!] [pet_exchange_age_blacklist] No valid ages provided. Option is disabled.")
+  	  	  	_G.InternalConfig.PetExchangeAgeBlacklist = false
+  	  	  end			
+  	  	else
+  	  	  _G.InternalConfig.PetExchangeAgeBlacklist = false
+  	  	end
+  	  else
+  	  	LocalPlayer:Kick("[pet_exchange_age_blacklist] Wrong datatype. Exiting.")
+		error("", 0)
+  	  end
+  	else 
+  	  _G.InternalConfig.AutoRecyclePet = false
+  	end
+  else
+  	LocalPlayer:Kick("[auto_recycle_pet] Wrong datatype. Exiting.")
 	error("", 0)
   end
   if type(Config.discord_webhook_url) == "string" then 
@@ -1989,7 +2832,7 @@ end)()
   	  	})
   	  end)
   	  if res then
-  	  	_G.InternalConfig.DiscordWebhookURL = Config.DiscordWebhookURL
+  	  	_G.InternalConfig.DiscordWebhookURL = Config.discord_webhook_url
   	  else
   	  	_G.InternalConfig.DiscordWebhookURL = false
   	  end
@@ -1998,6 +2841,262 @@ end)()
   	end
   else
   	LocalPlayer:Kick("[discord_webhook_url] Wrong datatype. Exiting.")
+	error("", 0)
+  end
+  if type(Config.pet_auto_trade) == "boolean" then
+  	_G.InternalConfig.AutoTradeFilter = {}
+  	_G.InternalConfig.AutoTradeFilter.Blacklist = {}
+  	if Config.pet_auto_trade then 
+  	  _G.InternalConfig.PetAutoTrade = true	
+  	  if type(Config.auto_trade_filter.player_trade_with) == "string" then 
+  	  	if not Config.auto_trade_filter.player_trade_with:match("^%s*$") then 
+  	  	  _G.InternalConfig.AutoTradeFilter.PlayerTradeWith = Config.auto_trade_filter.player_trade_with
+  	  	  if type(Config.auto_trade_filter.trade_priority) == "string" then
+  	  	  	if not Config.auto_trade_filter.trade_priority:match("^%s*$") then 
+  	  	  	  local str = Config.auto_trade_filter.trade_priority
+  	  	  	  if str == "pets" or str == "eggs" or str == "any" then
+  	  	  	  	_G.InternalConfig.AutoTradeFilter.TradePriority = Config.auto_trade_filter.trade_priority
+  	  	  	  else
+  	  	  	  	LocalPlayer:Kick("[auto_trade_filter.trade_priority] Wrong value. Exiting.")
+				error("", 0)
+  	  	  	  end
+  	  	  	else
+  	  	  	  print("[!] [auto_trade_filter.trade_priority] is not specified. PetAutoTrade won't work.")
+  	  	  	  _G.InternalConfig.PetAutoTrade = false
+  	  	  	end
+  	  	  else
+  	  	  	LocalPlayer:Kick("[auto_trade_filter.trade_priority] Wrong datatype. Exiting.")
+			error("", 0)
+  	  	  end
+  	  	  if type(Config.auto_trade_filter.trade_farmed) == "boolean" then
+  	  	  	_G.InternalConfig.AutoTradeFilter.TradeFarmed = Config.auto_trade_filter.trade_farmed
+  	  	  else
+  	  	  	LocalPlayer:Kick("[auto_trade_filter.trade_farmed] Wrong datatype. Exiting.")
+			error("", 0)
+  	  	  end
+  	  	  if type(Config.auto_trade_filter.webhook_enabled) == "boolean" then
+  	  	  	_G.InternalConfig.AutoTradeFilter.WebhookEnabled = false
+  	  	  	if Config.auto_trade_filter.webhook_enabled then
+  	  	  	  if _G.InternalConfig.DiscordWebhookURL then
+  	  	  	    _G.InternalConfig.AutoTradeFilter.WebhookEnabled = true
+  	  	  	  end
+  	  	  	end
+  	  	  else
+  	  	  	LocalPlayer:Kick("[auto_trade_filter.webhook_enabled] Wrong datatype. Exiting.")
+			error("", 0)
+  	  	  end
+  	  	  if type(Config.auto_trade_filter.trade_delay) == "number" then
+  	  	  	if Config.auto_trade_filter.trade_delay >= 1 then
+  	  	  	  _G.InternalConfig.AutoTradeFilter.TradeDelay = Config.auto_trade_filter.trade_delay
+  	  	  	else
+  	  	  	  _G.InternalConfig.AutoTradeFilter.TradeDelay = 40 
+  	  	      print("[!] [auto_trade_filter.trade_delay] Value of TradeDelay can't be lower than 1. Reseting to 40.")
+  	  	  	end
+  	  	  else 
+  	  	  	LocalPlayer:Kick("[auto_trade_filter.trade_delay] Wrong datatype. Exiting.")
+			error("", 0)
+  	  	  end
+  	  	  if type(Config.auto_trade_filter.blacklist.rarity) == "string" then
+  	  	  	if not Config.auto_trade_filter.blacklist.rarity:match("^%s*$") then 
+  	  	  	  _G.InternalConfig.AutoTradeFilter.Blacklist.Rarity = {}
+  	  	  	  for v in Config.auto_trade_filter.blacklist.rarity:gmatch("([^;]+)") do
+  	  	  	  	if PetRarities[v:lower()] then
+  	  	  	  	  _G.InternalConfig.AutoTradeFilter.Blacklist.Rarity[v:lower()] = true
+  	  	  	  	else
+                  print(string.format("[!] [auto_trade_filter.blacklist.rarity] Wrong [%s] rarity.", v))
+  	  	  	  	end
+  	  	  	  end
+  	  	  	  if count(_G.InternalConfig.AutoTradeFilter.Blacklist.Rarity) == 0 then
+  	  	  	  	print("[!] [auto_trade_filter.blacklist.rarity] No valid rarities provided. Option is disabled.")
+  	  	  	  	_G.InternalConfig.AutoTradeFilter.Blacklist.Rarity = false
+  	  	  	  end
+  	  	  	else	
+  	  	  	  _G.InternalConfig.AutoTradeFilter.Blacklist.Rarity = false
+  	  	  	end
+  	  	  else
+  	  	  	LocalPlayer:Kick("[auto_trade_filter.blacklist.rarity] Wrong datatype. Exiting.")
+			error("", 0)
+  	  	  end
+  	  	  if type(Config.auto_trade_filter.blacklist.age) == "string" then
+  	  	  	if not Config.auto_trade_filter.blacklist.age:match("^%s*$") then 
+  	  	  	  _G.InternalConfig.AutoTradeFilter.Blacklist.Age = {}
+  	  	  	  for v in Config.auto_trade_filter.blacklist.age:gmatch("([^;]+)") do
+  	  	  	  	if PetAges[v:lower()] then
+  	  	  	  	  _G.InternalConfig.AutoTradeFilter.Blacklist.Age[v:lower()] = true
+  	  	  	  	else
+                  print(string.format("[!] [auto_trade_filter.blacklist.age] Wrong [%s] age.", v))
+  	  	  	  	end
+  	  	  	  end
+  	  	  	  if count(_G.InternalConfig.AutoTradeFilter.Blacklist.Age) == 0 then
+  	  	  	  	print("[!] [auto_trade_filter.blacklist.age] No valid ages provided. Option is disabled.")
+  	  	  	  	_G.InternalConfig.AutoTradeFilter.Blacklist.Age = false
+  	  	  	  end
+  	  	  	else	
+  	  	  	  _G.InternalConfig.AutoTradeFilter.Blacklist.Age = false
+  	  	  	end
+  	  	  else
+  	  	  	LocalPlayer:Kick("[auto_trade_filter.blacklist.age] Wrong datatype. Exiting.")
+			error("", 0)
+  	  	  end
+  	  	  if type(Config.auto_trade_filter.blacklist.property) == "string" then
+  	  	  	if not Config.auto_trade_filter.blacklist.property:match("^%s*$") then 
+  	  	  	  _G.InternalConfig.AutoTradeFilter.Blacklist.Property = {}
+  	  	  	  local l = Config.auto_trade_filter.blacklist.property:lower()
+  	  	  	  if l:match("n") then
+  	  	  	  	_G.InternalConfig.AutoTradeFilter.Blacklist.Property["n"] = true
+  	  	  	  end
+  	  	  	  if l:match("m") then
+  	  	  	  	_G.InternalConfig.AutoTradeFilter.Blacklist.Property["m"] = true
+  	  	  	  end
+  	  	  	  if l:match("r") then
+  	  	  	  	_G.InternalConfig.AutoTradeFilter.Blacklist.Property["r"] = true
+  	  	  	  end
+  	  	  	  if l:match("f") then
+  	  	  	  	_G.InternalConfig.AutoTradeFilter.Blacklist.Property["f"] = true
+  	  	  	  end
+  	  	  	else
+  	  	  	  _G.InternalConfig.AutoTradeFilter.Blacklist.Property = false
+  	  	  	end
+  	  	  else
+  	  	  	LocalPlayer:Kick("[auto_trade_filter.blacklist.property] Wrong datatype. Exiting.")
+			error("", 0)
+  	  	  end
+  	  	  if type(Config.auto_trade_filter.blacklist.friendly) == "boolean" then
+  	  	  	_G.InternalConfig.AutoTradeFilter.Blacklist.Friendly = Config.auto_trade_filter.blacklist.friendly
+  	  	  else
+  	  	  	LocalPlayer:Kick("[auto_trade_filter.blacklist.friendly] Wrong datatype. Exiting.")
+			error("", 0)
+  	  	  end
+  	  	  if type(Config.auto_trade_filter.blacklist.pets) == "string" then
+  	  	  	if not Config.auto_trade_filter.blacklist.pets:match("^%s*$") then 
+			  _G.InternalConfig.AutoTradeFilter.Blacklist.Pets = {}
+			  for v in Config.auto_trade_filter.blacklist.pets:gmatch("([^;]+)") do
+			    local found = false
+				local name = v:lower()
+				for id,tab in pairs(InventoryDB.pets) do
+			      if tab.name:lower() == name then
+				    _G.InternalConfig.AutoTradeFilter.Blacklist.Pets[id] = true
+				    found = true
+				    break
+				  end 
+				end
+				if not found then
+				  print(string.format("[!] [auto_trade_filter.blacklist.pets] Wrong [%s] name.", v))
+				end
+			  end
+  	  	  	  if count(_G.InternalConfig.AutoTradeFilter.Blacklist.Pets) == 0 then
+  	  	  	  	print("[!] [auto_trade_filter.blacklist.pets] No valid pet names provided. Option is disabled.")
+  	  	  	  	_G.InternalConfig.AutoTradeFilter.Blacklist.Pets = false
+  	  	  	  end
+  	  	  	else
+  	  	  	  _G.InternalConfig.AutoTradeFilter.Blacklist.Pets = false
+  	  	  	end
+  	  	  else
+  	  	  	print("[auto_trade_filter.blacklist.pets] Wrong datatype. Exiting.")
+  	  	  end	
+  	  	else 
+  	  	  print("[!] [auto_trade_filter.player_trade_with] is not specified. PetAutoTrade won't work.")
+  	  	  _G.InternalConfig.PetAutoTrade = false
+  	  	end
+  	  else
+  	  	LocalPlayer:Kick("[auto_trade_filter.player_trade_with] Wrong datatype. Exiting.")
+		error("", 0)
+  	  end
+  	else
+  		_G.InternalConfig.PetAutoTrade = false
+  	end
+  else
+  	LocalPlayer:Kick("[pet_auto_trade] Wrong datatype. Exiting.")
+	error("", 0)
+  end
+  if type(Config.telegram_webhooks_enabled) == "boolean" then
+	_G.InternalConfig.TelegramWebhooksEnabled = Config.telegram_webhooks_enabled 
+	if _G.InternalConfig.TelegramWebhooksEnabled then
+	  if type(Config.telegram_bot_api_key) == "string" then
+		local ok, res = pcall(function()
+          return request({
+            Url = "https://api.telegram.org/bot"..Config.telegram_bot_api_key.."/getMe",
+            Method = "POST",
+            Headers = { ["Content-Type"] = "application/json" }
+          })
+        end)
+		if not ok then
+		  print("[-] Telegram HTTP error while checking bot API. Telegram webhooks wont work.")
+		  _G.InternalConfig.TelegramWebhooksEnabled = false
+		end
+		local body = res.Body
+		local data
+		pcall(function() 
+		  data = HttpService:JSONDecode(body)
+		end)
+		if not data or data.ok ~= true then
+		  local desc = "Unknown Error."
+		  if data and data.description then
+			desc = data.description
+		  end
+   		  print("[-] Invalid bot API key: " .. desc .. ". Telegram webhooks wont work.")
+		 _G.InternalConfig.TelegramWebhooksEnabled = false
+		else
+		  _G.InternalConfig.TelegramBotApiKey = Config.telegram_bot_api_key
+		  print('[+] Telegram bot API key is valid.')
+		  if type(Config.telegram_chat_id) == "string" then
+			print("[INFO] Trying to send message through telegram bot to check chat id..")
+		    local ok, res = pcall(function()
+			  return request({
+            	  Url = "https://api.telegram.org/bot" .. _G.InternalConfig.TelegramBotApiKey .. "/sendMessage",
+				  Method = "POST",
+				  Headers = { ["Content-Type"] = "application/json" },
+				  Body = HttpService:JSONEncode({
+					chat_id = Config.telegram_chat_id,
+					text = "test"
+				  })
+			    })
+			end)
+			if not ok then
+			  print("[-] Telegram HTTP error while trying to send message to chat. Telegram webhooks wont work.")
+			  _G.InternalConfig.TelegramWebhooksEnabled = false
+			end
+			local data
+			pcall(function() 
+			  data = HttpService:JSONDecode(res.Body)
+			end)
+			if data.ok == true then
+			  print("[+] Telegram chat id is valid.")
+			  _G.InternalConfig.TelegramChatId = Config.telegram_chat_id
+			end
+			if data.ok ~= true then
+			  print("[-] Error while trying to send message to chat: " .. data.description or "Unknown telegram error")
+			  _G.InternalConfig.TelegramWebhooksEnabled = false
+			end
+		  else
+			LocalPlayer:Kick("[telegram_chat_id] wrong datatype. Exiting.")
+			error("", 0)	
+		  end
+		end
+	  else
+		LocalPlayer:Kick("[telegram_bot_api_key] Wrong datatype. Exiting.")
+		error("", 0)
+	  end
+	end
+  else
+	LocalPlayer:Kick("[telegram_webhooks_enabled] Wrong datatype. Exiting.")
+	error("", 0)
+  end
+  if type(Config.webhook_send_delay) == "number" then
+  	if Config.webhook_send_delay >= 5 then
+  	  _G.InternalConfig.WebhookSendDelay = Config.webhook_send_delay
+  	else
+  	  _G.InternalConfig.WebhookSendDelay = 3600
+  	  print("[!] Value of webhook_send_delay can't be lower than 5. Reseting to 3600.")
+  	end
+  else
+  	LocalPlayer:Kick("[webhook_send_delay] Wrong datatype. Exiting.")
+	error("", 0)
+  end
+  if type(Config.disable_3d_rendering) == "boolean" then
+  	_G.InternalConfig.Disable3DRendering = Config.disable_3d_rendering
+  else
+  	LocalPlayer:Kick("[disable_3d_rendering] Wrong datatype. Exiting.")
 	error("", 0)
   end
 end)()
@@ -2107,23 +3206,19 @@ task.spawn(function()
   frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
   frame.BackgroundTransparency = 0.3
   frame.Parent = gui
-  local function createLabel(name, text, order, flag)
+  local function createLabel(name, text, order)
   	local label = Instance.new("TextLabel")
   	label.Name = name
   	label.Size = UDim2.new(1, 0, 0, 20)
   	label.Position = UDim2.new(0, 0, 0, order * 22)
   	label.BackgroundTransparency = 1
   	label.TextYAlignment = Enum.TextYAlignment.Center
-  	label.TextColor3 = Color3.fromRGB(156, 136, 136)
+  	label.TextColor3 = Color3.fromRGB(255, 255, 255)
   	label.Font = Enum.Font.SourceSans
   	label.TextSize = 18
   	label.TextXAlignment = Enum.TextXAlignment.Left
-	if not flag then
-  	  label.Text = text .. ": 0"
-	else
-	  label.Text = text 
-	end  	
-	label.Parent = frame
+  	label.Text = text .. ": 0"
+  	label.Parent = frame
   	return label
   end
   createLabel("bucks", "💸 Bucks earned", 0)
