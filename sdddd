@@ -2569,12 +2569,7 @@ local function license()
   	print("[📃]:[✅] License received.")
   end
 end
-;(function() 
-  for k, v in pairs(getupvalue(require(ReplicatedStorage.ClientModules.Core:WaitForChild("RouterClient"):WaitForChild("RouterClient")).init, 7)) do
-  	v.Name = k
-  end
-  print("[+] API dehashed.")
-end)()
+
 ;(function() 
   local Config = getgenv().Config
   if Config.NEINCRAFT_IS_THE_BEST_MINECRAFT_MOD ~= true then
