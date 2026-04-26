@@ -3280,7 +3280,7 @@ end
       return
     end
     _G.InternalConfig.SpecificGiftsToOpen = {}
-    for k,v in table.unpack(v) do
+    for k,v in v do
       _G.InternalConfig.SpecificGiftsToOpen[v] = true
     end
   end
