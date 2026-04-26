@@ -266,7 +266,7 @@ local _script = coroutine.create(function()
     ["_beach"] = {-670, 37, -1413},
   }
   local furn = {}
-  _G.InternalConfig = {PetFarmDLib = {}, AutoTradeDLib = {}, RecyclerDLib = {}}
+  _G.InternalConfig = {PetFarmDLib = {}, AutoTradeDLib = {}, RecyclerDLib = {}, SpecificGiftsToOpen = "all"}
   _G.HeadCashed = nil
   _G.mystery = false
   local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -1424,7 +1424,7 @@ end
   GUI.InitSection(AutofarmTab, "- Dailies -") 
   GUI.InitToggleButton(AutofarmTab, "Auto Claim Dailies", false, "autoclaimdailiestogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleDailiesAutoCollect(v) end)
   GUI.InitSection(AutofarmTab, "- Gifts -") 
-  GUI.InitToggleButton(AutofarmTab, "Gift Auto Open", false, "giftsautoopentogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleGiftAutoOpen(v) end)
+  local GiftsAutoOpenToggleButton = GUI.InitToggleButton(AutofarmTab, "Gift Auto Open", false, "giftsautoopentogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleGiftAutoOpen(v) end)
   GUI.InitDropdown(AutofarmTab, "Specific Gifts To Open", {"all", "Small Gift", "Big Gift", "Massive Gift", "Chests"}, {"all"}, true, "specificgiftstoopendropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleSpecificGiftToOpen(v) end)
 
 -- fully fixed
@@ -3195,6 +3195,11 @@ end
     if v then
       WriteConsoleLog("Gift auto open enabled", nil, "DEBUG")
       WriteFileLog("Gift auto open enabled", "DEBUG")
+      if not _G.InternalConfig.SpecificGiftsToOpen then
+        GUI.ToggleButtonSetValue(GiftsAutoOpenToggleButton, false)
+        GUI.Notify("Warning", "Set <Specific Gifts To Open> at first", "WARNING", "traingle-alert")
+        return
+      end 
       Cooldown.AutoFarm.AutoOpenGiftsAfter = 0
       Registry.RegisterTask("auto_open_gifts_handler", function()
         Cooldown.AutoFarm.AutoOpenGiftsAfter = nil
@@ -3236,10 +3241,8 @@ end
             if k == "chests" then
               for k,v in pairs(GetOwnedCategory("gifts")) do
                 local r = v.remote:lower()
-                if r:match("chest") then
-                  safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
-                  _opened += 1
-                end
+                safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
+                _opened += 1
               end
             end
             if k == "Massive Gift" or k == "Big Gift" or k == "Small Gift" then
@@ -3960,7 +3963,7 @@ end
 
   GUI.Tabs.AutoTrade.Sections.Blacklist.Callbacks.HandleAges = function(v) 
     WriteConsoleLog("Blacklisted ages triggered", nil, "DEBUG")
-    WriteFileLog("Blacklisted ages triggered", "DEBUG")
+    WriteFileLog("Blacklisted ages triggered", "DEBUG") 
     if count(v) == 0 then
       _G.InternalConfig.TradeDLib.BlacklistedAges = nil
       return
