@@ -662,8 +662,8 @@ local _script = coroutine.create(function()
     local _condition = condition
     local _fallback = fallback
     Registry.Tasks[_flag] = {['_flag'] = _flag, ["_callback"] = _callback, ["_condition"] = _condition, ["_fallback"] = _fallback, _active = true}
-    WriteConsoleLog(string.format("[Registry]: Task registered. _flag: {%s} : {%s}", _flag, (debug.info(_callback, "n") or tostring(_callback))), nil, "DEBUG")
-    WriteFileLog(string.format("[Registry]: Task registered. _flag: {%s} : {%s}", _flag, (debug.info(_callback, "n") or tostring(_callback))), "DEBUG")
+    WriteConsoleLog(string.format("[Registry]: Task registered. _flag: {%s} : {%s}", _flag, (debug.info(_callback, "l") or tostring(_callback))), nil, "DEBUG")
+    WriteFileLog(string.format("[Registry]: Task registered. _flag: {%s} : {%s}", _flag, (debug.info(_callback, "l") or tostring(_callback))), "DEBUG")
   end
 
   function Registry.RunTask(flag :string, callback :Callback)
@@ -675,8 +675,8 @@ local _script = coroutine.create(function()
     task.spawn(function() 
       local ok, _ = pcall(callback)
       if not ok then
-        WriteConsoleLog(string.format("[Registry]: Disposable task crashed. _flag: {%s} : {%s}", _flag, (debug.info(callback, "n") or tostring(callback))), nil, "DEBUG")
-        WriteFileLog(string.format("[Registry]: Disposable task crashed. _flag: {%s} : {%s}", _flag, (debug.info(callback, "n") or tostring(callback))), "DEBUG")
+        WriteConsoleLog(string.format("[Registry]: Disposable task crashed. _flag: {%s} : {%s}", _flag, (debug.info(callback, "l") or tostring(callback))), nil, "DEBUG")
+        WriteFileLog(string.format("[Registry]: Disposable task crashed. _flag: {%s} : {%s}", _flag, (debug.info(callback, "l") or tostring(callback))), "DEBUG")
       end
       Registry.DisposableTasks[_flag] = nil
     end)
@@ -3441,7 +3441,7 @@ end
         WriteFileLog("[Registry]: {gift_auto_buy_handler} runned", "DEBUG")
         local money = ClientData.get("money")
         local gift = table.unpack(GiftToBuyDropdown.CurrentOption) 
-        local can_afford = math.floor(money / EggRemotes[egg][2]) 
+        local can_afford = math.floor(money / GiftRemotes[gift][2]) 
         local bc = math.min(can_afford, _G.InternalConfig.GiftsToBuyLeft, 99) 
         GUI.Notify("Info", "Buying gifts..", "INFO", "info")
         SafeInvoke("ShopAPI/BuyItem",
