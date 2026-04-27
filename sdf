@@ -662,8 +662,8 @@ local _script = coroutine.create(function()
     local _condition = condition
     local _fallback = fallback
     Registry.Tasks[_flag] = {['_flag'] = _flag, ["_callback"] = _callback, ["_condition"] = _condition, ["_fallback"] = _fallback, _active = true}
-    WriteConsoleLog(string.format("[Registry]: Task registered. _flag: {%s} : {%s}", _flag, (debug.info(_callback, "l") or tostring(_callback))), nil, "DEBUG")
-    WriteFileLog(string.format("[Registry]: Task registered. _flag: {%s} : {%s}", _flag, (debug.info(_callback, "l") or tostring(_callback))), "DEBUG")
+    WriteConsoleLog(string.format("[Registry]: Task registered. _flag: {%s} : {%s}", _flag, (debug.info(_callback, "n") or tostring(_callback))), nil, "DEBUG")
+    WriteFileLog(string.format("[Registry]: Task registered. _flag: {%s} : {%s}", _flag, (debug.info(_callback, "n") or tostring(_callback))), "DEBUG")
   end
 
   function Registry.RunTask(flag :string, callback :Callback)
@@ -697,8 +697,8 @@ local _script = coroutine.create(function()
           task.spawn(function() 
             local ok, _ = pcall(v._callback)
             if not ok then
-              WriteConsoleLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), nil, "DEBUG")
-              WriteFileLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), "DEBUG")
+              WriteConsoleLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), nil, "DEBUG")
+              WriteFileLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), "DEBUG")
               pcall(v._fallback)
             end
           end)
@@ -1475,12 +1475,12 @@ end
   local AutoGivePotionToggleButton = GUI.InitToggleButton(AutofarmTab, "Auto Give Potion", false, "autogivepotiontogglebutton", function(v) end)
   local AutoGivePotionModeDropdown = GUI.InitDropdown(AutofarmTab, "Mode", {"automated", "manual"}, {"automated"}, false, "autogivepotionmodedropdown", function(v) end)
   GUI.InitDivider(AutofarmTab)
-  local AutoGivePotionSetHigherPriorityForDropdown = GUI.InitDropdown(AutofarmTab, "Set Higher Priority For (optional)", {["common"]="common", ["uncommon"]="uncommon", ["rare"]="rare", ["ultra_rare"]="ultra-rare", ["legendary"]="legendary"}, {""}, true, "autogivepotionsethigherpriorityfordropdown", function(v) end)
+  local AutoGivePotionSetHigherPriorityForDropdown = GUI.InitDropdown(AutofarmTab, "Set Higher Priority For (optional)", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "autogivepotionsethigherpriorityfordropdown", function(v) end)
   local AutoGivePotionPetToGivePotionDropdown = GUI.InitDropdown(AutofarmTab, "Pet To Give Potion", {}, {"set Mode to manual"}, true, "autogivepotionpettogivepotiondropdown", function(v) end)
   GUI.InitDivider(AutofarmTab)
-  local AutoGivePotionBlacklistedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {["common"]="common", ["uncommon"]="uncommon", ["rare"]="rare", ["ultra_rare"]="ultra-rare", ["legendary"]="legendary"}, {""}, true, "autogivepotionblacklistedraritiesdropdown", function(v) end)
-  local AutoGivePotionBlacklistedAgeDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {["newborn"]="newborn", ["junior"]="junior", ["preteen"]="pre-teen", ["teen"]="teen", ["postteen"]="post-teen", ["fullgrown"]="fullgrown"}, {""}, true, "autogivepotionblacklistedagesdropdown", function(v) end)
-  local AutoGivePotionBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {["rideable"]="rideable", ["flyable"]="flyable", ["neon"]="neon", ["meganeon"]="meganeon"}, {""}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) end)
+  local AutoGivePotionBlacklistedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "autogivepotionblacklistedraritiesdropdown", function(v) end)
+  local AutoGivePotionBlacklistedAgeDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {""}, true, "autogivepotionblacklistedagesdropdown", function(v) end)
+  local AutoGivePotionBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {""}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) end)
   local AutoGivePotionBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {""}, true, "autogivepotionblacklistedspecificpetsdropdown", function(v) end)
   GUI.InitDivider(AutofarmTab)
   local AutoGivePotionAgePotionsUsedLabel = GUI.InitLabel(AutofarmTab, "0 : Age Potions Used", "coffee", Color3.fromRGB(203, 92, 255), false)
@@ -1503,9 +1503,9 @@ end
   GUI.InitSection(AutofarmTab, "- Pet Recycler -") --done
   local RecyclerAutoRecyclePetsToggleButton = GUI.InitToggleButton(AutofarmTab, "Auto Recycle Pets", false, "recyclerautorecyclepetstogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.TogglePetRecycler(v) end)
   GUI.InitDivider(AutofarmTab)
-  local RecyclerBlacklistedRarirtiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {["common"]="common", ['uncommon']="uncommon", ["rare"]="rare", ["ultra_rare"]="ultra-rare", ["legendary"]="legendary"}, {""}, true, "recyclerblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedRarities(v) end)
-  local RecyclerPetPenBlacklistedAgesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {["newborn"]="newborn", ["junior"]="junior", ["preteen"]="pre-teen", ["teen"]="teen", ["postteen"]="post-teen", ["fullgrown"]="fullgrown"}, true, "recyclerblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedAges(v) end)
-  local RecyclerPetPenBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {["rideable"]="rideable", ["flyable"]="flyable", ["neon"]="neon", ["meganeon"]="meganeon"}, {""}, true, "recyclerblacklistedpropertydropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedProperties(v) end)
+  local RecyclerBlacklistedRarirtiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "recyclerblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedRarities(v) end)
+  local RecyclerPetPenBlacklistedAgesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, true, "recyclerblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedAges(v) end)
+  local RecyclerPetPenBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {""}, true, "recyclerblacklistedpropertydropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedProperties(v) end)
   local RecyclerPetPenBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {""}, true, "recyclerblacklistedspecificpetsdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedSpecificPets(v) end)
   
 
@@ -1522,9 +1522,9 @@ end
   local TradeDiscordWebhookLogToggleButton = GUI.InitToggleButton(AutoTradeTab, "Discord Webhook Log", false, "tradediscordwebhooklogtogglebutton", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandleTradeDelay.ToggleDiscordWebhookLog() end)
   GUI.InitSection(AutoTradeTab, "- Blacklist -")
   local TradeBlacklistFriendlyDropdown = GUI.InitToggleButton(AutoTradeTab, "Exclude Friendly", false, "tradeexcludefriendlytogglebutton", function(v) GUI.Tabs.AutoTrade.Sections.Blacklist.Callbacks.ToggleExcludeFriendly(v) end)
-  local TradeBlacklistRarityDropdown = GUI.InitDropdown(AutoTradeTab, "Rarity", {["common"]="common", ['uncommon']="uncommon", ["rare"]="rare", ["ultra_rare"]="ultra-rare", ["legendary"]="legendary"}, {""}, true, "tradeblacklistraritydropdown", function(v) GUI.Tabs.AutoTrade.Sections.Blacklist.Callbacks.HandleRarities(v) end)
-  local TradeBlacklistAgeDropdown = GUI.InitDropdown(AutoTradeTab, "Age", {["newborn"]="newborn", ["junior"]="junior", ["preteen"]="pre-teen", ["teen"]="teen", ["postteen"]="post-teen", ["fullgrown"]="fullgrown"}, {""}, true, "tradeblacklistagedropdown", function(v) GUI.Tabs.AutoTrade.Sections.Blacklist.Callbacks.HandleAges(v) end)
-  local TradeBlacklistPropertyDropdown = GUI.InitDropdown(AutoTradeTab, "Property", {["rideable"]="rideable", ["flyable"]="flyable", ["neon"]="neon", ["meganeon"]="meganeon"}, {""}, true, "tradeblacklistpropertydropdown", function(v) GUI.Tabs.AutoTrade.Sections.Blacklist.Callbacks.HandleProperties(v) end)
+  local TradeBlacklistRarityDropdown = GUI.InitDropdown(AutoTradeTab, "Rarity", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "tradeblacklistraritydropdown", function(v) GUI.Tabs.AutoTrade.Sections.Blacklist.Callbacks.HandleRarities(v) end)
+  local TradeBlacklistAgeDropdown = GUI.InitDropdown(AutoTradeTab, "Age", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {""}, true, "tradeblacklistagedropdown", function(v) GUI.Tabs.AutoTrade.Sections.Blacklist.Callbacks.HandleAges(v) end)
+  local TradeBlacklistPropertyDropdown = GUI.InitDropdown(AutoTradeTab, "Property", {"rideable", "flyable", "neon", "meganeon"}, {""}, true, "tradeblacklistpropertydropdown", function(v) GUI.Tabs.AutoTrade.Sections.Blacklist.Callbacks.HandleProperties(v) end)
   local TradeBlacklistSpecificPetsDropdown = GUI.InitDropdown(AutoTradeTab, "Specific Pets", {}, {""}, true, "tradespecificpetsdropdown", function(v) GUI.Tabs.AutoTrade.Sections.Blacklist.Callbacks.HandleSpecificPets(v) end)
   GUI.InitSection(AutoTradeTab, "- Statistics -")
   local TradeSuccessfulTradesLabel = GUI.InitLabel(AutoTradeTab, "0 : Successful Trades", "book-check", Color3.fromRGB(203, 92, 255), false) -- not handled
@@ -3410,6 +3410,7 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.EggToBuyHandler = function(v)
     WriteConsoleLog("Egg to buy triggered", nil, "DEBUG")
     WriteFileLog("Egg to buy triggered", "DEBUG")
+    GUI.TextFieldSetValue(EggBuyCountTextField, "")
   end
 
 
@@ -3466,19 +3467,19 @@ end
           return
         end
         if _G.InternalConfig.EggsToBuyLeft > 0 and bc == 99 then
-          Cooldown.AutoFarm.TryBuyEggAfter = 0
+          Cooldown.AutoFarm.TryBuyGiftAfter = 0
           return
         end
         local after = ClientData.get("money")
         local spent = money - after
         StateDB.starter_value = StateDB.starter_value - spent
-        Cooldown.AutoFarm.TryBuyEggAfter = 300
+        Cooldown.AutoFarm.TryBuyGiftAfter = 300
       end,
       function()
-        return Cooldown.AutoFarm.TryBuyEggAfter == 0
+        return Cooldown.AutoFarm.TryBuyGiftAfter == 0
       end,
       function()
-        Cooldown.AutoFarm.TryBuyEggAfter = 5
+        Cooldown.AutoFarm.TryBuyGiftAfter = 5
       end)
     end
   end
@@ -3486,6 +3487,7 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.GiftToBuyHandler = function(v) 
     WriteConsoleLog("Gift to buy triggered", nil, "DEBUG")
     WriteFileLog("Gift to buy triggered", "DEBUG")
+    GUI.TextFieldSetValue(GiftBuyCountTextField, "")
   end
 
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.GiftBuyCountHandler = function(v)
@@ -3608,8 +3610,8 @@ end
       return
     end
     _G.InternalConfig.RecyclerDLib.BlacklistedSRarities = {}
-    for k, v in v do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSRarities[k] = true
+    for _, v in v do
+      _G.InternalConfig.RecyclerDLib.BlacklistedSRarities[v] = true
     end
   end
   
@@ -3621,8 +3623,8 @@ end
       return
     end
     _G.InternalConfig.RecyclerDLib.BlacklistedSAges = {}
-    for k, v in v do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSAges[k] = true
+    for _,v in v do
+      _G.InternalConfig.RecyclerDLib.BlacklistedSAges[v] = true
     end
   end
   
@@ -3634,8 +3636,8 @@ end
       return
     end
     _G.InternalConfig.RecyclerDLib.BlacklistedSProperties = {}
-    for k, v in v do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSProperties[k] = true
+    for _,v in v do
+      _G.InternalConfig.RecyclerDLib.BlacklistedSProperties[v] = true
     end
   end
   
@@ -3647,8 +3649,8 @@ end
       return
     end
     _G.InternalConfig.RecyclerDLib.BlacklistedSpecificPets = {}
-    for k, v in v do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSpecificPets[k] = true
+    for _,v in v do
+      _G.InternalConfig.RecyclerDLib.BlacklistedSpecificPets[v] = true
     end
   end
   
@@ -3977,8 +3979,8 @@ end
       return
     end
     _G.InternalConfig.TradeDLib.BlacklistedRarities = {}
-    for k, v in v do
-      _G.InternalConfig.TradeDLib.BlacklistedRarities[k] = true
+    for _,v in v do
+      _G.InternalConfig.TradeDLib.BlacklistedRarities[v] = true
     end
   end 
 
@@ -3990,8 +3992,8 @@ end
       return
     end
     _G.InternalConfig.TradeDLib.BlacklistedAges = {}
-    for k, v in v do
-      _G.InternalConfig.TradeDLib.BlacklistedAges[k] = true
+    for _,v in v do
+      _G.InternalConfig.TradeDLib.BlacklistedAges[v] = true
     end
   end 
 
@@ -4003,8 +4005,8 @@ end
       return
     end
     _G.InternalConfig.TradeDLib.BlacklistedProperties = {}
-    for k, v in v do
-      _G.InternalConfig.TradeDLib.BlacklistedProperties[k] = true
+    for _,v in v do
+      _G.InternalConfig.TradeDLib.BlacklistedProperties[v] = true
     end
   end 
 
@@ -4016,8 +4018,8 @@ end
       return
     end
     _G.InternalConfig.TradeDLib.BlacklistedSpecificPets = {}
-    for k, v in v do
-      _G.InternalConfig.TradeDLib.BlacklistedSpecificPets[k] = true
+    for _,v in v do
+      _G.InternalConfig.TradeDLib.BlacklistedSpecificPets[v] = true
     end
   end
 
