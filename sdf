@@ -197,7 +197,7 @@ local _script = coroutine.create(function()
     Settings = {},
     Other = {
       TotalCurrencyUpdate = 0,
-      Deadline10sUpdates = {}
+      Deadline10sUpdates = 0
     },
   }
   local Registry = {
@@ -209,15 +209,15 @@ local _script = coroutine.create(function()
     _running = false
   }
   local EggRemotes = {
-    ["Endangered Egg - 750$"] = 750,
-    ["Pet Egg - 600$"] = 600,
-    ["Royal Egg - 1450$"] = 1450,
-    ["Cracked Egg - 350$"] = 350,
+    ["Endangered Egg - 750$"] = {"endangered_2026_endangered_egg", 750},
+    ["Pet Egg - 600$"] = {"regular_pet_egg", 600},
+    ["Royal Egg - 1450$"] = {"royal_egg", 1450},
+    ["Cracked Egg - 350$"] = {"cracked_egg", 350},
   }
   local GiftRemotes = {
-    ["Small Gift - 70$"] = 70,
-    ["Big Gift - 199$"] = 199,
-    ["Massive Gift - 499$"] = 499,
+    ["Small Gift - 70$"] = {"smallgift", 70},
+    ["Big Gift - 199$"] = {"biggift", 199},
+    ["Massive Gift - 499$"] = {"massivegift", 499},
   }
   _G.CONNECTIONS = {}
   local formatted_pet = {
@@ -266,7 +266,7 @@ local _script = coroutine.create(function()
     ["_beach"] = {-670, 37, -1413},
   }
   local furn = {}
-  _G.InternalConfig = {PetFarmDLib = {}, AutoTradeDLib = {}, RecyclerDLib = {}}
+  _G.InternalConfig = {PetFarmDLib = {}, AutoTradeDLib = {}, RecyclerDLib = {}, SpecificGiftsToOpen = "all"}
   _G.HeadCashed = nil
   _G.mystery = false
   local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -328,6 +328,26 @@ local _script = coroutine.create(function()
     ["Massive Gift"] = "massivegift",
     ["Chests"] = "chests"
   }
+  local uniques_db = {
+    AutoGivePotion = {
+      BlacklistedSpecifcPets = {},
+      PetToGivePotion = {}
+    },
+    AutoTrade = {
+      BlacklistedSpecifcPets = {},
+    },
+    PetAutoFarm = {
+      BlacklistedSpecifcPets = {},
+      PetsToExclude = {}
+    },
+    PetPen = {
+      BlacklistedSpecifcPets = {},
+    },
+    PetRecycler = {
+      BlacklistedSpecifcPets = {},
+    },
+  }
+  
   local NotifyDuration = {
     WARNING = 4,
     INFO = 5,
@@ -378,7 +398,7 @@ local _script = coroutine.create(function()
     
   local function WriteConsoleLog(debug, default :string|nil, status)
     if _G.InternalConfig.ConsoleLogs then 
-      print(string.format("[# %s | %s | %s | [ %s ] #]", status, os.date("%d.%m.%Y"), os.date("%H:%M:%S"), debug))
+      print(string.format("[# %s | %s | %s | %s #]", status, os.date("%d.%m.%Y"), os.date("%H:%M:%S"), debug))
     else
       if default then
         print(default)
@@ -388,7 +408,7 @@ local _script = coroutine.create(function()
   
   local function WriteFileLog(debug, status)
     if _G.InternalConfig.FileLogs then
-      appendfile("Arcanic/logs.txt", string.format("[# %s | %s | %s | [ %s ] #]", status, os.date("%d.%m.%Y"), os.date("%H:%M:%S"), debug))
+      appendfile("Arcanic/logs.txt", string.format("[# %s | %s | %s | %s #]", status, os.date("%d.%m.%Y"), os.date("%H:%M:%S"), debug))
     end
   end
 
@@ -1084,12 +1104,14 @@ local _script = coroutine.create(function()
       end
     end
   end
-  local function InvGetCategoryUniques(category, remote)
+  local function InvGetCategoryUniquesByName(category, name)
     local inv = ClientData.get("inventory")
+    local inv_db = InventoryDB[category]
     local cat = inv and inv[category]
     local data = {}
     for unique, v in pairs(cat) do
-      if v.id == remote then
+      local remote = inv_db[v.id] or {['name'] = "_pizda"}
+      if remote.name == name then
         data[unique] = true
       end
     end
@@ -1416,19 +1438,19 @@ end
   GUI.InitDivider(AutofarmTab)
   local PetAutoFarmPetToFarmDropdown = GUI.InitDropdown(AutofarmTab, "Pet To Farm (manual farm type)", {}, {"set Farm Type to manual"}, false, "petautofarmpettofarmdropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetToFarm(v) end)
   
-
-  GUI.InitSection(AutofarmTab, "- Baby AutoFarm -")--done
+-- fully fixed 
+  GUI.InitSection(AutofarmTab, "- Baby AutoFarm -")
   GUI.InitToggleButton(AutofarmTab, "Baby Auto Farm", false, "babyautofarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleBabyAutoFarm(v) end) 
-  GUI.InitSection(AutofarmTab, "- Lurebox AutoFarm -") --done
+  GUI.InitSection(AutofarmTab, "- Lurebox AutoFarm -")
   GUI.InitToggleButton(AutofarmTab, "Lurebox Auto Farm", false, "lureboxautofarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleLureboxFarm(v) end)
-  GUI.InitSection(AutofarmTab, "- Dailies -") --done
+  GUI.InitSection(AutofarmTab, "- Dailies -") 
   GUI.InitToggleButton(AutofarmTab, "Auto Claim Dailies", false, "autoclaimdailiestogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleDailiesAutoCollect(v) end)
-  GUI.InitSection(AutofarmTab, "- Gifts -") --done
-  local GiftAutoOpenToggleButton = GUI.InitToggleButton(AutofarmTab, "Gift Auto Open", false, "giftsautoopentogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleGiftAutoOpen(v) end)
-  local SpecificGiftToOpenDropdown = GUI.InitDropdown(AutofarmTab, "Specific Gifts To Open", {["all"]="all", ["smallgift"]="Small Gift", ["biggift"]="Big Gift", ["massivegift"]="Massive Gift", ["chests"]="Chests"}, {"all"}, true, "specificgiftstoopendropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleSpecificGiftToOpen(v) end)
+  GUI.InitSection(AutofarmTab, "- Gifts -") 
+  local GiftsAutoOpenToggleButton = GUI.InitToggleButton(AutofarmTab, "Gift Auto Open", false, "giftsautoopentogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleGiftAutoOpen(v) end)
+  GUI.InitDropdown(AutofarmTab, "Specific Gifts To Open", {"all", "Small Gift", "Big Gift", "Massive Gift", "Chests"}, {"all"}, true, "specificgiftstoopendropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleSpecificGiftToOpen(v) end)
 
--- done
-  local EggAutoBuySection = GUI.InitSection(AutofarmTab, "- Auto Buy -")
+-- fully fixed
+  GUI.InitSection(AutofarmTab, "- Auto Buy -")
   local EggAutoBuyToggleButton = GUI.InitToggleButton(AutofarmTab, "Egg Auto Buy", false, "eggautobuytogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.EggAutoBuyLoopHandler(v) end)
   local EggToBuyDropdown = GUI.InitDropdown(AutofarmTab, "Egg To Buy", {"Endangered Egg - 750$", "Pet Egg - 600$", "Royal Egg - 1450$", "Cracked Egg - 350$"}, "", false, "eggtobuytextfield", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.EggToBuyHandler(v) end)
   local EggBuyCountTextField = GUI.InitTextField(AutofarmTab, "Buy count", "", "     ", false, "eggbuycounttextfield", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.EggBuyCountHandler(v) end)
@@ -1544,8 +1566,8 @@ end
   -- Webhooks Tab
   GUI.InitSection(WebhooksTab, "- Discord -")
   local DiscordWebhooksToggleButton = GUI.InitToggleButton(WebhooksTab, "Discord Webhooks", false, "discordwebhookstogglebutton", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.ToggleDiscordWebhook(v) end)
-  local DiscordWebhookUrlTextField = GUI.InitTextField(WebhooksTab, "Webhook URL", "", "                    ", false, "discordwebhookurltextfield", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.HandleWebhookUrl(v) end)
-  local DiscordWebhookSendDelayTextField = GUI.InitTextField(WebhooksTab, "Send delay (secconds)", "3600", "", false, "discordwebhooksenddelaytextfield", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.HandleSendDelay(v) end)
+  local DiscordWebhookUrlTextField = GUI.InitTextField(WebhooksTab, "Webhook URL", "", "                                                                 ", false, "discordwebhookurltextfield", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.HandleWebhookUrl(v) end)
+  local DiscordWebhookSendDelayTextField = GUI.InitTextField(WebhooksTab, "Send delay (secconds)", "3600", "    ", false, "discordwebhooksenddelaytextfield", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.HandleSendDelay(v) end)
   GUI.InitButton(WebhooksTab, "Send now manually", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.SendManually(v) end)
   GUI.InitDivider(WebhooksTab)
   local DiscordWebhookSendCountdownLabel = GUI.InitLabel(WebhooksTab, "3600 : Send Countdown", "clock", Color3.fromRGB(203, 92, 255), false)
@@ -2475,12 +2497,12 @@ end
     end
     for k,v in pairs(__neon_temp) do
       if v >= 4 then
-        neon[k] = GetNameFromRemote(k)
+        table.insert(neon, GetNameFromRemote(k))
       end
     end
     for k,v in pairs(__meganeon_temp) do
       if v >= 4 then
-        meganeon[k] = GetNameFromRemote(k)
+        table.insert(meganeon, GetNameFromRemote(k))
       end
     end
     GUI.DropdownUpdateOptionList(PetToMegaNeonDropdown, meganeon)
@@ -3195,6 +3217,11 @@ end
     if v then
       WriteConsoleLog("Gift auto open enabled", nil, "DEBUG")
       WriteFileLog("Gift auto open enabled", "DEBUG")
+      if not _G.InternalConfig.SpecificGiftsToOpen then
+        GUI.ToggleButtonSetValue(GiftsAutoOpenToggleButton, false)
+        GUI.Notify("Warning", "Set <Specific Gifts To Open> at first", "WARNING", "triangle-alert")
+        return
+      end 
       Cooldown.AutoFarm.AutoOpenGiftsAfter = 0
       Registry.RegisterTask("auto_open_gifts_handler", function()
         Cooldown.AutoFarm.AutoOpenGiftsAfter = nil
@@ -3207,35 +3234,51 @@ end
           return
         end
         local _opened = 0
-        local to_open = GiftsHelper[table.unpack(SpecificGiftToOpenDropdown.CurrentOption)]
-        if to_open == "chests" then
+        if not _G.InternalConfig.SpecificGiftsToOpen then
           for k,v in pairs(GetOwnedCategory("gifts")) do
             local r = v.remote:lower()
-            if r:match("chest") then
+            if r:match("box") or r:match("chest") then
               safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
               _opened += 1
-            end
-          end
-        elseif to_open == "all" then
-          for k,v in pairs(GetOwnedCategory("gifts")) do
-            local r = v.remote:lower()
-              if r:match("box") or r:match("chest") then
-                safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
-                _opened += 1
-              else
-                safeInvoke("ShopAPI/OpenGift", k)
-                _opened += 1
-              end
-          end
-        else
-          for k,v in pairs(GetOwnedCategory("gifts")) do
-            if v.id == to_open then
+            else
               safeInvoke("ShopAPI/OpenGift", k)
               _opened += 1
             end
           end
+        else
+          for k,_ in _G.InternalConfig.SpecificGiftsToOpen do
+            if k == "all" then
+              for k,v in pairs(GetOwnedCategory("gifts")) do
+                local r = v.remote:lower()
+                if r:match("box") or r:match("chest") then
+                  safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
+                  _opened += 1
+                else
+                  safeInvoke("ShopAPI/OpenGift", k)
+                  _opened += 1
+                end
+              end
+              break
+            end
+            if k == "chests" then
+              for k,v in pairs(GetOwnedCategory("gifts")) do
+                local r = v.remote:lower()
+                safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
+                _opened += 1
+              end
+            end
+            if k == "Massive Gift" or k == "Big Gift" or k == "Small Gift" then
+              for k,v in pairs(GetOwnedCategory("gifts")) do
+                if (k == "Massive Gift" and v.id == "massivegift") or (k == "Big Gift" and v.id == "biggift") or (k == "Small Gift" and v.id == "smallgift") then
+                  safeInvoke("ShopAPI/OpenGift", k)
+                  _opened += 1
+                end
+              end
+            end
+          end
         end
-        local _type = ("gifts/chests" and to_open == "all") or ("chests" and to_open == "chests") or "gifts"
+
+        local _type = ("gifts/chests" and _G.InternalConfig.SpecificGiftsToOpen["all"]) or ("chests" and _G.InternalConfig.SpecificGiftsToOpen["chests"]) or "gifts" 
         GUI.Notify("Info", string.format("Opened %d %s", _opened, _type), "INFO", "circle-check")
         WriteConsoleLog(string.format("Opened %d %s", _opened, _type), string.format("[📦]:[✅] Opened %d %s!", _opened, _type), "DEBUG")
         WriteFileLog(string.format("Opened %d %s", _opened, _type), "DEBUG")
@@ -3257,6 +3300,14 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleSpecificGiftToOpen = function(v) 
     WriteConsoleLog("Specific gift to open triggered", nil, "DEBUG")
     WriteFileLog("Specific gift to open triggered", "DEBUG")
+    if count(v) == 0 then
+      _G.InternalConfig.SpecificGiftsToOpen = nil
+      return
+    end
+    _G.InternalConfig.SpecificGiftsToOpen = {}
+    for k,v in v do
+      _G.InternalConfig.SpecificGiftsToOpen[v] = true
+    end
   end
 
 
@@ -3288,12 +3339,12 @@ end
         WriteFileLog("[Registry]: {egg_auto_buy_handler} runned", "DEBUG")
         local money = ClientData.get("money")
         local egg = table.unpack(EggToBuyDropdown.CurrentOption) 
-        local can_afford = math.floor(money / EggRemotes[egg]) 
+        local can_afford = math.floor(money / EggRemotes[egg][2]) 
         local bc = math.min(can_afford, _G.InternalConfig.EggsToBuyLeft, 99) 
         GUI.Notify("Info", "Buying eggs..", "INFO", "info")
         SafeInvoke("ShopAPI/BuyItem",
           "pets",
-          egg,
+          EggRemotes[egg][1],
           {
             buy_count = bc
           }
@@ -3305,7 +3356,6 @@ end
         farmed.total_eggs_bought += bc
         GUI.LabelUpdate(EggsBoughtLabel, string.format("%d : Eggs bought", farmed.total_eggs_bought), "egg", Color3.fromRGB(203, 92, 255), false)
         if _G.InternalConfig.EggsToBuyLeft == 0 then
-          GUI.ToggleButtonSetValue(EggAutoBuyToggleButton, false)
           GUI.TextFieldSetValue(EggBuyCountTextField, "")
           GUI.DropdownSetValue(EggToBuyDropdown, {""})
           WriteConsoleLog("[Egg AutoBuy]: Bought all as expected", nil, "DEBUG")
@@ -3391,12 +3441,12 @@ end
         WriteFileLog("[Registry]: {gift_auto_buy_handler} runned", "DEBUG")
         local money = ClientData.get("money")
         local gift = table.unpack(GiftToBuyDropdown.CurrentOption) 
-        local can_afford = math.floor(money / EggRemotes[egg]) 
+        local can_afford = math.floor(money / EggRemotes[egg][2]) 
         local bc = math.min(can_afford, _G.InternalConfig.GiftsToBuyLeft, 99) 
         GUI.Notify("Info", "Buying gifts..", "INFO", "info")
         SafeInvoke("ShopAPI/BuyItem",
           "gifts",
-          gift,
+          GiftRemotes[gift][1],
           {
             buy_count = bc
           }
@@ -3934,7 +3984,7 @@ end
 
   GUI.Tabs.AutoTrade.Sections.Blacklist.Callbacks.HandleAges = function(v) 
     WriteConsoleLog("Blacklisted ages triggered", nil, "DEBUG")
-    WriteFileLog("Blacklisted ages triggered", "DEBUG")
+    WriteFileLog("Blacklisted ages triggered", "DEBUG") 
     if count(v) == 0 then
       _G.InternalConfig.TradeDLib.BlacklistedAges = nil
       return
@@ -4011,8 +4061,8 @@ end
       _G.InternalConfig.PetsToNeon = false
       return
     end
-    for k,v in pairs(v) do
-      _G.InternalConfig.PetsToNeon[k] = InvGetCategoryUniques("pets", k)
+    for k,v in pairs(v) do 
+      table.insert(_G.InternalConfig.PetsToNeon, InvGetCategoryUniques("pets", k))
     end
   end
 
@@ -4059,8 +4109,8 @@ end
       _G.InternalConfig.PetsToMegaNeon = false
       return
     end
-    for k,v in pairs(v) do
-      _G.InternalConfig.PetsToMegaNeon[k] = InvGetCategoryUniques("pets", k)
+    for k,v in pairs(v) do 
+      table.insert(_G.InternalConfig.PetsToMegaNeon, InvGetCategoryUniques("pets", k))
     end
   end
 
@@ -4192,7 +4242,7 @@ end
     WriteConsoleLog("Discord webhook send manually triggered", nil, "DEBUG")
     WriteFileLog("Discord webhook send manually triggered", "DEBUG")
     if not _G.InternalConfig.DiscordWebhookUrl then 
-      GUI.Notify("Warning", "Set discord webhook url at first.", "WARNING", "triangle-alert")
+      GUI.Notify("Warning", "Set <Webhook URL> at first.", "WARNING", "triangle-alert")
       return
     end
     Registry.RunTask("discord_webhook_send_manually_handler", function() 
@@ -4292,7 +4342,7 @@ end
     end
   end 
 
-  GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.ToggleTelegramWebhook = function(v)
+  GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.ToggleTelegramWebhooks = function(v)
     WriteConsoleLog("Telegram webhooks triggered", nil, "DEBUG")
     WriteFileLog("Telegram webhooks triggered", "DEBUG") 
     if v then
@@ -4391,11 +4441,11 @@ end
     WriteFileLog("Send manually triggered", "DEBUG") 
     if v then
       if not _G.InternalConfig.TelegramBotApi then
-        GUI.Notify("Warning", "set Bot Api Key at first", "WARNING", "triangle-alert")
+        GUI.Notify("Warning", "Set <Bot Api Key> at first", "WARNING", "triangle-alert")
         return
       end
       if not _G.InternalConfig.TelegramChatId then
-        GUI.Notify("Warning", "set Chat Id at first", "WARNING", "triangle-alert")
+        GUI.Notify("Warning", "Set <Chat Id> at first", "WARNING", "triangle-alert")
         return
       end
       Registry.RunTask("telegram_webhook_send_manually_handler", function(v)
@@ -4607,9 +4657,10 @@ end
           _rep[v.id] = true 
           -- insert not repeatable
         end
-        trade_specified_pets[k] = v.name .. " | age: " .. v.age 
-        recycler_specific_pets[k] = v.name .. " | age: " .. v.age 
-        auto_give_potion_specific_pets[k] = v.name .. " | age: " .. v.age
+        table.insert(trade_specified_pets, v.name .. " | age: " .. v.age .. " | unique: ", k)
+        table.insert(recycler_specific_pets, v.name .. " | age: " .. v.age .. " | unique: ", k)
+        table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: ", k)
+
         if v.age == 6 then
           __neon_temp[v.id] = (__neon_temp[v.id] or 0) + 1
         end
@@ -4619,28 +4670,57 @@ end
       end
       for k,v in pairs(__neon_temp) do
         if v >= 4 then
-          neon[k] = GetNameFromRemote(k)
+          table.insert(neon, GetNameFromRemote(k))
         end
       end
       for k,v in pairs(__meganeon_temp) do
         if v >= 4 then
-          meganeon[k] = GetNameFromRemote(k)
+          table.insert(meganeon, GetNameFromRemote(k))
+        end
+      end
+      for k,v in pairs(saved_neon) do
+        local name = v:split(" | ")[1]
+        local found = false
+        for a,b in pairs(neon) do
+          if b == name then
+            found = true
+            break
+          end
+        end
+        if not found then
+          saved_neon[k] = nil
+        end
+      end
+      for k,v in pairs(saved_meganeon) do
+        local name = v:split(" | ")[1]
+        local found = false
+        for a,b in pairs(meganeon) do
+          if b == name then
+            found = true
+            break
+          end
+        end
+        if not found then
+          saved_meganeon[k] = nil
         end
       end
       for k,v in pairs(saved_trade_specified_pets) do
-        if not owned[k] then 
+        local unique = v:split("unique: ")[2]
+        if not owned[unique] then 
           GUI.Notify("Warning", string.format("[AutoTrade Blacklist] Pet %s is no longer available.", saved_trade_specified_pets[k]), "WARNING", "triangle-alert")
           saved_trade_specified_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
         end
       end
       for k,v in pairs(saved_recycler_specific_pets) do
-        if not owned[k] then 
+        local unique = v:split("unique: ")[2]
+        if not owned[unique] then 
           GUI.Notify("Warning", string.format("[Pet Recycler Blacklist] Pet %s is no longer available.", saved_recycler_specific_pets[k]), "WARNING", "triangle-alert")
           saved_recycler_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
         end
       end
       for k,v in pairs(saved_auto_give_potion_specific_pets) do
-        if not owned[k] then 
+        local unique = v:split("unique: ")[2]
+        if not owned[unique] then 
           GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
           saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
         end
