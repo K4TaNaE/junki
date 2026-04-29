@@ -118,6 +118,14 @@ local _script = coroutine.create(function()
               TogglePetRecycler = function() end,
               HandlePetRecyclerBlacklistedSpecificPets = function() end,
               HandlePetRecyclerBlacklistedProperties = function() end,
+              ToggleAutoGivePotion = function() end,
+              HandleAutoGivePotionMode = function() end,
+              HandleAutoGivePotionHigherPriority = function() end,
+              HandlePetToGivePotion = function() end,
+              AutoGivePotionBlacklistedSpecificRarities = function() end,
+              AutoGivePotionBlacklistedSpecificAges = function() end,
+              AutoGivePotionBlacklistedSpecificProperties = function() end,
+              AutoGivePotionBlacklistedSpecificPets = function() end,
             }
           }
         }
@@ -208,6 +216,10 @@ local _script = coroutine.create(function()
     _queue = {},
     _running = false
   }
+  local TaskQueue = {
+    _queue = {},
+    _running = false
+  }
   local EggRemotes = {
     ["Endangered Egg - 750$"] = {"endangered_2026_endangered_egg", 750},
     ["Pet Egg - 600$"] = {"regular_pet_egg", 600},
@@ -266,7 +278,7 @@ local _script = coroutine.create(function()
     ["_beach"] = {-670, 37, -1413},
   }
   local furn = {}
-  _G.InternalConfig = {PetFarmDLib = {}, AutoTradeDLib = {}, RecyclerDLib = {}, SpecificGiftsToOpen = "all"}
+  _G.InternalConfig = {PetFarmDLib = {}, TradeDLib = {}, RecyclerDLib = {}, AutoGivePotionDLib = {}}
   _G.HeadCashed = nil
   _G.mystery = false
   local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -312,7 +324,13 @@ local _script = coroutine.create(function()
     time = 0,
     total_money = 0,
     total_eggs_bought = 0,
-    total_gifts_bought = 0,
+    total_gifts_bought = 0,  
+    agp = {
+      age_potions_used = 0,
+      tiny_age_potions_used = 0,
+      count_of_pets_fullgrowned = 0,
+      pets_fullgrowned = {},
+    },
   }
   local furn = {}
   local parts = {
@@ -328,26 +346,6 @@ local _script = coroutine.create(function()
     ["Massive Gift"] = "massivegift",
     ["Chests"] = "chests"
   }
-  local uniques_db = {
-    AutoGivePotion = {
-      BlacklistedSpecifcPets = {},
-      PetToGivePotion = {}
-    },
-    AutoTrade = {
-      BlacklistedSpecifcPets = {},
-    },
-    PetAutoFarm = {
-      BlacklistedSpecifcPets = {},
-      PetsToExclude = {}
-    },
-    PetPen = {
-      BlacklistedSpecifcPets = {},
-    },
-    PetRecycler = {
-      BlacklistedSpecifcPets = {},
-    },
-  }
-  
   local NotifyDuration = {
     WARNING = 4,
     INFO = 5,
@@ -789,6 +787,58 @@ local _script = coroutine.create(function()
   end
 
   function LocationQueue.Complete(task)
+      task.completed = true      
+      WriteConsoleLog(string.format("[Location Change Queue]: Task marked as completed. function: {%s}", (debug.info(task.callback, "n") or tostring(task.callback))), nil, "DEBUG")
+      WriteFileLog(string.format("[Location Change Queue]: Task marked as completed. function: {%s}", (debug.info(task.callback, "n") or tostring(task.callback))), "DEBUG")
+      if task.resume then
+        coroutine.resume(task.resume)
+      end
+  end
+
+  function TaskQueue.CreateTask(callback :Callback)
+    return {
+      callback = callback,
+      completed = false,
+      started = false,
+      resume = nil,
+      finished = false
+    }
+  end
+
+  function TaskQueue._process()
+    if TaskQueue._running then return end
+    TaskQueue._running = true
+    while #TaskQueue._queue > 0 do
+      local _task = table.remove(TaskQueue._queue, 1)
+      _task.started = true
+      _task.callback() -- specialno ne pcall, poomuchto funkcija kotoraya vyzyvaet location queu asma osibku obrabotaet s svoim cooldown
+      _task.finished = true
+      local startTime = os.clock()
+      while not _task.completed do
+        if os.clock() - startTime >= 65 then
+          WriteConsoleLog(string.format("[Location Change Queue]: Task reached the deadline. Crashing. function: {%s}",(debug.info(_task.callback, "n") or tostring(_task.callback))), nil, "ERROR")
+          WriteFileLog(string.format("[Location Change Queue]: Task reached the deadline. Crashing. function: {%s}",(debug.info(_task.callback, "n") or tostring(_task.callback))), "ERROR")
+          _task.completed = true
+          break
+        end
+        _task.resume = coroutine.running()
+        coroutine.yield()
+      end
+    end
+    TaskQueue._running = false
+  end
+
+  function TaskQueue.Enqueue(callback :Callback)
+    local _task = TaskQueue.CreateTask(callback)
+    table.insert(TaskQueue._queue, _task)
+    _task.resume = nil
+    coroutine.wrap(TaskQueue._process)()
+    WriteConsoleLog(string.format("[Location Change Queue]: Task entered queue. function: {%s}", (debug.info(callback, "n") or tostring(callback))), nil, "DEBUG")
+    WriteFileLog(string.format("[Location Change Queue]: Task entered queue. function: {%s}", (debug.info(callback, "n") or tostring(callback))), "DEBUG")
+    return _task
+  end
+
+  function TaskQueue.Complete(task)
       task.completed = true      
       WriteConsoleLog(string.format("[Location Change Queue]: Task marked as completed. function: {%s}", (debug.info(task.callback, "n") or tostring(task.callback))), nil, "DEBUG")
       WriteFileLog(string.format("[Location Change Queue]: Task marked as completed. function: {%s}", (debug.info(task.callback, "n") or tostring(task.callback))), "DEBUG")
@@ -1307,6 +1357,73 @@ end
     GUI.LabelUpdate(runtimeLabel1, string.format("Bucks earned : %d", farmed.money), "banknote", Color3.fromRGB(203, 92, 255), false)
     GUI.LabelUpdate(runtimeLabel2, string.format("Total Bucks : %d", farmed.total_money), "banknote", Color3.fromRGB(203, 92, 255), false)
   end
+local function shallow_keys_copy(t)
+  local r = {}
+  for k,_ in pairs(t) do
+  	r[k] = true
+  end
+  return r
+end
+local function get_potions() 
+  local big = {}
+  local tiny = {}
+  for k,v in pairs(get_owned_category("food")) do
+	if (v.remote:lower()):match("tiny_pet_age_potion") then
+	  tiny[k] = true
+	elseif (v.remote:lower()):match("pet_age_potion") then
+	  big[k] = true
+	end
+  end
+  if count(big) == 0 then big = nil end
+  if count(tiny) == 0 then tiny = nil end
+  return { big, tiny }
+end
+local function calculate_optimal_potions_by_rarity(age, rarity, potions)
+  local total_tasks = TASKS_BY_RARITY[rarity:lower()]
+  local remaining = total_tasks - age
+  if remaining <= 0 then
+  	return { {}, {}, }
+  end
+  local _age = potions[1] and shallow_keys_copy(potions[1]) or {}  
+  local _tiny = potions[2] and shallow_keys_copy(potions[2]) or {}
+  local big_up = count(_age)
+  local tiny_up = count(_tiny)
+  local use_age = math.floor(remaining / 30)
+  local leftover = remaining % 30
+  local use_tiny = 0
+  if leftover > 0 then
+  	if leftover <= 3 and tiny_up > 0 then
+  	  use_tiny = 1
+  	else
+  	  use_age += 1
+  	end
+  end
+  local original_age = use_age
+  use_age = math.min(use_age, big_up)
+  if use_age < original_age and tiny_up > 0 then
+  	local missing_age = original_age - use_age
+  	local tiny_needed = math.ceil((missing_age * 30) / 3)
+  	use_tiny = math.min(tiny_needed, tiny_up)
+  end
+  use_tiny = math.min(use_tiny, tiny_up)
+  if use_age > 0 and big_up > use_age then
+  	for k,_ in pairs(_age) do 
+  	  _age[k] = nil
+  	  if count(_age) == use_age then
+  		break
+  	  end
+  	end
+  end
+  if use_tiny > 0 and tiny_up > use_tiny then
+  	for k,_ in pairs(_tiny) do 
+  	  _tiny[k] = nil
+  	  if count(_tiny) == use_tiny then
+  		break
+  	  end
+  	end
+  end
+  return { _age, _tiny }
+end
 
   local function PetUpdate()
     local wrapper = ClientData.get("pet_char_wrappers")[1]
@@ -1471,22 +1588,23 @@ end
   GUI.InitButton(AutofarmTab, "Make Pets Mega Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon)
   local PetToMegaNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Mega Neon", {}, {""}, true, "pettomeganeondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon(v) end)
   
-  GUI.InitSection(AutofarmTab, "- Auto Give Potion -")
-  local AutoGivePotionToggleButton = GUI.InitToggleButton(AutofarmTab, "Auto Give Potion", false, "autogivepotiontogglebutton", function(v) end)
-  local AutoGivePotionModeDropdown = GUI.InitDropdown(AutofarmTab, "Mode", {"automated", "manual"}, {"automated"}, false, "autogivepotionmodedropdown", function(v) end)
+  GUI.InitSection(AutofarmTab, "- Auto Give Potion -") -- done
+  local AutoGivePotionToggleButton = GUI.InitToggleButton(AutofarmTab, "Auto Give Potion", false, "autogivepotiontogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleAutoGivePotion(v) end)
+  local AutoGivePotionModeDropdown = GUI.InitDropdown(AutofarmTab, "Mode", {"automated", "manual"}, {"automated"}, false, "autogivepotionmodedropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionMode(v) end)
   GUI.InitDivider(AutofarmTab)
-  local AutoGivePotionSetHigherPriorityForDropdown = GUI.InitDropdown(AutofarmTab, "Set Higher Priority For (optional)", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "autogivepotionsethigherpriorityfordropdown", function(v) end)
-  local AutoGivePotionPetToGivePotionDropdown = GUI.InitDropdown(AutofarmTab, "Pet To Give Potion", {}, {"set Mode to manual"}, true, "autogivepotionpettogivepotiondropdown", function(v) end)
+  local AutoGivePotionSetHigherPriorityForDropdown = GUI.InitDropdown(AutofarmTab, "Set Higher Priority For (optional)", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "autogivepotionsethigherpriorityfordropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionHigherPriority(v) end)
+  local AutoGivePotionPetToGivePotionDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Give Potion", {}, {"set <Mode> to manual"}, true, "autogivepotionpettogivepotiondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToGivePotion(v) end)
   GUI.InitDivider(AutofarmTab)
-  local AutoGivePotionBlacklistedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionblacklistedraritiesdropdown", function(v) end)
-  local AutoGivePotionBlacklistedAgeDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {}, true, "autogivepotionblacklistedagesdropdown", function(v) end)
-  local AutoGivePotionBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) end)
-  local AutoGivePotionBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {}, true, "autogivepotionblacklistedspecificpetsdropdown", function(v) end)
+  local AutoGivePotionBlacklistedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedRarities(v) end)
+  local AutoGivePotionBlacklistedAgeDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {}, true, "autogivepotionblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedAges(v) end)
+  local AutoGivePotionBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedProperties(v) end)
+  local AutoGivePotionBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {}, true, "autogivepotionblacklistedspecificpetsdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedSpecificPets(v) end)
   GUI.InitDivider(AutofarmTab)
+
   local AutoGivePotionAgePotionsUsedLabel = GUI.InitLabel(AutofarmTab, "0 : Age Potions Used", "coffee", Color3.fromRGB(203, 92, 255), false)
   local AutoGivePotionTinyAgePotionsUsedLabel = GUI.InitLabel(AutofarmTab, "0 : Tiny Age Potions Used", "milk", Color3.fromRGB(203, 92, 255), false)
   local AutoGivePotionCountOfPetsFullgrownedLabel = GUI.InitLabel(AutofarmTab, "0 : Count Of Pets Fullgrowned", "calculator", Color3.fromRGB(203, 92, 255), false)
-  local AutoGivePotionPetsFullgrownedLabel = GUI.InitLabel(AutofarmTab, "none : Pets Fullgrowned", "list-ordered", Color3.fromRGB(203, 92, 255), false)
+  local AutoGivePotionPetsFullgrownedLabel = GUI.InitLabel(AutofarmTab, "- Pets Fullgrowned -", "list-ordered", Color3.fromRGB(203, 92, 255), false)
 
   GUI.InitSection(AutofarmTab, "- Pet Pen -")
   local PetPenUsePetPenTogleButton = GUI.InitToggleButton(AutofarmTab, "Use Pet Pen", false, "usepetpentogglebutton", function(v) end)
@@ -1514,7 +1632,7 @@ end
   local AutoTradeToggleButton = GUI.InitToggleButton(AutoTradeTab, "Auto Trade", false, "autotradetogglebutton", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.ToggleAutoTrade(v) end)
   local PlayerTradeWithTextField = GUI.InitTextField(AutoTradeTab, "Player Trade With", "", "        ", false, "playertradewithtextfield", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandlePlayerTradeWith(v) end)
   local TradePriorityDropdown = GUI.InitDropdown(AutoTradeTab, "Trade Priority", {"pets", "eggs", "any"}, {"any"}, false, "tradeprioritydropdown", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandleTradePriority(v) end)
-  local TradeFarmedToggleButton = GUI.InitToggleButton(AutoTradeTab, "Trade Farmed", false, "tradefarmedtogglebutton", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.ToggleTradeFarmed(v) end)
+  GUI.InitToggleButton(AutoTradeTab, "Trade Farmed", false, "tradefarmedtogglebutton", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.ToggleTradeFarmed(v) end)
   local TradeDelayTextField = GUI.InitTextField(AutoTradeTab, "Trade Delay (delay for next trade)", "3600", "     ", false, "tradedelaytextfield", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandleTradeDelay(v) end)
   local TradeFallbackDelayTextField = GUI.InitTextField(AutoTradeTab, "Fallback Trade Delay (delay on fallback)", "40", "     ", false, "tradefallbacktradedelaytextfield", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.ToggleFallbackTradeFarmed(v) end)
   GUI.InitDivider(AutoTradeTab)
@@ -2480,7 +2598,16 @@ end
     end,
   }
 
-
+    local function InstantListPetToGivePotion()
+      local list = {}
+      for k,v in pairs(GetOwnedPets()) do
+        if v.age < 6 then
+          table.insert(list, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+        end
+      end
+      GUI.DropdownUpdateOptionList(AutoGivePotionPetToGivePotionDropdown, list)
+      GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, {})
+    end
 
   local function NeonAndMegaNeonInstantListUpdate()
     local __neon_temp = {}
@@ -3034,7 +3161,7 @@ end
 --       _G.InternalConfig.PetFarmDLib.PetsToExclude = false
 --       return
 --     end
---     for _,v in v do
+--     for _,v in pairs(v) do
 --       _G.InternalConfig.PetFarmDLib.PetsToExclude[v] = true  
 --     end
 --   end
@@ -3259,9 +3386,11 @@ end
         end
 
         local _type = ("gifts/chests" and not _G.InternalConfig.SpecificGiftsToOpen) or ("chests" and _G.InternalConfig.SpecificGiftsToOpen["chests"]) or "gifts" 
-        GUI.Notify("Info", string.format("Opened %d %s", _opened, _type), "INFO", "circle-check")
-        WriteConsoleLog(string.format("Opened %d %s", _opened, _type), string.format("[📦]:[✅] Opened %d %s!", _opened, _type), "DEBUG")
-        WriteFileLog(string.format("Opened %d %s", _opened, _type), "DEBUG")
+        if _opened > 0 then 
+          GUI.Notify("Info", string.format("Opened %d %s", _opened, _type), "INFO", "circle-check")
+          WriteConsoleLog(string.format("Opened %d %s", _opened, _type), string.format("[📦]:[✅] Opened %d %s!", _opened, _type), "DEBUG")
+          WriteFileLog(string.format("Opened %d %s", _opened, _type), "DEBUG")
+        end
         Cooldown.AutoFarm.AutoOpenGiftsAfter = 120 
       end,
       function()
@@ -3603,7 +3732,7 @@ end
       return
     end
     _G.InternalConfig.RecyclerDLib.BlacklistedSAges = {}
-    for _,v in v do
+    for _,v in pairs(v) do
       _G.InternalConfig.RecyclerDLib.BlacklistedSAges[v] = true
     end
   end
@@ -3616,7 +3745,7 @@ end
       return
     end
     _G.InternalConfig.RecyclerDLib.BlacklistedSProperties = {}
-    for _,v in v do
+    for _,v in pairs(v) do
       _G.InternalConfig.RecyclerDLib.BlacklistedSProperties[v] = true
     end
   end
@@ -3629,11 +3758,431 @@ end
       return
     end
     _G.InternalConfig.RecyclerDLib.BlacklistedSpecificPets = {}
-    for _,v in v do
+    for _,v in pairs(v) do
       _G.InternalConfig.RecyclerDLib.BlacklistedSpecificPets[v] = true
     end
   end
   
+
+
+
+
+  
+
+
+  
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleAutoGivePotion = function(v)
+    WriteConsoleLog("Auto give potion triggered", nil, "DEBUG")
+    WriteFileLog("Auto give potion triggered", "DEBUG")
+    if v then
+      WriteConsoleLog("Auto give potion enabled", nil, "DEBUG")
+      WriteFileLog("Auto give potion enabled", "DEBUG")
+      Cooldown.AutoFarm.TryUsePotionAfter = 0
+      if table.unpack(AutoGivePotionModeDropdown.CurrentOption) == "automated" then
+        Registry.RegisterTask("automated_auto_give_potion_handler", function()
+          Cooldown.AutoFarm.TryUsePotionAfter = nil
+          local potions = get_potions()
+          if not potions[1] and not potions[2] then 
+            WriteConsoleLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "🧪 No potions detected. Cooldown: [180]s.", "DEBUG")
+            WriteFileLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "DEBUG")
+            GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s", "INFO", "info")
+            Cooldown.Cooldown.TryUsePotionAfter = 180
+            return
+          end	
+
+          local pet_to_grow = {}
+          local owned_pets = GetOwnedPets()
+          local _temp_prioritized = count(AutoGivePotionSetHigherPriorityForDropdown) > 0 and AutoGivePotionSetHigherPriorityForDropdown.CurrentOptions
+
+          for k,v in pairs(owned_pets) do
+            if _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities and _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities[v.rarity] then continue end
+            if _G.InternalConfig.AutoGivePotionDLib.BlacklistedAges and _G.InternalConfig.AutoGivePotionDLib.BlacklistedAges[v.age] then continue end
+            if _G.InternalConfig.AutoGivePotionDLib.BlacklistedProperties then 
+              if v.neon and _G.InternalConfig.AutoGivePotionDLib.BlacklistedProperties["neon"] then continue end
+              if v.mega_neon and _G.InternalConfig.AutoGivePotionDLib.BlacklistedProperties["meganeon"] then continue end
+              if v.flyable and _G.InternalConfig.AutoGivePotionDLib.BlacklistedProperties["flyable"] then continue end
+              if v.rideable and _G.InternalConfig.AutoGivePotionDLib.BlacklistedProperties["rideable"] then continue end
+            end
+            if _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities and _G.InternalConfig.AutoGivePotionDLib.BlacklistedSpecificPets[k] then continue end
+            table.insert(pet_to_grow, { k, v.age, v.rarity, v.remote, })
+          end
+          if _temp_prioritized then
+            for _,r in ipairs(Rarities) do
+              for k,v in ipairs(pet_to_grow) do
+                if v[3] == r then
+                  table.insert(_temp_prioritized, { k, v.age, v.rarity, v.remote, })
+                end
+              end
+            end
+            pet_to_grow = table.clone(_temp_prioritized)
+          end
+          if #pet_to_grow == 0 then 
+            WriteConsoleLog("[AutoGivePotion]: No pets to grow up. Cooldown [180]s", "🧪 No pets to grow up. Cooldown: [180]s.", "DEBUG")
+            WriteFileLog("[AutoGivePotion]: No pets to grow up. Cooldown [180]s", "DEBUG")
+            GUI.Notify("Info", "[AutoGivePotion]: No pets to grow up. Cooldown [180]s", "INFO", "info")
+            Cooldown.Cooldown.TryUsePotionAfter = 180
+            return
+          end
+
+          local equiped_pet = ClientData.get("pet_char_wrappers")[1]
+          local _task = TaskQueue.Enqueue(function()
+            for _,v in ipairs(pet_to_grow) do
+              local potions = get_potions()
+              if not potions[1] and not potions[2] then 
+                WriteConsoleLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "🧪 No potions detected. Cooldown: [180]s.", "DEBUG")
+                WriteFileLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "DEBUG")
+                GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s", "INFO", "info")
+                return
+              end	
+              local owned = GetOwnedPets()
+              local potions_to_give = calculate_optimal_potions_by_rarity(v[2], v[3], potions)
+              WriteConsoleLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), string.format("⚙️ Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions].", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
+              WriteFileLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
+              safeInvoke("ToolAPI/Equip",
+                v[1],
+                {
+                  use_sound_delay = true,
+                  equip_as_last = false
+                }
+              )
+              if count(potions_to_give[1]) > 0 then
+                local main = nil
+                local others = {}
+                for k,_ in pairs(potions_to_give[1]) do
+                  if main then 
+                    table.insert(others, k)
+                  else 
+                    main = k 
+                  end
+                end
+                safeInvoke("PetObjectAPI/CreatePetObject",
+                  "__Enum_PetObjectCreatorType_2",
+                  {
+                    additional_consume_uniques = {
+                      table.unpack(others)
+                    },
+                    pet_unique = pet_to_grow[1][1],
+                    unique_id = main
+                  }
+                )
+                task.wait(12)
+              end
+              if count(potions_to_give[2]) > 0 then
+                local main = nil
+                local others = {}
+                for k,_ in pairs(potions_to_give[2]) do
+                  if main then 
+                    table.insert(others, k)
+                  else 
+                    main = k 
+                  end
+                end
+                safeInvoke("PetObjectAPI/CreatePetObject",
+                  "__Enum_PetObjectCreatorType_2",
+                  {
+                    additional_consume_uniques = {
+                      table.unpack(others)
+                    },
+                    pet_unique = pet_to_grow[1][1],
+                    unique_id = main
+                  }
+                )
+                task.wait(12)
+              end
+              WriteConsoleLog(string.format("[Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], pet_to_grow[1][4]), string.format("🧪 [Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], pet_to_grow[1][4]), "DEBUG")
+              WriteFileLog(string.format("[Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], pet_to_grow[1][4]), "DEBUG")
+              GUI.Notify("Info", string.format("[Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], pet_to_grow[1][4]), "INFO", "info")
+              farmed.agp.age_potions_used += potions_to_give[1]
+              farmed.agp.tiny_age_potions_used += potions_to_give[2]
+              GUI.LabelUpdate(AutoGivePotionAgePotionsUsedLabel, string.format("%d : Age Potions Used", farmed.agp.age_potions_used), "coffee", Color3.fromRGB(203, 92, 255), false)
+              GUI.LabelUpdate(AutoGivePotionTinyAgePotionsUsedLabel, string.format("%d : Tiny Age Potions Used", farmed.agp.tiny_age_potions_used), "coffee", Color3.fromRGB(203, 92, 255), false)
+              task.wait(1)
+              WriteConsoleLog(string.format("%s age: %d -> %d\n", v[4], v[2], owned[v[1]].age), string.format("[🧪]:[✅] %s age: %d -> %d\n", v[4], v[2], owned[v[1]].age), "DEBUG")
+              WriteFileLog(string.format("%s age: %d -> %d\n", v[4], v[2], owned[v[1]].age), "DEBUG")
+              GUI.Notify("Info", string.format("%s age: %d -> %d\n", v[4], v[2], owned[v[1]].age), "INFO", "info")
+              if owned[v[1]].age == 6 then
+                farmed.pets_fullgrown += 1
+                farmed.agp.count_of_pets_fullgrowned += 1
+                update_gui("fullgrown", farmed.pets_fullgrown)
+                GUI.LabelUpdate(AutoGivePotionCountOfPetsFullgrownedLabel, string.format("%d : Count Of Pets Fullgrowned", farmed.agp.count_of_pets_fullgrowned), "coffee", Color3.fromRGB(203, 92, 255), false)
+                table.insert(farmed.agp.pets_fullgrowned, owned[v].name .. " : " .. owned[v])
+                local str = "- Pets Fullgrowned -"
+                for _,v in ipairs(farmed.agp.pets_fullgrowned) do
+                  str = str .. string.format("\n%s", v)
+                end
+                GUI.LabelUpdate(AutoGivePotionPetsFullgrownedLabel, str, "coffee", Color3.fromRGB(203, 92, 255), false)
+              end
+            end 
+          end)
+          while not _task.finished do
+            task.wait(1)
+          end
+          safeInvoke("ToolAPI/Equip",
+            equiped_pet.pet_unique or actual_pet.unique or "",
+            {
+              use_sound_delay = true,
+              equip_as_last = false
+            }
+          )
+          TaskQueue.Complete(_task)
+          Cooldown.AutoFarm.TryUsePotionAfter = 180
+        end,
+        function()
+          return Cooldown.AutoFarm.TryUsePotionAfter == 0
+        end,
+        function()
+          Cooldown.AutoFarm.TryUsePotionAfter = 5
+        end)
+      else
+        if not _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion then
+          GUI.ToggleButtonSetValue(AutoGivePotionToggleButton, false)
+          GUI.Notify("Info", "Set <Pet To Give Potion> at first", "INFO", "info")
+          return
+        end
+        Registry.RegisterTask("manual_auto_give_potion_handler", function()
+          Cooldown.AutoFarm.TryUsePotionAfter = nil
+          local potions = get_potions()
+          if not potions[1] and not potions[2] then 
+            WriteConsoleLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "🧪 No potions detected. Cooldown: [180]s.", "DEBUG")
+            WriteFileLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "DEBUG")
+            GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s", "INFO", "info")
+            Cooldown.Cooldown.TryUsePotionAfter = 180
+            return
+          end	
+
+          local equiped_pet = ClientData.get("pet_char_wrappers")[1]
+          local _task = TaskQueue.Enqueue(function()
+            for _,v in ipairs(_G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion) do
+              local potions = get_potions()
+              if not potions[1] and not potions[2] then 
+                WriteConsoleLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "🧪 No potions detected. Cooldown: [180]s.", "DEBUG")
+                WriteFileLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "DEBUG")
+                GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s", "INFO", "info")
+                return
+              end	
+              local owned_pets = GetOwnedPets()
+              local potions_to_give = calculate_optimal_potions_by_rarity(owned_pets[v].age, owned_pets[v].rarity, potions)
+              WriteConsoleLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", owned_pets[v].remote, potions_to_give[1], potions_to_give[2]), string.format("⚙️ Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions].", owned_pets[v].remote, potions_to_give[1], potions_to_give[2]), "DEBUG")
+              WriteFileLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", owned_pets[v].remote, potions_to_give[1], potions_to_give[2]), "DEBUG")
+              safeInvoke("ToolAPI/Equip",
+                owned_pets[v],
+                {
+                  use_sound_delay = true,
+                  equip_as_last = false
+                }
+              )
+              if count(potions_to_give[1]) > 0 then
+                local main = nil
+                local others = {}
+                for k,_ in pairs(potions_to_give[1]) do
+                  if main then 
+                    table.insert(others, k)
+                  else 
+                    main = k 
+                  end
+                end
+                safeInvoke("PetObjectAPI/CreatePetObject",
+                  "__Enum_PetObjectCreatorType_2",
+                  {
+                    additional_consume_uniques = {
+                      table.unpack(others)
+                    },
+                    pet_unique = pet_to_grow[1][1],
+                    unique_id = main
+                  }
+                )
+                task.wait(12)
+              end
+              if count(potions_to_give[2]) > 0 then
+                local main = nil
+                local others = {}
+                for k,_ in pairs(potions_to_give[2]) do
+                  if main then 
+                    table.insert(others, k)
+                  else 
+                    main = k 
+                  end
+                end
+                safeInvoke("PetObjectAPI/CreatePetObject",
+                  "__Enum_PetObjectCreatorType_2",
+                  {
+                    additional_consume_uniques = {
+                      table.unpack(others)
+                    },
+                    pet_unique = pet_to_grow[1][1],
+                    unique_id = main
+                  }
+                )
+                task.wait(12)
+              end
+              WriteConsoleLog(string.format("[Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], owned_pets[v].remote), string.format("🧪 [Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], owned_pets[v].remote), "DEBUG")
+              WriteFileLog(string.format("[Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], owned_pets[v].remote), "DEBUG")
+              GUI.Notify("Info", string.format("[Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], owned_pets[v].remote), "INFO", "info")
+              farmed.agp.age_potions_used += potions_to_give[1]
+              farmed.agp.tiny_age_potions_used += potions_to_give[2]
+              GUI.LabelUpdate(AutoGivePotionAgePotionsUsedLabel, string.format("%d : Age Potions Used", farmed.agp.age_potions_used), "coffee", Color3.fromRGB(203, 92, 255), false)
+              GUI.LabelUpdate(AutoGivePotionTinyAgePotionsUsedLabel, string.format("%d : Tiny Age Potions Used", farmed.agp.tiny_age_potions_used), "coffee", Color3.fromRGB(203, 92, 255), false)
+              task.wait(1)
+              WriteConsoleLog(string.format("%s age: %d -> %d\n", v[4], v[2], owned_pets[v].age), string.format("[🧪]:[✅] %s age: %d -> %d\n", v[4], v[2], owned_pets[v].age), "DEBUG")
+              WriteFileLog(string.format("%s age: %d -> %d\n", v[4], v[2], owned_pets[v].age), "DEBUG")
+              GUI.Notify("Info", string.format("%s age: %d -> %d\n", v[4], v[2], owned_pets[v].age), "INFO", "info")
+              if owned_pets[v].age == 6 then
+                farmed.pets_fullgrown += 1
+                farmed.agp.count_of_pets_fullgrowned += 1
+                update_gui("fullgrown", farmed.pets_fullgrown)
+                GUI.LabelUpdate(AutoGivePotionCountOfPetsFullgrownedLabel, string.format("%d : Count Of Pets Fullgrowned", farmed.agp.count_of_pets_fullgrowned), "coffee", Color3.fromRGB(203, 92, 255), false)
+                table.insert(farmed.agp.pets_fullgrowned, owned[v].name .. " : " .. owned[v])
+                local str = "- Pets Fullgrowned -"
+                for _,v in ipairs(farmed.agp.pets_fullgrowned) do
+                  str = str .. string.format("\n%s", v)
+                end
+                GUI.LabelUpdate(AutoGivePotionPetsFullgrownedLabel, str, "coffee", Color3.fromRGB(203, 92, 255), false)
+              end
+            end 
+          end)
+          while not _task.finished do
+            task.wait(1)
+          end
+          InstantListPetToGivePotion()
+          safeInvoke("ToolAPI/Equip",
+            equiped_pet.pet_unique or actual_pet.unique or "",
+            {
+              use_sound_delay = true,
+              equip_as_last = false
+            }
+          )
+          TaskQueue.Complete(_task)
+          Cooldown.AutoFarm.TryUsePotionAfter = 180
+        end,
+        function()
+          return Cooldown.AutoFarm.TryUsePotionAfter == 0
+        end,
+        function()
+          Cooldown.AutoFarm.TryUsePotionAfter = 5
+        end)
+      end
+    else
+      WriteConsoleLog("Auto give potion disabled", nil, "DEBUG")
+      WriteFileLog("Auto give potion disabled", "DEBUG")
+      Registry.UnregisterTask("manual_auto_give_potion_handler")
+      Registry.UnregisterTask("automated_auto_give_potion_handler")
+      Cooldown.AutoFarm.TryUsePotionAfter = nil
+    end
+  end
+  
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionMode = function(v)
+    WriteConsoleLog("Mode triggered", nil, "DEBUG")
+    WriteFileLog("Mode triggered", "DEBUG")
+    local mode = table.unpack(v)
+    if mode == "manual" then
+      GUI.ToggleButtonSetValue(AutoGivePotionToggleButton, false)
+      GUI.DropdownUpdateOptionList(AutoGivePotionSetHigherPriorityForDropdown, {})
+      GUI.DropdownSetValue(AutoGivePotionSetHigherPriorityForDropdown, {"Set <Mode> to automated"})
+      InstantListPetToGivePotion()
+      _G.pets_to_give_potion_should_be_updated = true
+    else
+      GUI.ToggleButtonSetValue(AutoGivePotionToggleButton, false)
+      GUI.DropdownUpdateOptionList(AutoGivePotionSetHigherPriorityForDropdown, {"common", "uncommon", "rare", "ultra-rare", "legendary"})
+      GUI.DropdownSetValue(AutoGivePotionSetHigherPriorityForDropdown, {})
+      GUI.DropdownUpdateOptionList(AutoGivePotionPetToGivePotionDropdown, {})
+      GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, {"Set <Mode> to manual"})
+      _G.pets_to_give_potion_should_be_updated = false
+    end
+  end
+
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionHigherPriority = function(v)
+    WriteConsoleLog("Set higher priority triggered", nil, "DEBUG")
+    WriteFileLog("Set higher priority triggered", "DEBUG")
+    if table.unpack(v):match("Set <Mode> to automated") or #v == 0 then
+      _G.InternalConfig.AutoGivePotionDLib.HigherPriority = nil
+      return
+    end 
+    _G.InternalConfig.AutoGivePotionDLib.HigherPriority = {}
+    for _,v in pairs(v) do
+      _G.InternalConfig.AutoGivePotionDLib.HigherPriority[v] = true
+    end
+  end
+
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToGivePotion = function(v)
+    WriteConsoleLog("Set higher priority triggered", nil, "DEBUG")
+    WriteFileLog("Set higher priority triggered", "DEBUG")
+    if v[1]:match("Set <Mode> to manual") or #v == 0 then
+      _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion = nil
+      return
+    end
+    _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion = {}
+    for k,v in ipairs(v) do
+      table.insert(_G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion, v:split("unique: ")[2])
+    end    
+  end
+  
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedSpecificRarities = function(v)
+    WriteConsoleLog("Blacklisted rarities triggered", nil, "DEBUG")
+    WriteFileLog("Blacklisted rarities triggered", "DEBUG")
+    WriteFileLog("Blacklisted ages triggered", "DEBUG")
+    if count(v) == 0 then
+      _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities = nil
+      return
+    end
+    _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities = {}
+    for _,v in pairs(v) do
+      _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities[v] = true
+    end
+  end
+
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedSpecificAges = function(v)
+    WriteConsoleLog("Blacklisted ages triggered", nil, "DEBUG")
+    WriteFileLog("Blacklisted ages triggered", "DEBUG")
+    if count(v) == 0 then
+      _G.InternalConfig.AutoGivePotionDLib.BlacklistedAges = nil
+      return
+    end
+    _G.InternalConfig.AutoGivePotionDLib.BlacklistedAges = {}
+    for _,v in pairs(v) do
+      _G.InternalConfig.AutoGivePotionDLib.BlacklistedAges[v] = true
+    end
+  end
+  
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedSpecificProperties = function(v)
+    WriteConsoleLog("Blacklisted properties triggered", nil, "DEBUG")
+    WriteFileLog("Blacklisted properties triggered", "DEBUG")
+    if count(v) == 0 then
+      _G.InternalConfig.AutoGivePotionDLib.BlacklistedProperties = nil
+      return
+    end
+    _G.InternalConfig.AutoGivePotionDLib.BlacklistedProperties = {}
+    for _,v in pairs(v) do
+      _G.InternalConfig.AutoGivePotionDLib.BlacklistedProperties[v] = true
+    end
+  end
+
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedSpecificSpecificPets = function(v)
+    WriteConsoleLog("Blacklisted specific pets triggered", nil, "DEBUG")
+    WriteFileLog("Blacklisted specific pets triggered", "DEBUG")
+    if count(v) == 0 then
+      _G.InternalConfig.AutoGivePotionDLib.BlacklistedSpecificPets = nil
+      return
+    end
+    _G.InternalConfig.AutoGivePotionDLib.BlacklistedSpecificPets = {}
+    for _,v in pairs(v) do
+      _G.InternalConfig.AutoGivePotionDLib.BlacklistedSpecificPets[v] = true
+    end
+  end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   -- AUTOTRADE
   GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.ToggleAutoTrade = function(v) 
@@ -3959,7 +4508,7 @@ end
       return
     end
     _G.InternalConfig.TradeDLib.BlacklistedRarities = {}
-    for _,v in v do
+    for _,v in pairs(v) do
       _G.InternalConfig.TradeDLib.BlacklistedRarities[v] = true
     end
   end 
@@ -3972,7 +4521,7 @@ end
       return
     end
     _G.InternalConfig.TradeDLib.BlacklistedAges = {}
-    for _,v in v do
+    for _,v in pairs(v) do
       _G.InternalConfig.TradeDLib.BlacklistedAges[v] = true
     end
   end 
@@ -3985,7 +4534,7 @@ end
       return
     end
     _G.InternalConfig.TradeDLib.BlacklistedProperties = {}
-    for _,v in v do
+    for _,v in pairs(v) do
       _G.InternalConfig.TradeDLib.BlacklistedProperties[v] = true
     end
   end 
@@ -3998,7 +4547,7 @@ end
       return
     end
     _G.InternalConfig.TradeDLib.BlacklistedSpecificPets = {}
-    for _,v in v do
+    for _,v in pairs(v) do
       _G.InternalConfig.TradeDLib.BlacklistedSpecificPets[v] = true
     end
   end
@@ -4018,6 +4567,9 @@ end
           local _task = LocationQueue.Enqueue(function()
             EmulateLocation("Cave")
           end)
+          if not _task.started then
+            task.wait(.2)
+          end
           local ok, _ = safeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
           if ok then 
             WriteConsoleLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), string.format("[🧿]:[✅] Pet %s is Neon now!", k), "DEBUG")
@@ -4617,115 +5169,143 @@ end
   Registry.RegisterTask("runtime_10_s_deadline_updates_for_pet_lists", function()
     WriteConsoleLog("[Registry]: {runtime_10_s_deadline_updates_for_pet_lists} runned", nil, "DEBUG")
     WriteFileLog("[Registry]: {runtime_10_s_deadline_updates_for_pet_lists} runned", "DEBUG")
-    Callbakcs.Other.Deadline10sUpdates = nil
-      local trade_specified_pets = {}
-      local recycler_specific_pets = {}
-      local auto_give_potion_specific_pets = {}
+    Cooldown.Other.Deadline10sUpdates = nil
+    local trade_specified_pets = {}
+    local recycler_specific_pets = {}
+    local auto_give_potion_specific_pets = {}
 
-      local saved_trade_specified_pets = TradeBlacklistSpecificPetsDropdown.CurrentOption
-      local saved_recycler_specific_pets = RecyclerPetPenBlacklistedSpecificPetsDropdown.CurrentOption
-      local saved_auto_give_potion_specific_pets = AutoGivePotionBlacklistedSpecificPetsDropdown.CurrentOption
-      local saved_meganeon = PetToMegaNeonDropdown.CurrentOption
-      local saved_neon = PetToNeonDropdown.CurrentOption
+    local saved_trade_specified_pets = TradeBlacklistSpecificPetsDropdown.CurrentOption
+    local saved_recycler_specific_pets = RecyclerPetPenBlacklistedSpecificPetsDropdown.CurrentOption
+    local saved_auto_give_potion_specific_pets = AutoGivePotionBlacklistedSpecificPetsDropdown.CurrentOption
+    local saved_meganeon = PetToMegaNeonDropdown.CurrentOption
+    local saved_neon = PetToNeonDropdown.CurrentOption
+    local saved_pets_to_give_potion = nil
+    local pets_to_give_potion = nil
+    if _G.pets_to_give_potion_should_be_updated then
+      saved_pets_to_give_potion = AutoGivePotionPetToGivePotionDropdown.CurrentOption
+      pets_to_give_potion = {}
+    end
 
-      local __neon_temp = {}
-      local __meganeon_temp = {}
-      local neon = {}
-      local meganeon = {}
-      local _rep = {}
-      local owned = GetOwnedPets()
-      for k,v in pairs(owned) do
-        if not _rep[v.id] then
-          _rep[v.id] = true 
-          -- insert not repeatable
-        end
-        table.insert(trade_specified_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
-        table.insert(recycler_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
-        table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
 
-        if v.age == 6 then
-          __neon_temp[v.id] = (__neon_temp[v.id] or 0) + 1
-        end
-        if v.neon and v.age == 6 then
-          __meganeon_temp[v.id] = (meganeon[v.id] or 0) + 1
+    local __neon_temp = {}
+    local __meganeon_temp = {}
+    local neon = {}
+    local meganeon = {}
+    local _rep = {}
+    local owned = GetOwnedPets()
+    for k,v in pairs(owned) do
+      if not _rep[v.id] then
+        _rep[v.id] = true 
+        -- insert not repeatable
+      end
+      table.insert(trade_specified_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      table.insert(recycler_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+
+      if v.age == 6 then
+        __neon_temp[v.id] = (__neon_temp[v.id] or 0) + 1
+      end
+      if v.neon and v.age == 6 then
+        __meganeon_temp[v.id] = (meganeon[v.id] or 0) + 1
+      end
+      if v.age < 6 then 
+        if pets_to_give_potion then
+          table.insert(pets_to_give_potion, v.name .. " | age: " .. v.age .. " | unique: " .. k)
         end
       end
-      for k,v in pairs(__neon_temp) do
-        if v >= 4 then
-          table.insert(neon, GetNameFromRemote(k))
-        end
+    end
+    for k,v in pairs(__neon_temp) do
+      if v >= 4 then
+        table.insert(neon, GetNameFromRemote(k))
       end
-      for k,v in pairs(__meganeon_temp) do
-        if v >= 4 then
-          table.insert(meganeon, GetNameFromRemote(k))
-        end
+    end
+    for k,v in pairs(__meganeon_temp) do
+      if v >= 4 then
+        table.insert(meganeon, GetNameFromRemote(k))
       end
-      for k,v in pairs(saved_neon) do
-        local name = v:split(" | ")[1]
-        local found = false
-        for a,b in pairs(neon) do
-          if b == name then
-            found = true
-            break
-          end
-        end
-        if not found then
-          saved_neon[k] = nil
-        end
-      end
-      for k,v in pairs(saved_meganeon) do
-        local name = v:split(" | ")[1]
-        local found = false
-        for a,b in pairs(meganeon) do
-          if b == name then
-            found = true
-            break
-          end
-        end
-        if not found then
-          saved_meganeon[k] = nil
-        end
-      end
-      for k,v in pairs(saved_trade_specified_pets) do
+    end
+    if pets_to_give_potion then
+      for k,v in ipairs(saved_pets_to_give_potion) do
         local unique = v:split("unique: ")[2]
-        if not owned[unique] then 
-          GUI.Notify("Warning", string.format("[AutoTrade Blacklist] Pet %s is no longer available.", saved_trade_specified_pets[k]), "WARNING", "triangle-alert")
-          saved_trade_specified_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+        if not owned[unique] then
+          saved_pets_to_give_potion[k] = nil
         end
       end
-      for k,v in pairs(saved_recycler_specific_pets) do
-        local unique = v:split("unique: ")[2]
-        if not owned[unique] then 
-          GUI.Notify("Warning", string.format("[Pet Recycler Blacklist] Pet %s is no longer available.", saved_recycler_specific_pets[k]), "WARNING", "triangle-alert")
-          saved_recycler_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+    end
+    for k,v in ipairs(saved_neon) do
+      local name = v:split(" | ")[1]
+      local found = false
+      for a,b in pairs(neon) do
+        if b == name then
+          found = true
+          break
         end
       end
-      for k,v in pairs(saved_auto_give_potion_specific_pets) do
-        local unique = v:split("unique: ")[2]
-        if not owned[unique] then 
-          GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
-          saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+      if not found then
+        saved_neon[k] = nil
+      end
+    end
+    for k,v in ipairs(saved_meganeon) do
+      local name = v:split(" | ")[1]
+      local found = false
+      for a,b in pairs(meganeon) do
+        if b == name then
+          found = true
+          break
         end
       end
-      GUI.DropdownUpdateOptionList(PetToMegaNeonDropdown, meganeon)
-      GUI.DropdownUpdateOptionList(PetToNeonDropdown, neon)
-      
-      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, auto_give_potion_specific_pets)
-      GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, saved_auto_give_potion_specific_pets)
-      
-      GUI.DropdownUpdateOptionList(RecyclerPetPenBlacklistedSpecificPetsDropdown, recycler_specific_pets)
-      GUI.DropdownSetValue(RecyclerPetPenBlacklistedSpecificPetsDropdown, saved_recycler_specific_pets)
-      
-      GUI.DropdownUpdateOptionList(TradeBlacklistSpecificPetsDropdown, trade_specified_pets)
-      GUI.DropdownSetValue(TradeBlacklistSpecificPetsDropdown, saved_trade_specified_pets)
+      if not found then
+        saved_meganeon[k] = nil
+      end
+    end
+    for k,v in ipairs(saved_trade_specified_pets) do
+      local unique = v:split("unique: ")[2]
+      if not owned[unique] then 
+        GUI.Notify("Warning", string.format("[AutoTrade Blacklist] Pet %s is no longer available.", saved_trade_specified_pets[k]), "WARNING", "triangle-alert")
+        saved_trade_specified_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+      end
+    end
+    for k,v in ipairs(saved_recycler_specific_pets) do
+      local unique = v:split("unique: ")[2]
+      if not owned[unique] then 
+        GUI.Notify("Warning", string.format("[Pet Recycler Blacklist] Pet %s is no longer available.", saved_recycler_specific_pets[k]), "WARNING", "triangle-alert")
+        saved_recycler_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+      end
+    end
+    for k,v in ipairs(saved_auto_give_potion_specific_pets) do
+      local unique = v:split("unique: ")[2]
+      if not owned[unique] then 
+        GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
+        saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+      end
+    end
+    GUI.DropdownUpdateOptionList(PetToNeonDropdown, neon)
+    GUI.DropdownSetValue(PetToNeonDropdown, saved_neon)
+    
+    GUI.DropdownUpdateOptionList(PetToMegaNeonDropdown, meganeon)
+    GUI.DropdownSetValue(PetToMegaNeonDropdown, saved_meganeon)
 
-      Cooldown.Other.Deadline10sUpdates = 10
-  end,
-  function()
-    return Cooldown.Other.Deadline10sUpdates == 10
-  end,
-  function()
+    if pets_to_give_potion and _G.pets_to_give_potion_should_be_updated then -- tut proverka na flag esce raz, vdrug za eto vremia chtoto pomenialos, i flag = nil
+      GUI.DropdownUpdateOptionList(AutoGivePotionPetToGivePotionDropdown, pets_to_give_potion)
+      GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, saved_pets_to_give_potion)
+    end
+
+    GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, auto_give_potion_specific_pets)
+    GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, saved_auto_give_potion_specific_pets)
+    
+    GUI.DropdownUpdateOptionList(RecyclerPetPenBlacklistedSpecificPetsDropdown, recycler_specific_pets)
+    GUI.DropdownSetValue(RecyclerPetPenBlacklistedSpecificPetsDropdown, saved_recycler_specific_pets)
+    
+    GUI.DropdownUpdateOptionList(TradeBlacklistSpecificPetsDropdown, trade_specified_pets)
+    GUI.DropdownSetValue(TradeBlacklistSpecificPetsDropdown, saved_trade_specified_pets)
+
     Cooldown.Other.Deadline10sUpdates = 10
+  end,
+  function()
+    return Cooldown.Other.Deadline10sUpdates == 0
+  end,
+  function()
+    Cooldown.Other.Deadline10sUpdates = 2
   end)
 
 
