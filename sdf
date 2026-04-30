@@ -2656,67 +2656,87 @@ end
       Cooldown.AutoFarm.PetAutoFarm = 50 
       return
     end
-    local flag = false
-    local kitty_unique
-    if _G.InternalConfig.PetFarmDLib.Detect2DKitty then
-      if kitty_unique == actual_pet.unique and kitty_unique == ClientData.get("pet_char_wrappers")[1].pet_unique then
-        flag = true
+    local _task = TaskQueue.Enqueue(function()
+      local flag = false
+      local kitty_unique
+      if _G.InternalConfig.PetFarmDLib.Detect2DKitty then
+        if kitty_unique == actual_pet.unique and kitty_unique == ClientData.get("pet_char_wrappers")[1].pet_unique then
+          flag = true
+        else
+          kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")
+          if kitty_unique and kitty_unique ~= actual_pet.unique then
+            SafeInvoke("ToolAPI/Equip",
+              kitty_unique,
+              {
+                use_sound_delay = true,
+                equip_as_last = false
+              }
+            )
+            print("🐱 Found and equiped 2D-kitty.")
+            WriteConsoleLog("2D-kitty detected and equiped", "🐱 2D-kitty detected and equiped.", "DEBUG")
+            WriteFileLog("2D-kitty detected and equiped", "DEBUG")
+            flag = true
+            _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
+            _G.InternalConfig.PetFarmDLib.KittyInUse = true
+            task.wait(1)
+            PetUpdate() 
+            task.wait(.2)
+          end
+        end
       else
-        kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")
-        if kitty_unique and kitty_unique ~= actual_pet.unique then
+        _G.InternalConfig.PetFarmDLib.KittyInUse = false
+      end
+      if not _G.InternalConfig.PetFarmDLib.KittyInUse then
+        if (actual_pet.unique and not Equiped()) or (actual_pet.unique and actual_pet.unique ~= CurUnique()) then
           SafeInvoke("ToolAPI/Equip",
-            kitty_unique,
+            actual_pet.unique, 
             {
               use_sound_delay = true,
               equip_as_last = false
             }
           )
-          print("🐱 Found and equiped 2D-kitty.")
-          WriteConsoleLog("2D-kitty detected and equiped", "🐱 2D-kitty detected and equiped.", "DEBUG")
-          WriteFileLog("2D-kitty detected and equiped", "DEBUG")
+          WriteConsoleLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), string.format("🐶 Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEUBG")
+          WriteFileLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEBUG")
+          GUI.Notify("Warning", string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "WARNING", "triangle-alert")
           flag = true
-          _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
-          _G.InternalConfig.PetFarmDLib.KittyInUse = true
-          task.wait(1)
-          PetUpdate() 
-          task.wait(.2)
+          task.wait(.5)
         end
       end
-    else
-      _G.InternalConfig.PetFarmDLib.KittyInUse = false
-    end
-    if not _G.InternalConfig.PetFarmDLib.KittyInUse then
-      if (actual_pet.unique and not Equiped()) or (actual_pet.unique and actual_pet.unique ~= CurUnique()) then
-        SafeInvoke("ToolAPI/Equip",
-          actual_pet.unique, 
-          {
-            use_sound_delay = true,
-            equip_as_last = false
-          }
-        )
-        WriteConsoleLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), string.format("🐶 Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEUBG")
-        WriteFileLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEBUG")
-        GUI.Notify("Warning", string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "WARNING", "triangle-alert")
-        flag = true
-        task.wait(.5)
-      end
-    end
-    if not Equiped() or CurUnique() ~= actual_pet.unique then
-      actual_pet.unique = false
-      if _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
-        print("⚙️ Opposite farm disabled.")
-      end
-      _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
-      _G.InternalConfig.PetFarmDLib.random_farm = false
-      _G.InternalConfig.PetFarmDLib.potionfarm = false
-    end 
-    if not actual_pet.unique then
-      local owned_pets = GetOwnedPets()
-      if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then	
-        local found = false
-        for _,r in ipairs(Rarities) do
+      if not Equiped() or CurUnique() ~= actual_pet.unique then
+        actual_pet.unique = false
+        if _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
+          print("⚙️ Opposite farm disabled.")
+        end
+        _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
+        _G.InternalConfig.PetFarmDLib.random_farm = false
+        _G.InternalConfig.PetFarmDLib.potionfarm = false
+      end 
+      if not actual_pet.unique then
+        local owned_pets = GetOwnedPets()
+        if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then	
+          local found = false
+          for _,r in ipairs(Rarities) do
+            for k,v in pairs(owned_pets) do
+              if v.remote ~= "practice_dog" and v.rarity == r and v.age < 6 and not _G.InternalConfig.PetFarmDLib.PetsToExclude[v.remote] and not (v.name:lower()):match("egg") then
+                SafeInvoke("ToolAPI/Equip",
+                  k,
+                  {
+                    use_sound_delay = true,
+                    equip_as_last = false
+                  }
+                )
+                flag = true
+                found = true
+                _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
+                _G.InternalConfig.PetFarmDLib.random_farm = false
+                break
+              end
+            end
+            if found then break end
+          end
+        else 
           for k,v in pairs(owned_pets) do
-            if v.remote ~= "practice_dog" and v.rarity == r and v.age < 6 and not _G.InternalConfig.PetFarmDLib.PetsToExclude[v.remote] and not (v.name:lower()):match("egg") then
+            if not _G.InternalConfig.AutoFarmFilter.PetsToExclude[v.remote] and (v.name:lower()):match("egg") then
               SafeInvoke("ToolAPI/Equip",
                 k,
                 {
@@ -2725,64 +2745,67 @@ end
                 }
               )
               flag = true
-              found = true
               _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
               _G.InternalConfig.PetFarmDLib.random_farm = false
               break
             end
           end
-          if found then break end
-        end
-      else 
-        for k,v in pairs(owned_pets) do
-          if not _G.InternalConfig.AutoFarmFilter.PetsToExclude[v.remote] and (v.name:lower()):match("egg") then
-            SafeInvoke("ToolAPI/Equip",
-              k,
-              {
-                use_sound_delay = true,
-                equip_as_last = false
-              }
-            )
-            flag = true
-            _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
-            _G.InternalConfig.PetFarmDLib.random_farm = false
-            break
-          end
-        end
-      end  	
-      if not flag then
-        if _G.InternalConfig.PetFarmDLib.OppositeFarm then
-          if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then  
-            print("⚙️ Enabling opposite farm..")
-            if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then
-              local found = false
-              for _,r in ipairs(Rarities) do
-                for k,v in pairs(owned_pets) do
-                  if v.remote ~= "practice_dog" and v.rarity == r and not _G.InternalConfig.PetFarmDLib.PetsToExclude[k] and not (v.name:lower()):match("egg") then
-                    SafeInvoke("ToolAPI/Equip",
-                      k,
-                      {
-                        use_sound_delay = true,
-                        equip_as_last = false
-                      }
-                    )
-                    flag = true
-                    found = true
-                    _G.InternalConfig.PetFarmDLib.random_farm = true
-                    _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = true
-                    if _G.InternalConfig.PetFarmDLib.PotionFarm then
-                      _G.InternalConfig.PetFarmDLib.potionfarm = true
-                    end
-                    break
-                  end 
-                end
-                if found then break end
-              end
-              if not found then
+        end  	
+        if not flag then
+          if _G.InternalConfig.PetFarmDLib.OppositeFarm then
+            if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then  
+              print("⚙️ Enabling opposite farm..")
+              if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then
                 local found = false
                 for _,r in ipairs(Rarities) do
                   for k,v in pairs(owned_pets) do
-                    if v.remote ~= "practice_dog" and v.rarity == r and not _G.InternalConfig.PetFarmDLib.PetsToExclude[k] then
+                    if v.remote ~= "practice_dog" and v.rarity == r and not _G.InternalConfig.PetFarmDLib.PetsToExclude[k] and not (v.name:lower()):match("egg") then
+                      SafeInvoke("ToolAPI/Equip",
+                        k,
+                        {
+                          use_sound_delay = true,
+                          equip_as_last = false
+                        }
+                      )
+                      flag = true
+                      found = true
+                      _G.InternalConfig.PetFarmDLib.random_farm = true
+                      _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = true
+                      if _G.InternalConfig.PetFarmDLib.PotionFarm then
+                        _G.InternalConfig.PetFarmDLib.potionfarm = true
+                      end
+                      break
+                    end 
+                  end
+                  if found then break end
+                end
+                if not found then
+                  local found = false
+                  for _,r in ipairs(Rarities) do
+                    for k,v in pairs(owned_pets) do
+                      if v.remote ~= "practice_dog" and v.rarity == r and not _G.InternalConfig.PetFarmDLib.PetsToExclude[k] then
+                        SafeInvoke("ToolAPI/Equip",
+                          k,
+                          {
+                            use_sound_delay = true,
+                            equip_as_last = false
+                          }
+                        )
+                        flag = true
+                        found = true
+                        _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = true
+                        _G.InternalConfig.PetFarmDLib.random_farm = true
+                        break
+                      end
+                    end
+                    if found then break end
+                  end
+                end
+              else
+                local found = false
+                for _,r in ipairs(Rarities) do
+                  for k,v in pairs(owned_pets) do
+                    if v.remote ~= "practice_dog" and v.rarity == r and not _G.InternalConfig.PetFarmDLib.PetsToExclude[k]  then
                       SafeInvoke("ToolAPI/Equip",
                         k,
                         {
@@ -2800,158 +2823,146 @@ end
                   if found then break end
                 end
               end
-            else
-              local found = false
-              for _,r in ipairs(Rarities) do
-                for k,v in pairs(owned_pets) do
-                  if v.remote ~= "practice_dog" and v.rarity == r and not _G.InternalConfig.PetFarmDLib.PetsToExclude[k]  then
-                    SafeInvoke("ToolAPI/Equip",
-                      k,
-                      {
-                        use_sound_delay = true,
-                        equip_as_last = false
-                      }
-                    )
-                    flag = true
-                    found = true
-                    _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = true
-                    _G.InternalConfig.PetFarmDLib.random_farm = true
-                    break
+              if not flag then
+                local practice_dog = InvGetCategoryUnique("pets", "practice_dog")
+                if practice_dog then 
+                  SafeInvoke("ToolAPI/Equip",
+                    practice_dog,
+                    {
+                      use_sound_delay = true,
+                      equip_as_last = false
+                    }
+                  )
+                  flag = true
+                  _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = true
+                  _G.InternalConfig.PetFarmDLib.random_farm = true
+                  task.wait(2)
+                  if CurUnique() ~= practice_dog then
+                    flag = false
+                    _G.InternalConfig.PetFarmDLib.random_farm = false
+                    _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
                   end
                 end
-                if found then break end
-              end
-            end
-            if not flag then
-              local practice_dog = InvGetCategoryUnique("pets", "practice_dog")
-              if practice_dog then 
-                SafeInvoke("ToolAPI/Equip",
-                  practice_dog,
-                  {
-                    use_sound_delay = true,
-                    equip_as_last = false
-                  }
-                )
-                flag = true
-                _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = true
-                _G.InternalConfig.PetFarmDLib.random_farm = true
-                task.wait(2)
-                if CurUnique() ~= practice_dog then
-                  flag = false
-                  _G.InternalConfig.PetFarmDLib.random_farm = false
-                  _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
-                end
               end
             end
           end
-        end
-      end  
+        end  
 
-      if (flag and not Equiped()) then
-        Cooldown.AutoFarm.PetAutoFarm = 5
-        return
-      end
-      if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm and _G.InternalConfig.PetFarmDLib.random_farm then
-          print("⚙️ Opposite farm disabled.")
-          _G.InternalConfig.PetFarmDLib.random_farm = false
-      end
-      if flag then 
-        task.wait(1)
-        PetUpdate()
-        task.wait(.2)
-        if actual_pet.unique then
-          GUI.Notify("Warning", string.format("New pet equiped: %s", actual_pet.remote), "WARNING", "triangle-alert")
-          WriteConsoleLog(string.format("New pet equiped: %s", actual_pet.remote), string.format("🐨 New pet equiped: %s", actual_pet.remote), "DEBUG")
-          WriteFileLog(string.format("New pet equiped: %s", actual_pet.remote), "DEBUG")      
+        if (flag and not Equiped()) then
+          Cooldown.AutoFarm.PetAutoFarm = 5
+          return
         end
-      end
-    end
-    local eqailments = GetEquipedPetAilments()
-    print(string.format("🔎 Detecting tasks for %s..", actual_pet.remote))
-    for k,_ in pairs(eqailments) do 
-      if pet_ailments[k] then
-        HouseCheck()
-        if k == "mystery" then 
-          if not _G.mystery then
-            print(formatted_pet["mystery"], actual_pet.remote)
-            task.spawn(pet_ailments[k]) 
+        if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm and _G.InternalConfig.PetFarmDLib.random_farm then
+            print("⚙️ Opposite farm disabled.")
+            _G.InternalConfig.PetFarmDLib.random_farm = false
+        end
+        if flag then 
+          task.wait(1)
+          PetUpdate()
+          task.wait(.2)
+          if actual_pet.unique then
+            GUI.Notify("Warning", string.format("New pet equiped: %s", actual_pet.remote), "WARNING", "triangle-alert")
+            WriteConsoleLog(string.format("New pet equiped: %s", actual_pet.remote), string.format("🐨 New pet equiped: %s", actual_pet.remote), "DEBUG")
+            WriteFileLog(string.format("New pet equiped: %s", actual_pet.remote), "DEBUG")      
           end
-          continue
         end
-        print(formatted_pet[k], actual_pet.remote)
-        pcall(pet_ailments[k])
-        if CONNECTIONS.WalkLock then CONNECTIONS.WalkLock:Disconnect(); CONNECTIONS.WalkLock = nil end
-        if CONNECTIONS.RideLock then CONNECTIONS.RideLock:Disconnect(); CONNECTIONS.RideLock = nil end
-        Cooldown.AutoFarm.PetAutoFarm = 0
-        return
       end
+      local eqailments = GetEquipedPetAilments()
+      print(string.format("🔎 Detecting tasks for %s..", actual_pet.remote))
+      for k,_ in pairs(eqailments) do 
+        if pet_ailments[k] then
+          HouseCheck()
+          if k == "mystery" then 
+            if not _G.mystery then
+              print(formatted_pet["mystery"], actual_pet.remote)
+              task.spawn(pet_ailments[k]) 
+            end
+            continue
+          end
+          print(formatted_pet[k], actual_pet.remote)
+          pcall(pet_ailments[k])
+          if CONNECTIONS.WalkLock then CONNECTIONS.WalkLock:Disconnect(); CONNECTIONS.WalkLock = nil end
+          if CONNECTIONS.RideLock then CONNECTIONS.RideLock:Disconnect(); CONNECTIONS.RideLock = nil end
+          Cooldown.AutoFarm.PetAutoFarm = 0
+          return
+        end
+      end
+      Cooldown.AutoFarm.PetAutoFarm = 15
+    end)
+    while not _task.finished do
+      task.wait(1)
     end
-    Cooldown.AutoFarm.PetAutoFarm = 15
-
+    TaskQueue.Complete(_task)
   end
 
   local function __init_manual_pet_farm()
-    if (actual_pet.unique and not Equiped()) or (actual_pet.unique and actual_pet.unique ~= CurUnique()) then
-      SafeInvoke("ToolAPI/Equip",
-        actual_pet.unique, 
-        {
-          use_sound_delay = true,
-          equip_as_last = false
-        }
-      )	 
-      WriteConsoleLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), string.format("🐶 Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEUBG")
-      WriteFileLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEBUG")
-      GUI.Notify("Warning", string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "WARNING", "triangle-alert")
-      task.wait(.5)
-    end
-    if not actual_pet.unique then
-      if _G.InternalConfig.PetFarmDLib.ManualPetsToFarm then
+    local _task = TaskQueue.Enqueue(function()
+      if (actual_pet.unique and not Equiped()) or (actual_pet.unique and actual_pet.unique ~= CurUnique()) then
         SafeInvoke("ToolAPI/Equip",
-          _G.InternalConfig.PetFarmDLib.ManualPetsToFarm,
+          actual_pet.unique, 
           {
             use_sound_delay = true,
             equip_as_last = false
           }
-        )   -- log "pet equiped or smth"
-        task.wait(1)
-        PetUpdate()
-        if actual_pet.unique then 
-          GUI.Notify("Warning", string.format("New pet equiped: %s", actual_pet.remote), "WARNING", "triangle-alert")
-          WriteConsoleLog(string.format("New pet equiped: %s", actual_pet.remote), string.format("🐨 New pet equiped: %s", actual_pet.remote), "DEBUG")
-          WriteFileLog(string.format("New pet equiped: %s", actual_pet.remote), "DEBUG")
-          _G.InternalConfig.PetFarmDLib.PotionFarm = true -- chtoby posle age == 6 ne zbrosilo peta
-        else
-          Cooldown.AutoFarm.PetAutoFarm = 2
+        )	 
+        WriteConsoleLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), string.format("🐶 Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEUBG")
+        WriteFileLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEBUG")
+        GUI.Notify("Warning", string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "WARNING", "triangle-alert")
+        task.wait(.5)
+      end
+      if not actual_pet.unique then
+        if _G.InternalConfig.PetFarmDLib.ManualPetsToFarm then
+          SafeInvoke("ToolAPI/Equip",
+            _G.InternalConfig.PetFarmDLib.ManualPetsToFarm,
+            {
+              use_sound_delay = true,
+              equip_as_last = false
+            }
+          )   
+          task.wait(1)
+          PetUpdate()
+          if actual_pet.unique then 
+            GUI.Notify("Warning", string.format("New pet equiped: %s", actual_pet.remote), "WARNING", "triangle-alert")
+            WriteConsoleLog(string.format("New pet equiped: %s", actual_pet.remote), string.format("🐨 New pet equiped: %s", actual_pet.remote), "DEBUG")
+            WriteFileLog(string.format("New pet equiped: %s", actual_pet.remote), "DEBUG")
+            _G.InternalConfig.PetFarmDLib.PotionFarm = true -- chtoby posle age == 6 ne zbrosilo peta
+          else
+            Cooldown.AutoFarm.PetAutoFarm = 2
+            return
+          end
+        end
+      else
+        GUI.Notify("Warning", "Internal validation cannot find pet. Try to specify <Pet To Farm> again", "WARNING", "triangle-alert")
+        GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
+        return
+      end
+
+      local eqailments = GetEquipedPetAilments()
+      print(string.format("🔎 Detecting tasks for %s..", actual_pet.remote))
+      for k,_ in pairs(eqailments) do 
+        if pet_ailments[k] then
+          HouseCheck()
+          if k == "mystery" then 
+            if not _G.mystery then
+              print(formatted_pet["mystery"], actual_pet.remote)
+              task.spawn(pet_ailments[k]) 
+            end
+            continue
+          end
+          print(formatted_pet[k], actual_pet.remote)
+          pcall(pet_ailments[k])
+          if CONNECTIONS.WalkLock then CONNECTIONS.WalkLock:Disconnect(); CONNECTIONS.WalkLock = nil end
+          if CONNECTIONS.RideLock then CONNECTIONS.RideLock:Disconnect(); CONNECTIONS.RideLock = nil end
+          Cooldown.AutoFarm.PetAutoFarm = 0
           return
         end
       end
-    else
-      GUI.Notify("Warning", "Internal validation cannot find pet. Try to specify <Pet To Farm> again", "WARNING", "triangle-alert")
-      GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
-      return
+      Cooldown.AutoFarm.PetAutoFarm = 15
+    end)
+    while not _task.finished do
+      task.wait(1)
     end
-
-    local eqailments = GetEquipedPetAilments()
-    print(string.format("🔎 Detecting tasks for %s..", actual_pet.remote))
-    for k,_ in pairs(eqailments) do 
-      if pet_ailments[k] then
-        HouseCheck()
-        if k == "mystery" then 
-          if not _G.mystery then
-            print(formatted_pet["mystery"], actual_pet.remote)
-            task.spawn(pet_ailments[k]) 
-          end
-          continue
-        end
-        print(formatted_pet[k], actual_pet.remote)
-        pcall(pet_ailments[k])
-        if CONNECTIONS.WalkLock then CONNECTIONS.WalkLock:Disconnect(); CONNECTIONS.WalkLock = nil end
-        if CONNECTIONS.RideLock then CONNECTIONS.RideLock:Disconnect(); CONNECTIONS.RideLock = nil end
-        Cooldown.AutoFarm.PetAutoFarm = 0
-        return
-      end
-    end
-    Cooldown.AutoFarm.PetAutoFarm = 15
+    TaskQueue.Complete(_task)
   end
 
   GUI.Tabs.Main.Sections.Optimization.Callbacks.SetFpsCap = function(v)
@@ -4216,21 +4227,15 @@ end
 
 
 
-
-
-
-
-
-
-
-
-
-
   -- AUTOTRADE
   GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.ToggleAutoTrade = function(v) 
     WriteConsoleLog("Auto trade triggered", nil, "DEBUG")
     WriteFileLog("Auto trade triggered", "DEBUG")
     if v then
+      if PlayerTradeWithTextField.CurrentValue:match("^%s*$") then
+        GUI.ToggleButtonSetValue(AutoTradeToggleButton, false)
+        return
+      end
       Cooldown.AutoTrade.NextTradeAfter = 0
       Registry.RegisterTask("auto_trade_handler", function()
         Cooldown.AutoTrade.NextTradeAfter = nil
@@ -4241,11 +4246,7 @@ end
         local pets_to_send = {}
         local confirmed = false
         if game.Players:FindFirstChild(user) then
-          if not game.Players[user].Character or not game.Players[user].Character.Humanoid then
-            Cooldown.AutoTrade.NextTradeAfter = 5
-            GUI.Notify("Info", "Player located. Waiting for player loads the game", "INFO", "loader")
-            return 
-          end
+          GUI.Notify("Info", string.format("Player %s located", user), "INFO", "loader")
           local owned_pets = GetOwnedPets()
           for k,v in owned_pets do
             if v.remote ~= "practice_dog" then
