@@ -1357,73 +1357,98 @@ end
     GUI.LabelUpdate(runtimeLabel1, string.format("Bucks earned : %d", farmed.money), "banknote", Color3.fromRGB(203, 92, 255), false)
     GUI.LabelUpdate(runtimeLabel2, string.format("Total Bucks : %d", farmed.total_money), "banknote", Color3.fromRGB(203, 92, 255), false)
   end
-local function shallow_keys_copy(t)
-  local r = {}
-  for k,_ in pairs(t) do
-  	r[k] = true
+  local function shallow_keys_copy(t)
+    local r = {}
+    for k,_ in pairs(t) do
+      r[k] = true
+    end
+    return r
   end
-  return r
-end
-local function get_potions() 
-  local big = {}
-  local tiny = {}
-  for k,v in pairs(get_owned_category("food")) do
-	if (v.remote:lower()):match("tiny_pet_age_potion") then
-	  tiny[k] = true
-	elseif (v.remote:lower()):match("pet_age_potion") then
-	  big[k] = true
-	end
+  local function get_potions() 
+    local big = {}
+    local tiny = {}
+    for k,v in pairs(get_owned_category("food")) do
+    if (v.remote:lower()):match("tiny_pet_age_potion") then
+      tiny[k] = true
+    elseif (v.remote:lower()):match("pet_age_potion") then
+      big[k] = true
+    end
+    end
+    if count(big) == 0 then big = nil end
+    if count(tiny) == 0 then tiny = nil end
+    return { big, tiny }
   end
-  if count(big) == 0 then big = nil end
-  if count(tiny) == 0 then tiny = nil end
-  return { big, tiny }
-end
-local function calculate_optimal_potions_by_rarity(age, rarity, potions)
-  local total_tasks = TASKS_BY_RARITY[rarity:lower()]
-  local remaining = total_tasks - age
-  if remaining <= 0 then
-  	return { {}, {}, }
+  local function calculate_optimal_potions_by_rarity(age, rarity, potions)
+    local total_tasks = TASKS_BY_RARITY[rarity:lower()]
+    local remaining = total_tasks - age
+    if remaining <= 0 then
+      return { {}, {}, }
+    end
+    local _age = potions[1] and shallow_keys_copy(potions[1]) or {}  
+    local _tiny = potions[2] and shallow_keys_copy(potions[2]) or {}
+    local big_up = count(_age)
+    local tiny_up = count(_tiny)
+    local use_age = math.floor(remaining / 30)
+    local leftover = remaining % 30
+    local use_tiny = 0
+    if leftover > 0 then
+      if leftover <= 3 and tiny_up > 0 then
+        use_tiny = 1
+      else
+        use_age += 1
+      end
+    end
+    local original_age = use_age
+    use_age = math.min(use_age, big_up)
+    if use_age < original_age and tiny_up > 0 then
+      local missing_age = original_age - use_age
+      local tiny_needed = math.ceil((missing_age * 30) / 3)
+      use_tiny = math.min(tiny_needed, tiny_up)
+    end
+    use_tiny = math.min(use_tiny, tiny_up)
+    if use_age > 0 and big_up > use_age then
+      for k,_ in pairs(_age) do 
+        _age[k] = nil
+        if count(_age) == use_age then
+        break
+        end
+      end
+    end
+    if use_tiny > 0 and tiny_up > use_tiny then
+      for k,_ in pairs(_tiny) do 
+        _tiny[k] = nil
+        if count(_tiny) == use_tiny then
+        break
+        end
+      end
+    end
+    return { _age, _tiny }
   end
-  local _age = potions[1] and shallow_keys_copy(potions[1]) or {}  
-  local _tiny = potions[2] and shallow_keys_copy(potions[2]) or {}
-  local big_up = count(_age)
-  local tiny_up = count(_tiny)
-  local use_age = math.floor(remaining / 30)
-  local leftover = remaining % 30
-  local use_tiny = 0
-  if leftover > 0 then
-  	if leftover <= 3 and tiny_up > 0 then
-  	  use_tiny = 1
-  	else
-  	  use_age += 1
-  	end
-  end
-  local original_age = use_age
-  use_age = math.min(use_age, big_up)
-  if use_age < original_age and tiny_up > 0 then
-  	local missing_age = original_age - use_age
-  	local tiny_needed = math.ceil((missing_age * 30) / 3)
-  	use_tiny = math.min(tiny_needed, tiny_up)
-  end
-  use_tiny = math.min(use_tiny, tiny_up)
-  if use_age > 0 and big_up > use_age then
-  	for k,_ in pairs(_age) do 
-  	  _age[k] = nil
-  	  if count(_age) == use_age then
-  		break
-  	  end
-  	end
-  end
-  if use_tiny > 0 and tiny_up > use_tiny then
-  	for k,_ in pairs(_tiny) do 
-  	  _tiny[k] = nil
-  	  if count(_tiny) == use_tiny then
-  		break
-  	  end
-  	end
-  end
-  return { _age, _tiny }
-end
+  local function send_trade_request(user)  
+    safeFire("TradeAPI/SendTradeRequest", game.Players[user])
+    print("⚙️ Trade request to user sent!")
+    WriteConsoleLog(string.format("Trade reuqest to %s sent", user), string.format("⚙️ Trade request to %s sent!", user), "DEBUG")
+    WriteFileLog(string.format("Trade reuqest to %s sent", user), "DEBUG")
+    GUI.Notify("Info", "Trade request to user sent!", "INFO", "info")
+    local deadline = os.clock() + 120
+    local declined = false
+    local ev = API["MsgAPI/HintSent"].OnClientEvent:Connect(function(...)
+    if select(1, ...)["text"]:match("declined your trade request.") then
+      declined = true
+    end
+  end)
+    while not UIManager.is_visible("TradeApp") and os.clock() < deadline and not declined do
+      task.wait(1)
+    end
+    ev:Disconnect()
+    if declined then 
+      return "declined"
+    end
+    if not UIManager.is_visible("TradeApp") or os.clock() > deadline then
+      return "No response"
+    end
+    return true  
+  end 
 
   local function PetUpdate()
     local wrapper = ClientData.get("pet_char_wrappers")[1]
@@ -3416,24 +3441,23 @@ end
         local _opened = 0
         if not _G.InternalConfig.SpecificGiftsToOpen then
           for k,v in pairs(GetOwnedCategory("gifts")) do
-            local r = v.remote:lower()
             safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
             safeInvoke("ShopAPI/OpenGift", k)
+            _opened += 1
           end
-        else
-          if k == "chests" then
-            for k,v in pairs(GetOwnedCategory("gifts")) do
-              local r = v.remote:lower()
-              safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
+        end
+        if k == "chests" then
+          for k,v in pairs(GetOwnedCategory("gifts")) do
+            local r = v.remote:lower()
+            safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
+            _opened += 1
+          end
+        end
+        if k == "Massive Gift" or k == "Big Gift" or k == "Small Gift" then
+          for k,v in pairs(GetOwnedCategory("gifts")) do
+            if (k == "Massive Gift" and v.id == "massivegift") or (k == "Big Gift" and v.id == "biggift") or (k == "Small Gift" and v.id == "smallgift") then
+              safeInvoke("ShopAPI/OpenGift", k)
               _opened += 1
-            end
-          end
-          if k == "Massive Gift" or k == "Big Gift" or k == "Small Gift" then
-            for k,v in pairs(GetOwnedCategory("gifts")) do
-              if (k == "Massive Gift" and v.id == "massivegift") or (k == "Big Gift" and v.id == "biggift") or (k == "Small Gift" and v.id == "smallgift") then
-                safeInvoke("ShopAPI/OpenGift", k)
-                _opened += 1
-              end
             end
           end
         end
@@ -4234,6 +4258,7 @@ end
     if v then
       if PlayerTradeWithTextField.CurrentValue:match("^%s*$") then
         GUI.ToggleButtonSetValue(AutoTradeToggleButton, false)
+        GUI.Notify("Warning", "Set <Player Trade With> at first", "WARNING", "triangle-alert")
         return
       end
       Cooldown.AutoTrade.NextTradeAfter = 0
