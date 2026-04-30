@@ -271,6 +271,20 @@ local _script = coroutine.create(function()
     [4] = "ultra_rare",
     [5] = "legendary",
   }
+  local PetRarities = {
+    ["common"] = "common",
+    ["uncommon"] = "uncommon",
+    ["rare"] = "rare",
+    ["legendary"] = "legendary",
+  }
+  local PetAges = {
+    ["newborn"] = 1,
+    ["junior"] = 2,
+    ["pre-teen"] = 3,
+    ["teen"] = 4,
+    ["post-teen"] = 5,
+    ["fullgrown"] = 6,
+  }
   local parts = {
     ["main"] = {0,100,0},
     ["_camp"] = {-25, 30, -1054},
@@ -325,6 +339,8 @@ local _script = coroutine.create(function()
     total_money = 0,
     total_eggs_bought = 0,
     total_gifts_bought = 0,  
+    unsuccessful_trades = 0,
+    successful_trades = 0,
     agp = {
       age_potions_used = 0,
       tiny_age_potions_used = 0,
@@ -338,13 +354,6 @@ local _script = coroutine.create(function()
       ["_camp"] = {-25, 30, -1054},
       ["_playground"] = {-387, 31, -1750},
       ["_beach"] = {-670, 37, -1413},
-  }
-  local GiftsHelper = {
-    ["all"] = "all",
-    ['Small Gift'] = "smallgift",
-    ["Big Gift"] = "biggift",
-    ["Massive Gift"] = "massivegift",
-    ["Chests"] = "chests"
   }
   local NotifyDuration = {
     WARNING = 4,
@@ -1426,7 +1435,7 @@ end
     return { _age, _tiny }
   end
   local function send_trade_request(user)  
-    safeFire("TradeAPI/SendTradeRequest", game.Players[user])
+    SafeFire("TradeAPI/SendTradeRequest", game.Players[user])
     WriteConsoleLog(string.format("Trade reuqest to %s sent", user), string.format("⚙️ Trade request to %s sent!", user), "DEBUG")
     WriteFileLog(string.format("Trade reuqest to %s sent", user), "DEBUG")
     GUI.Notify("Info", "Trade request to user sent!", "INFO", "info")
@@ -3796,8 +3805,8 @@ end
       return
     end
     _G.InternalConfig.RecyclerDLib.BlacklistedSRarities = {}
-    for _, v in v do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSRarities[v] = true
+    for _, v in ipairs(v) do
+      _G.InternalConfig.RecyclerDLib.BlacklistedSRarities[PetRarities[v]] = true
     end
   end
   
@@ -3809,8 +3818,8 @@ end
       return
     end
     _G.InternalConfig.RecyclerDLib.BlacklistedSAges = {}
-    for _,v in pairs(v) do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSAges[v] = true
+    for _,v in ipairs(v) do
+      _G.InternalConfig.RecyclerDLib.BlacklistedSAges[PetAges[v]] = true
     end
   end
   
@@ -3822,7 +3831,7 @@ end
       return
     end
     _G.InternalConfig.RecyclerDLib.BlacklistedSProperties = {}
-    for _,v in pairs(v) do
+    for _,v in ipairs(v) do
       _G.InternalConfig.RecyclerDLib.BlacklistedSProperties[v] = true
     end
   end
@@ -3835,7 +3844,7 @@ end
       return
     end
     _G.InternalConfig.RecyclerDLib.BlacklistedSpecificPets = {}
-    for _,v in pairs(v) do
+    for _,v in ipairs(v) do
       _G.InternalConfig.RecyclerDLib.BlacklistedSpecificPets[v] = true
     end
   end
@@ -4202,8 +4211,8 @@ end
       return
     end
     _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities = {}
-    for _,v in pairs(v) do
-      _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities[v] = true
+    for _,v in ipairs(v) do
+      _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities[PetRarities[v]] = true
     end
   end
 
@@ -4215,8 +4224,8 @@ end
       return
     end
     _G.InternalConfig.AutoGivePotionDLib.BlacklistedAges = {}
-    for _,v in pairs(v) do
-      _G.InternalConfig.AutoGivePotionDLib.BlacklistedAges[v] = true
+    for _,v in ipairs(v) do
+      _G.InternalConfig.AutoGivePotionDLib.BlacklistedAges[PetAges[v]] = true
     end
   end
   
@@ -4228,7 +4237,7 @@ end
       return
     end
     _G.InternalConfig.AutoGivePotionDLib.BlacklistedProperties = {}
-    for _,v in pairs(v) do
+    for _,v in ipairs(v) do
       _G.InternalConfig.AutoGivePotionDLib.BlacklistedProperties[v] = true
     end
   end
@@ -4241,7 +4250,7 @@ end
       return
     end
     _G.InternalConfig.AutoGivePotionDLib.BlacklistedSpecificPets = {}
-    for _,v in pairs(v) do
+    for _,v in ipairs(v) do
       _G.InternalConfig.AutoGivePotionDLib.BlacklistedSpecificPets[v] = true
     end
   end
@@ -4278,10 +4287,14 @@ end
                 pets_to_send[k] = true
                 continue
               end
-              if TradePriorityDropdown.CurrentOption == "eggs" and not (v.name:lower()):match("egg") then
-                continue
-              elseif TradePriorityDropdown.CurrentOption == "pets" and (v.name:lower()):match("egg") then
-                continue
+              if TradePriorityDropdown.CurrentOption == "eggs" then
+                if not (v.name:lower()):match("egg") then
+                  continue
+                end
+              elseif TradePriorityDropdown.CurrentOption == "pets" then
+                if (v.name:lower()):match("egg") then 
+                  continue
+                end
               end
               if _G.InternalConfig.TradeDLib.BlacklistedRarities and _G.InternalConfig.TradeDLib.BlacklistedRarities[v.rarity] then
                 continue
@@ -4321,15 +4334,11 @@ end
           end
           local r = send_trade_request(user)
           if r == "No response" then
-            WriteConsoleLog(string.format("[AutoTrade]: No response from: {%s}", user), string.format("[🔄]:[‼️] No response from: %s", user), "DEBUG")
-            WriteFileLog(string.format("[AutoTrade]: No response from: {%s}", user), "DEBUG")
             GUI.Notify("Warning", string.format("No response from: %s", user), "WARNING", "triangle-alert")
             Cooldown.AutoTrade.NextTradeAfter = tonumber(TradeFallbackDelayTextField.CurrentValue) or 40
             return
           elseif r == "declined" then
-            WriteConsoleLog(string.format("[AutoTrade]: Trade declined by {%s}", user), string.format("[🔄]:[‼️] Trade declined by", user), "DEBUG")
-            WriteFileLog(string.format("[AutoTrade]: Trade declined by {%s}", user), "DEBUG")
-            GUI.Notify("Warning", string.format("Trade declined by %s", user), "WARNING", "triangle-alert")
+            GUI.Notify("Warning", string.format("%s declined trade request", user), "WARNING", "triangle-alert")
             Cooldown.AutoTrade.NextTradeAfter = tonumber(TradeFallbackDelayTextField.CurrentValue) or 40
             return 
           end
@@ -4469,9 +4478,11 @@ end
     if not ok then
       GUI.TextFieldSetValue(PlayerTradeWithTextField, "")
       GUI.Notify("Warning", "User with specified name not exists", "WARNING", "triangle-alert")
-      WriteConsoleLog(string.format("[Auto Trade]: User with specified name: {%s} not exists", v), nil, "ERROR")
-      WriteFileLog(string.format("[Auto Trade]: User with specified name: {%s} not exists", v), "ERROR")
       return
+    end
+    if v == LocalPlayer.Name then
+      GUI.TextFieldSetValue(PlayerTradeWithTextField, "")
+      GUI.Notify("Warning", "You are trying to trade with yourself?...", "WARNING", "triangle-alert")
     end
   end
 
@@ -4575,8 +4586,8 @@ end
       return
     end
     _G.InternalConfig.TradeDLib.BlacklistedRarities = {}
-    for _,v in pairs(v) do
-      _G.InternalConfig.TradeDLib.BlacklistedRarities[v] = true
+    for _,v in ipairs(v) do
+      _G.InternalConfig.TradeDLib.BlacklistedRarities[PetRarities[v]] = true
     end
   end 
 
@@ -4588,8 +4599,8 @@ end
       return
     end
     _G.InternalConfig.TradeDLib.BlacklistedAges = {}
-    for _,v in pairs(v) do
-      _G.InternalConfig.TradeDLib.BlacklistedAges[v] = true
+    for _,v in ipairs(v) do
+      _G.InternalConfig.TradeDLib.BlacklistedAges[PetAges[v]] = true
     end
   end 
 
@@ -4601,7 +4612,7 @@ end
       return
     end
     _G.InternalConfig.TradeDLib.BlacklistedProperties = {}
-    for _,v in pairs(v) do
+    for _,v in ipairs(v) do
       _G.InternalConfig.TradeDLib.BlacklistedProperties[v] = true
     end
   end 
@@ -4614,7 +4625,7 @@ end
       return
     end
     _G.InternalConfig.TradeDLib.BlacklistedSpecificPets = {}
-    for _,v in pairs(v) do
+    for _,v in ipairs(v) do
       _G.InternalConfig.TradeDLib.BlacklistedSpecificPets[v] = true
     end
   end
