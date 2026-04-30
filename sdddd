@@ -671,8 +671,7 @@ local _script = coroutine.create(function()
     end
     Registry.DisposableTasks[_flag] = {["_flag"] = _flag, ["_callback"] = callback}
     task.spawn(function() 
-      -- local ok, _ = pcall(callback)
-      v.callback()
+      local ok, _ = pcall(callback)
       if not ok then
         WriteConsoleLog(string.format("[Registry]: Disposable task crashed. _flag: {%s} : {%s}", _flag, (debug.info(callback, "l") or tostring(callback))), nil, "DEBUG")
         WriteFileLog(string.format("[Registry]: Disposable task crashed. _flag: {%s} : {%s}", _flag, (debug.info(callback, "l") or tostring(callback))), "DEBUG")
@@ -694,7 +693,8 @@ local _script = coroutine.create(function()
           WriteConsoleLog(string.format("[Registry]: Task condition reached. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), nil, "DEBUG")
           WriteFileLog(string.format("[Registry]: Task condition reached. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), "DEBUG")
           task.spawn(function() 
-            local ok, _ = pcall(v._callback)
+            -- local ok, _ = pcall(v._callback)
+            v._callback()
             if not ok then
               WriteConsoleLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), nil, "DEBUG")
               WriteFileLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), "DEBUG")
@@ -1426,7 +1426,7 @@ end
     return { _age, _tiny }
   end
   local function send_trade_request(user)  
-    safeFire("TradeAPI/SendTradeRequest", game.Players[user])
+    SafeFire("TradeAPI/SendTradeRequest", game.Players[user])
     WriteConsoleLog(string.format("Trade reuqest to %s sent", user), string.format("⚙️ Trade request to %s sent!", user), "DEBUG")
     WriteFileLog(string.format("Trade reuqest to %s sent", user), "DEBUG")
     GUI.Notify("Info", "Trade request to user sent!", "INFO", "info")
@@ -4469,9 +4469,11 @@ end
     if not ok then
       GUI.TextFieldSetValue(PlayerTradeWithTextField, "")
       GUI.Notify("Warning", "User with specified name not exists", "WARNING", "triangle-alert")
-      WriteConsoleLog(string.format("[Auto Trade]: User with specified name: {%s} not exists", v), nil, "ERROR")
-      WriteFileLog(string.format("[Auto Trade]: User with specified name: {%s} not exists", v), "ERROR")
       return
+    end
+    if v == LocalPlayer.Name then
+      GUI.TextFieldSetValue(PlayerTradeWithTextField, "")
+      GUI.Notify("Warning", "You are trying to trade with yourself?...", "WARNING", "triangle-alert")
     end
   end
 
