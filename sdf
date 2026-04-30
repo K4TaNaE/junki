@@ -5250,10 +5250,6 @@ end
     local _rep = {}
     local owned = GetOwnedPets()
     for k,v in pairs(owned) do
-      if not _rep[v.id] then
-        _rep[v.id] = true 
-        -- insert not repeatable
-      end
       table.insert(trade_specified_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(recycler_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
