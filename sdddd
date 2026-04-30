@@ -275,6 +275,7 @@ local _script = coroutine.create(function()
     ["common"] = "common",
     ["uncommon"] = "uncommon",
     ["rare"] = "rare",
+    ["ultra-rare"] = "ultra_rare"
     ["legendary"] = "legendary",
   }
   local PetAges = {
@@ -4281,15 +4282,15 @@ end
         local confirmed = false
         if game.Players:FindFirstChild(user) then
           local owned_pets = GetOwnedPets()
-          for k,v in owned_pets do
+          for k,v in pairs(owned_pets) do
             if v.remote ~= "practice_dog" then
               if _G.InternalConfig.TradeDLib.TradeFarmed and StateDB.total_fullgrowned[k] then
                 pets_to_send[k] = true
                 continue
               end
-              if TradePriorityDropdown.CurrentOption == "eggs" and not (v.name:lower()):match("egg") then
+              if table.unpack(TradePriorityDropdown.CurrentOption) == "eggs" and not (v.name:lower()):match("egg") then
                 continue
-              elseif TradePriorityDropdown.CurrentOption == "pets" and (v.name:lower()):match("egg") then
+              elseif table.unpack(TradePriorityDropdown.CurrentOption) == "pets" and (v.name:lower()):match("egg") then
                 continue
               end
               if _G.InternalConfig.TradeDLib.BlacklistedRarities and _G.InternalConfig.TradeDLib.BlacklistedRarities[v.rarity] then
@@ -4330,15 +4331,11 @@ end
           end
           local r = send_trade_request(user)
           if r == "No response" then
-            WriteConsoleLog(string.format("[AutoTrade]: No response from: {%s}", user), string.format("[🔄]:[‼️] No response from: %s", user), "DEBUG")
-            WriteFileLog(string.format("[AutoTrade]: No response from: {%s}", user), "DEBUG")
             GUI.Notify("Warning", string.format("No response from: %s", user), "WARNING", "triangle-alert")
             Cooldown.AutoTrade.NextTradeAfter = tonumber(TradeFallbackDelayTextField.CurrentValue) or 40
             return
           elseif r == "declined" then
-            WriteConsoleLog(string.format("[AutoTrade]: Trade declined by {%s}", user), string.format("[🔄]:[‼️] Trade declined by", user), "DEBUG")
-            WriteFileLog(string.format("[AutoTrade]: Trade declined by {%s}", user), "DEBUG")
-            GUI.Notify("Warning", string.format("Trade declined by %s", user), "WARNING", "triangle-alert")
+            GUI.Notify("Warning", string.format("%s declined trade request", user), "WARNING", "triangle-alert")
             Cooldown.AutoTrade.NextTradeAfter = tonumber(TradeFallbackDelayTextField.CurrentValue) or 40
             return 
           end
