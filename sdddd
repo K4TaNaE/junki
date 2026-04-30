@@ -693,11 +693,12 @@ local _script = coroutine.create(function()
           WriteConsoleLog(string.format("[Registry]: Task condition reached. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), nil, "DEBUG")
           WriteFileLog(string.format("[Registry]: Task condition reached. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), "DEBUG")
           task.spawn(function() 
-            local ok, _ = pcall(v._callback)
+            -- local ok, _ = pcall(v._callback)
+            v._callback()
             if not ok then
               WriteConsoleLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), nil, "DEBUG")
               WriteFileLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), "DEBUG")
-              pcall(v._fallback)
+              -- pcall(v._fallback)
             end
           end)
         end
@@ -5281,12 +5282,12 @@ end
     end
     for k,v in pairs(__neon_temp) do
       if v >= 4 then
-        table.insert(neon, GetNameFromRemote(k))
+        table.insert(neon, GetNameFromRemote("pets", k))
       end
     end
     for k,v in pairs(__meganeon_temp) do
       if v >= 4 then
-        table.insert(meganeon, GetNameFromRemote(k))
+        table.insert(meganeon, GetNameFromRemote("pets", k))
       end
     end
     if pets_to_give_potion then
