@@ -5281,12 +5281,12 @@ end
     end
     for k,v in pairs(__neon_temp) do
       if v >= 4 then
-        table.insert(neon, GetNameFromRemote(k))
+        table.insert(neon, GetNameFromRemote("pets", k))
       end
     end
     for k,v in pairs(__meganeon_temp) do
       if v >= 4 then
-        table.insert(meganeon, GetNameFromRemote(k))
+        table.insert(meganeon, GetNameFromRemote("pets", k))
       end
     end
     if pets_to_give_potion then
