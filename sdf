@@ -671,7 +671,8 @@ local _script = coroutine.create(function()
     end
     Registry.DisposableTasks[_flag] = {["_flag"] = _flag, ["_callback"] = callback}
     task.spawn(function() 
-      local ok, _ = pcall(callback)
+      -- local ok, _ = pcall(callback)
+      v._callback()
       if not ok then
         WriteConsoleLog(string.format("[Registry]: Disposable task crashed. _flag: {%s} : {%s}", _flag, (debug.info(callback, "l") or tostring(callback))), nil, "DEBUG")
         WriteFileLog(string.format("[Registry]: Disposable task crashed. _flag: {%s} : {%s}", _flag, (debug.info(callback, "l") or tostring(callback))), "DEBUG")
@@ -1426,7 +1427,6 @@ end
   end
   local function send_trade_request(user)  
     safeFire("TradeAPI/SendTradeRequest", game.Players[user])
-    print("⚙️ Trade request to user sent!")
     WriteConsoleLog(string.format("Trade reuqest to %s sent", user), string.format("⚙️ Trade request to %s sent!", user), "DEBUG")
     WriteFileLog(string.format("Trade reuqest to %s sent", user), "DEBUG")
     GUI.Notify("Info", "Trade request to user sent!", "INFO", "info")
@@ -4271,7 +4271,6 @@ end
         local pets_to_send = {}
         local confirmed = false
         if game.Players:FindFirstChild(user) then
-          GUI.Notify("Info", string.format("Player %s located", user), "INFO", "loader")
           local owned_pets = GetOwnedPets()
           for k,v in owned_pets do
             if v.remote ~= "practice_dog" then
