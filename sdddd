@@ -323,6 +323,7 @@ local _script = coroutine.create(function()
   local HouseClient = loader("HouseClient")
   local PetActions = loader("PetActions")
   local StateManagerClient = loader("StateManagerClient")
+  local Calculator = require(ReplicatedStorage.new.modules.PetRecycler.PetRecyclerCalculator)
   local AilmentsDB = require(ReplicatedStorage.new.modules.Ailments.AilmentsDB)
   local LiveOpsTime = loader("LiveOpsTime")
   local HttpService = game:GetService("HttpService")
@@ -1632,16 +1633,16 @@ end
   --done
   GUI.InitSection(AutofarmTab, "- Auto Neon -")
   GUI.InitButton(AutofarmTab, "Make Pets Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetNeon)
-  local PetToNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Neon", {}, {""}, true, "pettoneondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon(v) end)
+  local PetToNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Neon", {}, {}, true, "pettoneondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon(v) end)
   GUI.InitSection(AutofarmTab, "- Auto Mega Neon -")
   GUI.InitButton(AutofarmTab, "Make Pets Mega Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon)
-  local PetToMegaNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Mega Neon", {}, {""}, true, "pettomeganeondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon(v) end)
+  local PetToMegaNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Mega Neon", {}, {}, true, "pettomeganeondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon(v) end)
   
   GUI.InitSection(AutofarmTab, "- Auto Give Potion -") -- done
   local AutoGivePotionToggleButton = GUI.InitToggleButton(AutofarmTab, "Auto Give Potion", false, "autogivepotiontogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleAutoGivePotion(v) end)
   local AutoGivePotionModeDropdown = GUI.InitDropdown(AutofarmTab, "Mode", {"automated", "manual"}, {"automated"}, false, "autogivepotionmodedropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionMode(v) end)
   GUI.InitDivider(AutofarmTab)
-  local AutoGivePotionSetHigherPriorityForDropdown = GUI.InitDropdown(AutofarmTab, "Set Higher Priority For (optional)", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "autogivepotionsethigherpriorityfordropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionHigherPriority(v) end)
+  local AutoGivePotionSetHigherPriorityForDropdown = GUI.InitDropdown(AutofarmTab, "Set Higher Priority For (optional)", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionsethigherpriorityfordropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionHigherPriority(v) end)
   local AutoGivePotionPetToGivePotionDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Give Potion", {}, {"set <Mode> to manual"}, true, "autogivepotionpettogivepotiondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToGivePotion(v) end)
   GUI.InitDivider(AutofarmTab)
   local AutoGivePotionBlacklistedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedRarities(v) end)
@@ -1744,8 +1745,8 @@ end
   local TelegramWebhookSendDelayTextField = GUI.InitTextField(WebhooksTab, "Send delay (secconds)", "3600", "", false, "telegramwebhooksenddelaytextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramSendDelay(v) end)
   GUI.InitButton(WebhooksTab, "Send now manually", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually(v) end)
   GUI.InitDivider(WebhooksTab)
-  local TelegramBotApiKeyTextField = GUI.InitTextField(WebhooksTab, "Bot API Key", "", "", false, "telegrambotapikeytextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramBotApiKey(v) end)
-  local TelegramChatIdTextField = GUI.InitTextField(WebhooksTab, "Chat Id", "", "", false, "telegramchatidtextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramChatId(v) end)
+  local TelegramBotApiKeyTextField = GUI.InitTextField(WebhooksTab, "Bot API Key", "", "                          ", false, "telegrambotapikeytextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramBotApiKey(v) end)
+  local TelegramChatIdTextField = GUI.InitTextField(WebhooksTab, "Chat Id", "", "                   ", false, "telegramchatidtextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramChatId(v) end)
   GUI.InitDivider(WebhooksTab)
   local TelegramWebhookSendCountdownLabel = GUI.InitLabel(WebhooksTab, "3600 : Send Countdown", "clock", Color3.fromRGB(203, 92, 255), false)
   GUI.InitSection(WebhooksTab, "")
@@ -3121,7 +3122,7 @@ end
     WriteFileLog("Pet auto farm triggered", "DEBUG")
     if v then
       Cooldown.AutoFarm.PetAutoFarm = 0
-      if table.unpack(PetAutoFarmFarmTypeDropdown.CurrentValue) == "automated" then
+      if table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) == "automated" then
         Registry.RegisterTask("automated_pet_auto_farm_handler", __init_automated_pet_farm,
         function()
           return Cooldown.AutoFarm.PetAutoFarm == 0
@@ -3246,7 +3247,7 @@ end
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetToFarm = function(v) 
     WriteConsoleLog("Pet to farm triggered", nil, "DEBUG")
     WriteFileLog("Pet to farm triggered", "DEBUG")  
-    if v[1]:match("set <Farm Type> to manual") or #v == 0 then
+    if #v == 0 or v[1]:match("set <Farm Type> to manual") then
       _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = nil
       return
     end
@@ -4180,7 +4181,7 @@ end
     if mode == "manual" then
       GUI.ToggleButtonSetValue(AutoGivePotionToggleButton, false)
       GUI.DropdownUpdateOptionList(AutoGivePotionSetHigherPriorityForDropdown, {})
-      GUI.DropdownSetValue(AutoGivePotionSetHigherPriorityForDropdown, {"Set <Mode> to automated"})
+      GUI.DropdownSetValue(AutoGivePotionSetHigherPriorityForDropdown, {"set <Mode> to automated"})
       InstantListPetToGivePotion()
       _G.pets_to_give_potion_should_be_updated = true
     else
@@ -4188,7 +4189,7 @@ end
       GUI.DropdownUpdateOptionList(AutoGivePotionSetHigherPriorityForDropdown, {"common", "uncommon", "rare", "ultra-rare", "legendary"})
       GUI.DropdownSetValue(AutoGivePotionSetHigherPriorityForDropdown, {})
       GUI.DropdownUpdateOptionList(AutoGivePotionPetToGivePotionDropdown, {})
-      GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, {"Set <Mode> to manual"})
+      GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, {"set <Mode> to manual"})
       _G.pets_to_give_potion_should_be_updated = false
     end
   end
@@ -4196,7 +4197,7 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionHigherPriority = function(v)
     WriteConsoleLog("Set higher priority triggered", nil, "DEBUG")
     WriteFileLog("Set higher priority triggered", "DEBUG")
-    if table.unpack(v):match("Set <Mode> to automated") or #v == 0 then
+    if #v == 0 or v[1]:match("set <Mode> to automated") then
       _G.InternalConfig.AutoGivePotionDLib.HigherPriority = nil
       return
     end 
@@ -4209,7 +4210,7 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToGivePotion = function(v)
     WriteConsoleLog("Set higher priority triggered", nil, "DEBUG")
     WriteFileLog("Set higher priority triggered", "DEBUG")
-    if v[1]:match("Set <Mode> to manual") or #v == 0 then
+    if #v == 0 or v[1]:match("set <Mode> to manual") then
       _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion = nil
       return
     end
@@ -5309,9 +5310,9 @@ end
       GUI.Notify("Warning", "Invalid bot API key: " .. desc .. string.format(". Setting value to {%s}", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
       GUI.TextFieldSetValue(TelegramBotApiKeyTextField, _G.InternalConfig.TelegramBotApi or "") 
 	  else
-      _G.InternalConfig.TelegramBotApi = table.unpack(v)
-      WriteConsoleLog(string.format("Telegram bot API key is valid: {%s}", table.unpack(v)), "[+] Telegram bot API key is valid.", "DEBUG")
-      WriteFileLog(string.format("Telegram bot API key is valid: {%s}", table.unpack(v)), "DEBUG")
+      _G.InternalConfig.TelegramBotApi = v
+      WriteConsoleLog(string.format("Telegram bot API key is valid: {%s}", v), "[+] Telegram bot API key is valid.", "DEBUG")
+      WriteFileLog(string.format("Telegram bot API key is valid: {%s}", v), "DEBUG")
       GUI.Notify("Info", "Telegram bot API key is valid.", "INFO", "mail-plus")
     end
   end
@@ -5349,8 +5350,9 @@ end
 		  data = HttpService:JSONDecode(res.Body)
 		end)
 		if data.ok == true then
-      WriteConsoleLog("Telegram chat id is valid", "[+] Telegram chat id is valid.", "DEBUG")
-      WriteFileLog("Telegram chat id is valid", "DEBUG")
+      WriteConsoleLog(string.format("Telegram chat id is valid: {%s}", v), "[+] Telegram chat id is valid.", "DEBUG")
+      WriteFileLog(string.format("Telegram chat id is valid: {%s}", v), "DEBUG")
+      GUI.Notify("Info", "Telegram chat id is valid.", "INFO", "mail-plus")
 		  _G.InternalConfig.TelegramChatId = v
 		end
 		if data.ok ~= true then
