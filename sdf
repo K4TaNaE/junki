@@ -122,10 +122,10 @@ local _script = coroutine.create(function()
               HandleAutoGivePotionMode = function() end,
               HandleAutoGivePotionHigherPriority = function() end,
               HandlePetToGivePotion = function() end,
-              AutoGivePotionBlacklistedSpecificRarities = function() end,
-              AutoGivePotionBlacklistedSpecificAges = function() end,
-              AutoGivePotionBlacklistedSpecificProperties = function() end,
-              AutoGivePotionBlacklistedSpecificPets = function() end,
+              HandleAutoGivePotionBlacklistedSpecificRarities = function() end,
+              HandleAutoGivePotionBlacklistedSpecificAges = function() end,
+              HandleAutoGivePotionBlacklistedSpecificProperties = function() end,
+              HandleAutoGivePotionBlacklistedSpecificPets = function() end,
               HandlePetPenBlacklistedRarities = function() end,
               HandlePetPenBlacklistedAges = function() end,
               HandlePetPenBlacklistedProperties = function() end,
@@ -1393,7 +1393,7 @@ end
   local function get_potions() 
     local big = {}
     local tiny = {}
-    for k,v in pairs(get_owned_category("food")) do
+    for k,v in pairs(GetOwnedCategory("food")) do
     if (v.remote:lower()):match("tiny_pet_age_potion") then
       tiny[k] = true
     elseif (v.remote:lower()):match("pet_age_potion") then
@@ -1645,10 +1645,10 @@ end
   local AutoGivePotionSetHigherPriorityForDropdown = GUI.InitDropdown(AutofarmTab, "Set Higher Priority For (optional)", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionsethigherpriorityfordropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionHigherPriority(v) end)
   local AutoGivePotionPetToGivePotionDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Give Potion", {}, {"set <Mode> to manual"}, true, "autogivepotionpettogivepotiondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToGivePotion(v) end)
   GUI.InitDivider(AutofarmTab)
-  local AutoGivePotionBlacklistedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedRarities(v) end)
-  local AutoGivePotionBlacklistedAgeDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {}, true, "autogivepotionblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedAges(v) end)
-  local AutoGivePotionBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedProperties(v) end)
-  local AutoGivePotionBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {}, true, "autogivepotionblacklistedspecificpetsdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedSpecificPets(v) end)
+  local AutoGivePotionBlacklistedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedRarities(v) end)
+  local AutoGivePotionBlacklistedAgeDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {}, true, "autogivepotionblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedAges(v) end)
+  local AutoGivePotionBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedProperties(v) end)
+  local AutoGivePotionBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {}, true, "autogivepotionblacklistedspecificpetsdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedSpecificPets(v) end)
   GUI.InitDivider(AutofarmTab)
 
   local AutoGivePotionAgePotionsUsedLabel = GUI.InitLabel(AutofarmTab, "0 : Age Potions Used", "coffee", Color3.fromRGB(203, 92, 255), false)
@@ -2768,7 +2768,7 @@ end
           local found = false
           for _,r in ipairs(Rarities) do
             for k,v in pairs(owned_pets) do
-              if v.remote ~= "practice_dog" and v.rarity == r and v.age < 6 and not _G.InternalConfig.PetFarmDLib.PetsToExclude[v.remote] and not (v.name:lower()):match("egg") then
+              if v.remote ~= "practice_dog" and v.rarity == r and v.age < 6 and not _G.InternalConfig.PetFarmDLib.PetsToExclude[k] and not (v.name:lower()):match("egg") then
                 SafeInvoke("ToolAPI/Equip",
                   k,
                   {
@@ -2904,8 +2904,8 @@ end
           return
         end
         if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm and _G.InternalConfig.PetFarmDLib.random_farm then
-            print("⚙️ Opposite farm disabled.")
-            _G.InternalConfig.PetFarmDLib.random_farm = false
+          print("⚙️ Opposite farm disabled.")
+          _G.InternalConfig.PetFarmDLib.random_farm = false
         end
         if flag then 
           task.wait(1)
@@ -3766,36 +3766,37 @@ end
             end
           end
         local val = (value + (ClientData.get("pet_recycler_manager").saved_points or 0)) 
-          if val >= 4500 then 
-            local _task = LocationQueue.Enqueue(function()
-              emulate_location("Nursery")
-            end)
-            while not _task.started do
-              task.wait(.2)
+        if val >= 4500 then 
+          local _task = LocationQueue.Enqueue(function()
+            emulate_location("Nursery")
+          end)
+          while not _task.started do
+            task.wait(.2)
+          end
+          if not ClientData.get("pet_recycler_manager").timestamp then
+            SafeInvoke("HousingAPI/ActivateInteriorFurniture",
+              "f-9",
+              "UseBlock",
+              {
+                action = "use",
+                uniques = pets_to_exchange
+              },
+              LocalPlayer.Character
+            )
+            LocationQueue.Complete(_task)
+            task.wait(1)
+            local tmps = ClientData.get("pet_recycler_manager").timestamp
+            local ok, tms = pcall(LiveOpsTime.get_time_until, tmps)
+            if not ok or not tms then 
+              tms = 300
             end
-            if not ClientData.get("pet_recycler_manager").timestamp then
-              SafeInvoke("HousingAPI/ActivateInteriorFurniture",
-                "f-9",
-                "UseBlock",
-                {
-                  action = "use",
-                  uniques = pets_to_exchange
-                },
-                LocalPlayer.Character
-              )
-              LocationQueue.Complete(_task)
-              task.wait(1)
-              local tmps = ClientData.get("pet_recycler_manager").timestamp
-              local ok, tms = pcall(LiveOpsTime.get_time_until, tmps)
-              if not ok or not tms then 
-                tms = 300
-              end
-              Cooldown.AutoFarm.PetRecycler = tms + 5
-              return
-            end
+            Cooldown.AutoFarm.PetRecycler = tms + 5
+            return
+          end
         else 
           WriteConsoleLog(string.format("Not enough points to use pet recycler (%d of 4500). Next try in [300]s", val), string.format("[♻️]:[❌] Not enough points to use pet recycler (%d of 4500). Next try in [300]s.", val), "DEBUG")
           WriteFileLog(string.format("Not enough points to use pet recycler (%d of 4500). Next try in [300]s", val), "DEBUG")
+          GUI.Notify("Info", string.format("Not enough points to use pet recycler (%d of 4500). Next try in [300]s.", val), "INFO", "info")
           Cooldown.AutoFarm.PetRecycler = 300 
           return
         end
@@ -4220,7 +4221,7 @@ end
     end    
   end
   
-  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedSpecificRarities = function(v)
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedRarities = function(v)
     WriteConsoleLog("Blacklisted rarities triggered", nil, "DEBUG")
     WriteFileLog("Blacklisted rarities triggered", "DEBUG")
     if count(v) == 0 then
@@ -4233,7 +4234,7 @@ end
     end
   end
 
-  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedSpecificAges = function(v)
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedAges = function(v)
     WriteConsoleLog("Blacklisted ages triggered", nil, "DEBUG")
     WriteFileLog("Blacklisted ages triggered", "DEBUG")
     if count(v) == 0 then
@@ -4246,7 +4247,7 @@ end
     end
   end
   
-  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedSpecificProperties = function(v)
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedProperties = function(v)
     WriteConsoleLog("Blacklisted properties triggered", nil, "DEBUG")
     WriteFileLog("Blacklisted properties triggered", "DEBUG")
     if count(v) == 0 then
@@ -4259,7 +4260,7 @@ end
     end
   end
 
-  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedSpecificSpecificPets = function(v)
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedSpecificPets = function(v)
     WriteConsoleLog("Blacklisted specific pets triggered", nil, "DEBUG")
     WriteFileLog("Blacklisted specific pets triggered", "DEBUG")
     if count(v) == 0 then
@@ -5443,7 +5444,6 @@ end
       saved_pet_to_manual_farm = {}
     end
 
-    local saved_pet_pen_specific_pets = {}
     local pet_farm_exclude_pets = {}
 
     local __neon_temp = {}
