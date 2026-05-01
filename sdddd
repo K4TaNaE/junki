@@ -126,6 +126,15 @@ local _script = coroutine.create(function()
               AutoGivePotionBlacklistedSpecificAges = function() end,
               AutoGivePotionBlacklistedSpecificProperties = function() end,
               AutoGivePotionBlacklistedSpecificPets = function() end,
+              HandlePetPenBlacklistedRarities = function() end,
+              HandlePetPenBlacklistedAges = function() end,
+              HandlePetPenBlacklistedProperties = function() end,
+              HandlePetPenBlacklistedSpecificPets = function() end,
+              HandlePetPenUsePriority = function() end,
+              TogglePetPen = function() end,
+              HandlePetPenPrioritizedRarities = function() end,
+              TogglePetPenStealable = function() end,
+              ToggleJustAutoCollectProgression = function() end,
             }
           }
         }
@@ -275,7 +284,7 @@ local _script = coroutine.create(function()
     ["common"] = "common",
     ["uncommon"] = "uncommon",
     ["rare"] = "rare",
-    ["ultra-rare"] = "ultra_rare"
+    ["ultra-rare"] = "ultra_rare",
     ["legendary"] = "legendary",
   }
   local PetAges = {
@@ -293,7 +302,7 @@ local _script = coroutine.create(function()
     ["_beach"] = {-670, 37, -1413},
   }
   local furn = {}
-  _G.InternalConfig = {PetFarmDLib = {}, TradeDLib = {}, RecyclerDLib = {}, AutoGivePotionDLib = {}}
+  _G.InternalConfig = {PetFarmDLib = {}, TradeDLib = {}, RecyclerDLib = {}, AutoGivePotionDLib = {}, PetPenDLib = {}}
   _G.HeadCashed = nil
   _G.mystery = false
   local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -357,10 +366,10 @@ local _script = coroutine.create(function()
       ["_beach"] = {-670, 37, -1413},
   }
   local NotifyDuration = {
-    WARNING = 4,
-    INFO = 5,
+    WARNING = 7,
+    INFO = 6,
     SUCCESS = 6,
-    ERROR = 6,
+    ERROR = 8,
   }
   local Theme ={
     TextColor = Color3.fromRGB(240, 230, 255),
@@ -406,7 +415,7 @@ local _script = coroutine.create(function()
     
   local function WriteConsoleLog(debug, default :string|nil, status)
     if _G.InternalConfig.ConsoleLogs then 
-      print(string.format("[# %s | %s | %s | %s #]", status, os.date("%d.%m.%Y"), os.date("%H:%M:%S"), debug))
+      print(string.format("[# %s | %s | %s | %s. #]", status, os.date("%d.%m.%Y"), os.date("%H:%M:%S"), debug))
     else
       if default then
         print(default)
@@ -416,7 +425,7 @@ local _script = coroutine.create(function()
   
   local function WriteFileLog(debug, status)
     if _G.InternalConfig.FileLogs then
-      appendfile("Arcanic/logs.txt", string.format("[# %s | %s | %s | %s #]", status, os.date("%d.%m.%Y"), os.date("%H:%M:%S"), debug))
+      appendfile("Arcanic/logs.txt", string.format("[# %s | %s | %s | %s. #]", status, os.date("%d.%m.%Y"), os.date("%H:%M:%S"), debug))
     end
   end
 
@@ -1117,7 +1126,7 @@ local _script = coroutine.create(function()
     end
     WriteConsoleLog("Furniture init done", "[🪑]:[✅] Furniture init done!", "DEBUG")
     WriteFileLog("Furniture init done", "DEBUG")
-    GUI.Notify("Info", "Furniture init done", "INFO", "info")
+    GUI.Notify("Info", "Furniture init done.", "INFO", "info")
     Gotopart("main")
   end
   local function GetEquipedPetAilments() 
@@ -1220,18 +1229,23 @@ local _script = coroutine.create(function()
 
   local function License() 
     if loader("TradeLicenseHelper").player_has_trade_license(LocalPlayer) then
-      print("[📃]:[✅] License found.")
-      GUI.Notify("Info", "Trade license already exists.", "INFO", "scroll")
+      WriteConsoleLog("Trade license found", "[📜]:[✅] Trade license found", "DEBUG")
+      WriteFileLog("Trade license found", "DEBUG")
+      GUI.Notify("Info", "Trade license found.", "INFO", "scroll")
     else
-      print("[📃] License not found, trying to get..")
+      WriteConsoleLog("License not found, trying to get.", "[📜] License not found, trying to get..", "DEBUG")
+      WriteFileLog("License not found, trying to get.", "DEBUG")
+      GUI.Notify("Info", "License not found, trying to get..", "INFO", "scroll")
       SafeFire("SettingsAPI/SetBooleanFlag", "has_talked_to_trade_quest_npc", true)
       SafeFire("TradeAPI/BeginQuiz")
       task.wait(.2)
       for _,v in pairs(ClientData.get("trade_license_quiz_manager").quiz) do
         SafeFire("TradeAPI/AnswerQuizQuestion", v.answer)
       end
-      print("[📃]:[✅] License received.")
-      GUI.Notify("Info", "Trade license received.", "SUCCESS", "scroll")
+      print("[📜]:[✅] License received")
+      WriteConsoleLog("Trade license received", "[📜]:[✅] Trade license received", "DEBUG")
+      WriteFileLog("Trade license received", "DEBUG")
+      GUI.Notify("Success", "Trade license received.", "SUCCESS", "circle-check")
     end
   end 
   local function Avatar()
@@ -1439,7 +1453,7 @@ end
     SafeFire("TradeAPI/SendTradeRequest", game.Players[user])
     WriteConsoleLog(string.format("Trade reuqest to %s sent", user), string.format("⚙️ Trade request to %s sent!", user), "DEBUG")
     WriteFileLog(string.format("Trade reuqest to %s sent", user), "DEBUG")
-    GUI.Notify("Info", "Trade request to user sent!", "INFO", "info")
+    GUI.Notify("Info", "Trade request to user sent.", "INFO", "info")
     local deadline = os.clock() + 120
     local declined = false
     local ev = API["MsgAPI/HintSent"].OnClientEvent:Connect(function(...)
@@ -1642,23 +1656,24 @@ end
   local AutoGivePotionPetsFullgrownedLabel = GUI.InitLabel(AutofarmTab, "- Pets Fullgrowned -", "list-ordered", Color3.fromRGB(203, 92, 255), false)
 
   GUI.InitSection(AutofarmTab, "- Pet Pen -")
-  local PetPenUsePetPenTogleButton = GUI.InitToggleButton(AutofarmTab, "Use Pet Pen", false, "usepetpentogglebutton", function(v) end)
-  local PetPenUsePriorityDropdown = GUI.InitDropdown(AutofarmTab, "Use Priority (required)", {"any", "pets", "eggs"}, {"any"}, false, "petpenuseprioritydropdown", function(v) end)
-  local PetPenPrioritizedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Prioritized Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "petpenprioritizedraritiesdropdown", function(v) end)
-  local PetPenStealableToggleButton = GUI.InitToggleButton(AutofarmTab, "Stealable", false, "petpenstealabletogglebutton", function(v) end)
+  local PetPenUsePetPenTogleButton = GUI.InitToggleButton(AutofarmTab, "Use Pet Pen", false, "usepetpentogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.TogglePetPen(v) end)
+  local PetPenUsePriorityDropdown = GUI.InitDropdown(AutofarmTab, "Use Priority (required)", {"any", "pets", "eggs"}, {"any"}, false, "petpenuseprioritydropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenUsePriority(v) end)
+  local PetPenPrioritizedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Prioritized Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "petpenprioritizedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenPrioritizedRarities(v) end)
+  local PetPenStealableToggleButton = GUI.InitToggleButton(AutofarmTab, "Stealable", false, "petpenstealabletogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.TogglePetPenStealable(v) end)
+  local PetPenJustAutoCollectProgressionToggleButton = GUI.InitToggleButton(AutofarmTab, "Just Auto Collect Progression", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleJustAutoCollectProgression(v) end)
   GUI.InitDivider(AutofarmTab)
-  local PetPenPetPenBlacklistedRarirtiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "petpenblacklistedraritiesdropdown", function(v) end)
-  local PetPenBlacklistedAgesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, true, "petpenblacklistedagesdropdown", function(v) end)
-  local PetPenBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "petpenblacklistedpropertydropdown", function(v) end)
-  local PetPenBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {}, true, "petpenblacklistedspecificpetsdropdown", function(v) end)
+  local PetPenPetPenBlacklistedRarirtiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "petpenblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedRarities(v) end)
+  local PetPenBlacklistedAgesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, true, "petpenblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedAges(v) end)
+  local PetPenBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "petpenblacklistedpropertydropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedProperties(v) end)
+  local PetPenBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {}, true, "petpenblacklistedspecificpetsdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedSpecificPets(v) end)
   -- list
 
   GUI.InitSection(AutofarmTab, "- Pet Recycler -") --done
   local RecyclerAutoRecyclePetsToggleButton = GUI.InitToggleButton(AutofarmTab, "Auto Recycle Pets", false, "recyclerautorecyclepetstogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.TogglePetRecycler(v) end)
   GUI.InitDivider(AutofarmTab)
-  local RecyclerBlacklistedRarirtiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "recyclerblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedRarities(v) end)
-  local RecyclerPetPenBlacklistedAgesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {}, true, "recyclerblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedAges(v) end)
-  local RecyclerPetPenBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "recyclerblacklistedpropertydropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedProperties(v) end)
+  GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "recyclerblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedRarities(v) end)
+  GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {}, true, "recyclerblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedAges(v) end)
+  GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "recyclerblacklistedpropertydropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedProperties(v) end)
   local RecyclerPetPenBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {}, true, "recyclerblacklistedspecificpetsdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetRecyclerBlacklistedSpecificPets(v) end)
   
 
@@ -1666,7 +1681,7 @@ end
   GUI.InitSection(AutoTradeTab, "- Auto Trade -")
   local AutoTradeToggleButton = GUI.InitToggleButton(AutoTradeTab, "Auto Trade", false, "autotradetogglebutton", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.ToggleAutoTrade(v) end)
   local PlayerTradeWithTextField = GUI.InitTextField(AutoTradeTab, "Player Trade With", "", "        ", false, "playertradewithtextfield", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandlePlayerTradeWith(v) end)
-  local TradePriorityDropdown = GUI.InitDropdown(AutoTradeTab, "Trade Priority", {"all", "pets", "eggs"}, {"any"}, false, "tradeprioritydropdown", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandleTradePriority(v) end)
+  local TradePriorityDropdown = GUI.InitDropdown(AutoTradeTab, "Trade Priority", {"any", "pets", "eggs"}, {"any"}, false, "tradeprioritydropdown", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandleTradePriority(v) end)
   GUI.InitToggleButton(AutoTradeTab, "Trade Farmed", false, "tradefarmedtogglebutton", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.ToggleTradeFarmed(v) end)
   local TradeDelayTextField = GUI.InitTextField(AutoTradeTab, "Trade Delay (delay for next trade)", "3600", "     ", false, "tradedelaytextfield", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandleTradeDelay(v) end)
   local TradeFallbackDelayTextField = GUI.InitTextField(AutoTradeTab, "Fallback Trade Delay (delay on fallback)", "40", "     ", false, "tradefallbacktradedelaytextfield", function(v) GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.ToggleFallbackTradeFarmed(v) end)
@@ -2967,7 +2982,7 @@ end
           end
         end
       else
-        GUI.Notify("Warning", "Internal validation cannot find pet. Try to specify <Pet To Farm> again", "WARNING", "triangle-alert")
+        GUI.Notify("Warning", "Internal validation cannot find pet. Try to specify <Pet To Farm> again.", "WARNING", "triangle-alert")
         GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
         return
       end
@@ -3097,7 +3112,7 @@ end
     Rayfield:LoadConfiguration()
     WriteConsoleLog("Configuration loaded.", "[+] Configuration loaded.", "DEBUG")
     WriteFileLog("Configuration loaded", "DEBUG")
-    GUI.Notify("Info", "Configuration loaded", "INFO", "file-cog")
+    GUI.Notify("Info", "Configuration loaded.", "INFO", "file-cog")
   end
   
 
@@ -3151,7 +3166,7 @@ end
         WriteConsoleLog("Detect 2d-kitty enabled", nil, "DEBUG")
         WriteFileLog("Detect 2d-kitty enabled", "DEBUG")
       else
-        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type', "WARNING", "triangle-alert")
+        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.', "WARNING", "triangle-alert")
         GUI.ToggleButtonSetValue(PetAutoFarmDetect2DKittyToggleButton, false)
       end
     else
@@ -3170,7 +3185,7 @@ end
         WriteConsoleLog("Opposite farm enabled", nil, "DEBUG")
         WriteFileLog("Opposite farm enabled", "DEBUG")
       else
-        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.')
+        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.', "WARNING", "triangle-alert")
         GUI.ToggleButtonSetValue(PetAutoFarmOpoositeFarmToggleButton, false)
       end
     else
@@ -3192,7 +3207,7 @@ end
         WriteConsoleLog("Potion farm enabled", nil, "DEBUG")
         WriteFileLog("Potion farm enabled", "DEBUG")
       else
-        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.')
+        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.', "WARNING", "triangle-alert")
         GUI.ToggleButtonSetValue(PetAutoFarmPotionFarmToggleButton, false)
       end
     else
@@ -3279,7 +3294,7 @@ end
           if l and l.bait_kind then
             WriteConsoleLog(string.format("Lurebox bait placed:", l.bait_kind), string.format("[📦]:[✅] Bait placed:", l.bait_kind), "DEBUG")
             WriteFileLog(string.format("Lurebox bait placed:", l.bait_kind), "DEBUG")
-            GUI.Notify("Info", string.format("Lurebox bait placed: %s", l.bait_kind), "INFO", "info")
+            GUI.Notify("Info", string.format("Lurebox bait placed: %s", l.bait_kind), "INFO", "cookie")
           else
             WriteConsoleLog(string.format("Lurebox bait not placed. Repeating after {5}s", l.bait_kind), string.format("[📦]:[❌] Bait not placed. Repeating after [5]s."), "ERROR")
             WriteFileLog(string.format("Lurebox bait not placed. Repeating after {5}s", l.bait_kind), "ERROR")
@@ -3315,7 +3330,7 @@ end
             if count(luresmap) == 0 then
               WriteConsoleLog(string.format("{%d %s} Found in lurebox", reward.amount, reward.kind), string.format("[📦]:[🎁] [%d %s] Found in lurebox.", reward.amount, reward.kind), "DEBUG")
               WriteFileLog(string.format("{%d %s} Found in lurebox", reward.amount, reward.kind), "DEBUG")
-              GUI.Notify("Info", string.format("[%d %s] Found in lurebox", reward.amount, reward.kind), "INFO", "info")
+              GUI.Notify("Info", string.format("[%d %s] Found in lurebox", reward.amount, reward.kind), "SUCCESS", "package-open")
               Cooldown.AutoFarm.LureboxFarm = 1
             else
               WriteConsoleLog("Unsuccessed to get lurebox reward. Repeating after {5}s", "[📦]:[❌] Unsuccessed to get lurebox reward. Repeating after [5]s.", "ERROR")
@@ -3451,22 +3466,22 @@ end
         local _opened = 0
         if not _G.InternalConfig.SpecificGiftsToOpen then
           for k,v in pairs(GetOwnedCategory("gifts")) do
-            safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
-            safeInvoke("ShopAPI/OpenGift", k)
+            SafeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
+            SafeInvoke("ShopAPI/OpenGift", k)
             _opened += 1
           end
         end
         if k == "chests" then
           for k,v in pairs(GetOwnedCategory("gifts")) do
             local r = v.remote:lower()
-            safeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
+            SafeInvoke("LootBoxAPI/ExchangeItemForReward", v.remote, k)
             _opened += 1
           end
         end
         if k == "Massive Gift" or k == "Big Gift" or k == "Small Gift" then
           for k,v in pairs(GetOwnedCategory("gifts")) do
             if (k == "Massive Gift" and v.id == "massivegift") or (k == "Big Gift" and v.id == "biggift") or (k == "Small Gift" and v.id == "smallgift") then
-              safeInvoke("ShopAPI/OpenGift", k)
+              SafeInvoke("ShopAPI/OpenGift", k)
               _opened += 1
             end
           end
@@ -3586,12 +3601,12 @@ end
     local count = tonumber(v)
     if not count then
       GUI.TextFieldSetValue(EggBuyCountTextField, "")
-      GUI.Notify("Warning", "Wrong value", "WARNING", "triangle-alert")
+      GUI.Notify("Warning", "Wrong value.", "WARNING", "triangle-alert")
       return
     end
     if count == 0 then
       GUI.TextFieldSetValue(EggBuyCountTextField, "")
-      GUI.Notify("Warning", "Cannot be 0", "WARNING", "triangle-alert")
+      GUI.Notify("Warning", "Cannot be 0.", "WARNING", "triangle-alert")
       return
     end
     if count == -1 then
@@ -3696,12 +3711,12 @@ end
     local count = tonumber(v)
     if not count then
       GUI.TextFieldSetValue(GiftBuyCountTextField, "")
-      GUI.Notify("Warning", "Wrong value", "WARNING", "triangle-alert")
+      GUI.Notify("Warning", "Wrong value.", "WARNING", "triangle-alert")
       return
     end
     if count == 0 then
       GUI.TextFieldSetValue(GiftBuyCountTextField, "")
-      GUI.Notify("Warning", "Cannot be 0", "WARNING", "triangle-alert")
+      GUI.Notify("Warning", "Cannot be 0.", "WARNING", "triangle-alert")
       return
     end
     if count == -1 then
@@ -3758,7 +3773,7 @@ end
               task.wait(.2)
             end
             if not ClientData.get("pet_recycler_manager").timestamp then
-              safeInvoke("HousingAPI/ActivateInteriorFurniture",
+              SafeInvoke("HousingAPI/ActivateInteriorFurniture",
                 "f-9",
                 "UseBlock",
                 {
@@ -3846,7 +3861,8 @@ end
     end
     _G.InternalConfig.RecyclerDLib.BlacklistedSpecificPets = {}
     for _,v in ipairs(v) do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSpecificPets[v] = true
+      local unique = v:split("unique: ")[2]
+      _G.InternalConfig.RecyclerDLib.BlacklistedSpecificPets[unique] = true
     end
   end
   
@@ -3872,7 +3888,7 @@ end
           if not potions[1] and not potions[2] then 
             WriteConsoleLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "🧪 No potions detected. Cooldown: [180]s.", "DEBUG")
             WriteFileLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "DEBUG")
-            GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s", "INFO", "info")
+            GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s.", "INFO", "info")
             Cooldown.Cooldown.TryUsePotionAfter = 180
             return
           end	
@@ -3906,7 +3922,7 @@ end
           if #pet_to_grow == 0 then 
             WriteConsoleLog("[AutoGivePotion]: No pets to grow up. Cooldown [180]s", "🧪 No pets to grow up. Cooldown: [180]s.", "DEBUG")
             WriteFileLog("[AutoGivePotion]: No pets to grow up. Cooldown [180]s", "DEBUG")
-            GUI.Notify("Info", "[AutoGivePotion]: No pets to grow up. Cooldown [180]s", "INFO", "info")
+            GUI.Notify("Info", "[AutoGivePotion]: No pets to grow up. Cooldown [180]s.", "INFO", "info")
             Cooldown.Cooldown.TryUsePotionAfter = 180
             return
           end
@@ -3925,7 +3941,7 @@ end
               local potions_to_give = calculate_optimal_potions_by_rarity(v[2], v[3], potions)
               WriteConsoleLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), string.format("⚙️ Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions].", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
               WriteFileLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
-              safeInvoke("ToolAPI/Equip",
+              SafeInvoke("ToolAPI/Equip",
                 v[1],
                 {
                   use_sound_delay = true,
@@ -3942,7 +3958,7 @@ end
                     main = k 
                   end
                 end
-                safeInvoke("PetObjectAPI/CreatePetObject",
+                SafeInvoke("PetObjectAPI/CreatePetObject",
                   "__Enum_PetObjectCreatorType_2",
                   {
                     additional_consume_uniques = {
@@ -3964,7 +3980,7 @@ end
                     main = k 
                   end
                 end
-                safeInvoke("PetObjectAPI/CreatePetObject",
+                SafeInvoke("PetObjectAPI/CreatePetObject",
                   "__Enum_PetObjectCreatorType_2",
                   {
                     additional_consume_uniques = {
@@ -4004,7 +4020,7 @@ end
           while not _task.finished do
             task.wait(1)
           end
-          safeInvoke("ToolAPI/Equip",
+          SafeInvoke("ToolAPI/Equip",
             equiped_pet.pet_unique or actual_pet.unique or "",
             {
               use_sound_delay = true,
@@ -4023,7 +4039,7 @@ end
       else
         if not _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion then
           GUI.ToggleButtonSetValue(AutoGivePotionToggleButton, false)
-          GUI.Notify("Info", "Set <Pet To Give Potion> at first", "INFO", "info")
+          GUI.Notify("Warning", "Set <Pet To Give Potion> at first.", "WARNING", "triangle-alert")
           return
         end
         Registry.RegisterTask("manual_auto_give_potion_handler", function()
@@ -4032,7 +4048,7 @@ end
           if not potions[1] and not potions[2] then 
             WriteConsoleLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "🧪 No potions detected. Cooldown: [180]s.", "DEBUG")
             WriteFileLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "DEBUG")
-            GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s", "INFO", "info")
+            GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s.", "INFO", "info")
             Cooldown.Cooldown.TryUsePotionAfter = 180
             return
           end	
@@ -4044,14 +4060,14 @@ end
               if not potions[1] and not potions[2] then 
                 WriteConsoleLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "🧪 No potions detected. Cooldown: [180]s.", "DEBUG")
                 WriteFileLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "DEBUG")
-                GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s", "INFO", "info")
+                GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s.", "INFO", "info")
                 return
               end	
               local owned_pets = GetOwnedPets()
               local potions_to_give = calculate_optimal_potions_by_rarity(owned_pets[v].age, owned_pets[v].rarity, potions)
               WriteConsoleLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", owned_pets[v].remote, potions_to_give[1], potions_to_give[2]), string.format("⚙️ Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions].", owned_pets[v].remote, potions_to_give[1], potions_to_give[2]), "DEBUG")
               WriteFileLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", owned_pets[v].remote, potions_to_give[1], potions_to_give[2]), "DEBUG")
-              safeInvoke("ToolAPI/Equip",
+              SafeInvoke("ToolAPI/Equip",
                 owned_pets[v],
                 {
                   use_sound_delay = true,
@@ -4068,7 +4084,7 @@ end
                     main = k 
                   end
                 end
-                safeInvoke("PetObjectAPI/CreatePetObject",
+                SafeInvoke("PetObjectAPI/CreatePetObject",
                   "__Enum_PetObjectCreatorType_2",
                   {
                     additional_consume_uniques = {
@@ -4090,7 +4106,7 @@ end
                     main = k 
                   end
                 end
-                safeInvoke("PetObjectAPI/CreatePetObject",
+                SafeInvoke("PetObjectAPI/CreatePetObject",
                   "__Enum_PetObjectCreatorType_2",
                   {
                     additional_consume_uniques = {
@@ -4131,7 +4147,7 @@ end
             task.wait(1)
           end
           InstantListPetToGivePotion()
-          safeInvoke("ToolAPI/Equip",
+          SafeInvoke("ToolAPI/Equip",
             equiped_pet.pet_unique or actual_pet.unique or "",
             {
               use_sound_delay = true,
@@ -4206,7 +4222,6 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.AutoGivePotionBlacklistedSpecificRarities = function(v)
     WriteConsoleLog("Blacklisted rarities triggered", nil, "DEBUG")
     WriteFileLog("Blacklisted rarities triggered", "DEBUG")
-    WriteFileLog("Blacklisted ages triggered", "DEBUG")
     if count(v) == 0 then
       _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities = nil
       return
@@ -4252,9 +4267,164 @@ end
     end
     _G.InternalConfig.AutoGivePotionDLib.BlacklistedSpecificPets = {}
     for _,v in ipairs(v) do
-      _G.InternalConfig.AutoGivePotionDLib.BlacklistedSpecificPets[v] = true
+      local unique = v:split("unique: ")[2]
+      _G.InternalConfig.AutoGivePotionDLib.BlacklistedSpecificPets[unique] = true
     end
   end
+
+
+
+
+
+  --kuni
+
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.TogglePetPen = function(v) 
+    WriteConsoleLog("Pet Pen triggered", nil, "DEBUG")
+    WriteFileLog("Pet Pen triggered", "DEBUG")
+    if v then
+      WriteConsoleLog("Pet Pen enabled", nil, "DEBUG")
+      WriteFileLog("Pet Pen enabled", "DEBUG")
+      if Registry.Exists("pet_pen_progression_collection_handler") then
+        GUI.ToggleButtonSetValue(PetPenJustAutoCollectProgressionToggleButton, false)
+      end
+      Cooldown.AutoFarm.PetPenCheckAfter = 0
+      Registry.RegisterTask("pet_pen_handler", function()
+        Cooldown.AutoFarm.PetPenCheckAfter = nil
+
+      end,
+      function()
+        return Cooldown.AutoFarm.PetPenCheckAfter == 0
+      end,
+      function()
+        Cooldown.AutoFarm.PetPenCheckAfter = 5 
+      end)
+    else
+      WriteConsoleLog("Pet Pen disabled", nil, "DEBUG")
+      WriteFileLog("Pet Pen disabled", "DEBUG")
+      Registry.UnregisterTask("pet_pen_handler")
+      Cooldown.AutoFarm.PetPenCheckAfter = nil
+    end
+  end 
+  
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.CallbacksHandlePetPenUsePriority = function(v) 
+    WriteConsoleLog("Use priority triggered", nil, "DEBUG")
+    WriteFileLog("Use priority triggered", "DEBUG")
+  end
+
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenPrioritizedRarities = function(v) 
+    WriteConsoleLog("Prioritized rarities triggered", nil, "DEBUG")
+    WriteFileLog("Prioritized rarities triggered", "DEBUG")
+    if count(v) == 0 then
+      _G.InternalConfig.PetPenDLib.PrioritizedRarities = nil
+      return
+    end
+    _G.InternalConfig.PetPenDLib.PrioritizedRarities = {}
+    for _,v in ipairs(v) do
+      _G.InternalConfig.PetPenDLib.PrioritizedRarities[PetRarities[v]] = true
+    end
+  end
+
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.TogglePetPenStealable = function(v) 
+    WriteConsoleLog("Stealable triggered", nil, "DEBUG")
+    WriteFileLog("Stealable triggered", "DEBUG")
+    if v then
+      WriteConsoleLog("Stealable enabled", nil, "DEBUG")
+      WriteFileLog("Stealable enabled", "DEBUG")
+      _G.InternalConfig.PetPenDLib.Stealable = true
+    else
+      WriteConsoleLog("Stealable disabled", nil, "DEBUG")
+      WriteFileLog("Stealable disabled", "DEBUG")
+      _G.InternalConfig.PetPenDLib.Stealable = false
+    end
+  end
+
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleJustAutoCollectProgression = function() 
+    WriteConsoleLog("Just auto collect progression triggered", nil, "DEBUG")
+    WriteFileLog("Just auto collect progression triggered", "DEBUG")
+    if v then
+      WriteConsoleLog("Just auto collect progression enabled", nil, "DEBUG")
+      WriteFileLog("Just auto collect progression enabled", "DEBUG")
+      if Registry.Exists("pet_pen_handler") then
+        GUI.Notify("Warning", "<Use Pet Pen> is already auto-collecting progression.", "WARNING", "triangle-alert")
+        GUI.ToggleButtonSetValue(PetPenJustAutoCollectProgressionToggleButton, false)
+        return
+      end
+      Cooldown.AutoFarm.AutoCollectProgression = 0
+      Registry.RegisterTask("pet_pen_progression_collection_handler", function()
+        -- ==============
+        Cooldown.AutoFarm.AutoCollectProgression = nil
+        SafeInvoke("IdleProgressionAPI/CommitAllProgression", true)
+        Cooldown.AutoFarm.AutoCollectProgression = 300
+        -- ==============
+      end,
+      function()
+        return Cooldown.AutoFarm.AutoCollectProgression == 0
+      end,
+      function()
+        Cooldown.AutoFarm.AutoCollectProgression = 5
+      end)
+    else
+      WriteConsoleLog("Just auto collect progression disabled", nil, "DEBUG")
+      WriteFileLog("Just auto collect progression disabled", "DEBUG")
+      Register.UnregisterTask("pet_pen_progression_collection_handler")
+      Cooldown.AutoFarm.AutoCollectProgression = nil
+    end
+  end
+
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedRarities = function(v) 
+    WriteConsoleLog("Blacklisted rarities triggered", nil, "DEBUG")
+    WriteFileLog("Blacklisted rarities triggered", "DEBUG")
+    if count(v) == 0 then
+      _G.InternalConfig.PetPenDLib.BlacklistedRarities = nil
+      return
+    end
+    _G.InternalConfig.PetPenDLib.BlacklistedRarities = {}
+    for _,v in ipairs(v) do
+      _G.InternalConfig.PetPenDLib.BlacklistedRarities[PetRarities[v]] = true
+    end
+  end
+
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedAges = function(v) 
+    WriteConsoleLog("Blacklisted ages triggered", nil, "DEBUG")
+    WriteFileLog("Blacklisted ages triggered", "DEBUG")
+    if count(v) == 0 then
+      _G.InternalConfig.PetPenDLib.BlacklistedAges = nil
+      return
+    end
+    _G.InternalConfig.PetPenDLib.BlacklistedAges = {}
+    for _,v in ipairs(v) do
+      _G.InternalConfig.PetPenDLib.BlacklistedAges[PetAges[v]] = true
+    end
+  end
+
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedProperties = function(v) 
+    WriteConsoleLog("Blacklisted properties triggered", nil, "DEBUG")
+    WriteFileLog("Blacklisted properties triggered", "DEBUG")
+    if count(v) == 0 then
+      _G.InternalConfig.PetPenDLib.BlacklistedProperties = nil
+      return
+    end
+    _G.InternalConfig.PetPenDLib.BlacklistedProperties = {}
+    for _,v in ipairs(v) do
+      _G.InternalConfig.PetPenDLib.BlacklistedProperties[v] = true
+    end
+  end
+
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedSpecificPets = function(v) 
+    WriteConsoleLog("Blacklisted specific pets triggered", nil, "DEBUG")
+    WriteFileLog("Blacklisted specific pets triggered", "DEBUG")
+    if count(v) == 0 then
+      _G.InternalConfig.PetPenDLib.BlacklistedSpecificPets = nil
+      return
+    end
+    _G.InternalConfig.PetPenDLib.BlacklistedSpecificPets = {}
+    for _,v in ipairs(v) do
+      local unique = v:split("unique: ")[2]
+      _G.InternalConfig.PetPenDLib.BlacklistedSpecificPets[unique] = true
+    end
+  end
+
+
 
 
 
@@ -4268,7 +4438,7 @@ end
     if v then
       if PlayerTradeWithTextField.CurrentValue:match("^%s*$") then
         GUI.ToggleButtonSetValue(AutoTradeToggleButton, false)
-        GUI.Notify("Warning", "Set <Player Trade With> at first", "WARNING", "triangle-alert")
+        GUI.Notify("Warning", "Set <Player Trade With> at first.", "WARNING", "triangle-alert")
         return
       end
       Cooldown.AutoTrade.NextTradeAfter = 0
@@ -4318,7 +4488,7 @@ end
             Cooldown.AutoTrade.NextTradeAfter = 60
             WriteConsoleLog(string.format("Internal pet list to trade is empty. Cooldown: [60]s", v), "[🔄]:[‼️] Internal pet list to trade is empty. Cooldown: [60]s.", "DEBUG")
             WriteFileLog(string.format("Internal pet list to trade is empty. Cooldown: [60]s", v), "DEBUG")
-            GUI.Notify("Warning", "Internal pet list to trade is empty. Cooldown: [60]s", "WARNING", "triangle-alert")
+            GUI.Notify("Warning", "Internal pet list to trade is empty. Cooldown: [60]s.", "WARNING", "triangle-alert")
             return
           elseif count(pets_to_send) > 18 then
             need_repeat = true
@@ -4343,11 +4513,11 @@ end
           local deadline = os.clock() + 180
           local ui = UIManager.apps.TradeApp
           if ui.visible then 
-            ui.negotiation_decline_button.mouse_button1_click = function() GUI.Notify("Warning", "Decline button is locked for script better working", "WARNING", "triangle-alert") end 
-            ui.confirmation_decline_button.mouse_button1_click = function() GUI.Notify("Warning", "Cancel button is locked for script better working", "WARNING", "triangle-alert") end 
-            ui.negotiation_accept_button.mouse_button1_click  = function() GUI.Notify("Warning", "Accept button is locked for script better working", "WARNING", "triangle-alert") end 
-            ui.confirmation_accept_button.mouse_button1_click  = function() GUI.Notify("Warning", "Confirm button is locked for script better working", "WARNING", "triangle-alert") end 
-            ui.my_negotiation_offer_pane.add_item_callback = function() GUI.Notify("Warning", "Add item button is locked for script better working", "WARNING", "triangle-alert") end 
+            ui.negotiation_decline_button.mouse_button1_click = function() GUI.Notify("Warning", "Decline button is locked", "WARNING", "triangle-alert") end 
+            ui.confirmation_decline_button.mouse_button1_click = function() GUI.Notify("Warning", "Cancel button is lockedfor", "WARNING", "triangle-alert") end 
+            ui.negotiation_accept_button.mouse_button1_click  = function() GUI.Notify("Warning", "Accept button is locked", "WARNING", "triangle-alert") end 
+            ui.confirmation_accept_button.mouse_button1_click  = function() GUI.Notify("Warning", "Confirm button is locked", "WARNING", "triangle-alert") end 
+            ui.my_negotiation_offer_pane.add_item_callback = function() GUI.Notify("Warning", "Add item button is locked", "WARNING", "triangle-alert") end 
             pcall(function()
               for k,_ in pairs(pets_to_send) do 
                 SafeFire("TradeAPI/AddItemToOffer", k)
@@ -4375,7 +4545,7 @@ end
               local _cdl = tonumber(TradeFallbackDelayTextField.CurrentValue) or 40
               WriteConsoleLog(string.format("[AutoTrade]: Trade is taking longer than expected. Repeating after [%d]s", _cdl), string.format("[🔄]:[‼️] Trade is taking longer than expected. Repeating after [%d]s.", _cdl), "DEBUG")
               WriteFileLog(string.format("[AutoTrade]: Trade is taking longer than expected. Repeating after [%d]s", _cdl), "DEBUG")
-              GUI.Notify("Warning", string.format("Trade is taking longer than expected. Repeating after [%d]s", _cdl), "WARNING", "triangle-alert")
+              GUI.Notify("Warning", string.format("Trade is taking longer than expected. Repeating after [%d]s.", _cdl), "WARNING", "triangle-alert")
               Cooldown.AutoTrade.NextTradeAfter = _cdl
               return
             end
@@ -4401,7 +4571,7 @@ end
                   .. "]s.\n```"
                 )
               else
-                GUI.Notify("Warning", "Unable to send discord webhook log due to <discord webhook url> in <Webhooks> section is not set", "WARNING", "triangle-alert") 
+                GUI.Notify("Warning", "Unable to send discord webhook log due to <Discord Webhook URL> in <Webhooks> is not specified.", "WARNING", "triangle-alert") 
               end
             end
             if _G.InternalConfig.TradeDLib.TelegramWebhookLog then
@@ -4411,7 +4581,7 @@ end
                   <b>Trade with %s unsuccessed. Timeout: [%d]s.</b>
                 ]], user, _cdl))
               else
-                GUI.Notify("Warning", "Unable to send telegram webhook log due to <telegram bot api key> or <telegram chat id> in <Webhooks> section is not set", "WARNING", "triangle-alert") 
+                GUI.Notify("Warning", "Unable to send telegram webhook log due to <Telegram Bot API Key> or <Telegram Chat Id> in <Webhooks> is not specified.", "WARNING", "triangle-alert") 
               end
             end
             Cooldown.AutoTrade.NextTradeAfter = _cdl
@@ -4427,7 +4597,7 @@ end
                 webhook("Trade-Log", "```diff\n+ Trade with " .. user .. " succeeded.\n```")		
                 Cooldown.AutoTrade.NextTradeAfter = tonumber(TradeDelayTextField.CurrentValue) or 3600
               else
-                GUI.Notify("Warning", "Unable to send discord webhook log due to <discord webhook url> in <Webhooks> section is not set", "WARNING", "triangle-alert") 
+                GUI.Notify("Warning", "Unable to send discord webhook log due to <Discord Webhook URL> in <Webhooks> is not specified.", "WARNING", "triangle-alert") 
               end
             end
             if _G.InternalConfig.TradeDLib.TelegramWebhookLog then
@@ -4437,11 +4607,11 @@ end
                   <b>Trade with %s unsuccessed. Timeout: [%d]s.</b>
                 ]], user, _cdl))
               else
-                GUI.Notify("Warning", "Unable to send telegram webhook log due to <telegram bot api key> or <telegram chat id> in <Webhooks> section is not set", "WARNING", "triangle-alert") 
+                GUI.Notify("Warning", "Unable to send telegram webhook log due to <Telegram Bot API Key> or <Telegram Chat Id> in <Webhooks> is not specified.", "WARNING", "triangle-alert") 
               end
             end
           if need_repeat then
-            GUI.Notify("Info", "Detected more than 18 pets to trade. Trade will be repeated soon after 5s.", "INFO", "settings")
+            GUI.Notify("Info", "Detected more than 18 pets to trade. Trade will be repeated soon.", "INFO", "info")
             Cooldown.AutoTrade.NextTradeAfter = 5	
           end
         else
@@ -4474,13 +4644,16 @@ end
     local ok, _ = pcall(function() game.Players:GetUserIdFromNameAsync(v) end)
     if not ok then
       GUI.TextFieldSetValue(PlayerTradeWithTextField, "")
-      GUI.Notify("Warning", "User with specified name not exists", "WARNING", "triangle-alert")
+      GUI.Notify("Warning", "User with specified name not exists.", "WARNING", "triangle-alert")
       return
     end
     if v == LocalPlayer.Name then
       GUI.TextFieldSetValue(PlayerTradeWithTextField, "")
       GUI.Notify("Warning", "You are trying to trade with yourself?...", "WARNING", "triangle-alert")
     end
+    if v:lower() == "hitler" then
+      GUI.Notify("Info", "Its good idea to trade with Adolf!", "INFO", "accessibility")      
+    end 
   end
 
   GUI.Tabs.AutoTrade.Sections.AutoTrade.Callbacks.HandleTradePriority = function(v) -- done
@@ -4494,7 +4667,7 @@ end
     local _delay = tonumber(v)
     if not _delay then
       GUI.TextFieldSetValue(TradeFallbackDelayTextField, "40")
-      GUI.Notify("Warning", "Wrong value", "WARNING", "triangle-alert")        
+      GUI.Notify("Warning", "Wrong value.", "WARNING", "triangle-alert")        
       WriteConsoleLog(string.format("[Auto Trade]: Wrong value of <Fallback Trade Delay>: {%s}", v), nil, "ERROR")
       WriteFileLog(string.format("[Auto Trade]: Wrong value of <Fallback Trade Delay>: {%s}", v), "ERROR")
       return
@@ -4507,7 +4680,7 @@ end
     local _delay = tonumber(v)
     if not _delay then
       GUI.TextFieldSetValue(TradeDelayTextField, "3600")
-      GUI.Notify("Warning", "Wrong value", "WARNING", "triangle-alert")        
+      GUI.Notify("Warning", "Wrong value.", "WARNING", "triangle-alert")        
       WriteConsoleLog(string.format("[Auto Trade]: Wrong value of <Trade Delay>: {%s}", v), nil, "ERROR")
       WriteFileLog(string.format("[Auto Trade]: Wrong value of <Trade Delay>: {%s}", v), "ERROR")
       return
@@ -4623,7 +4796,8 @@ end
     end
     _G.InternalConfig.TradeDLib.BlacklistedSpecificPets = {}
     for _,v in ipairs(v) do
-      _G.InternalConfig.TradeDLib.BlacklistedSpecificPets[v] = true
+      local unique = v:split("unique: ")[2]
+      _G.InternalConfig.TradeDLib.BlacklistedSpecificPets[unique] = true
     end
   end
 
@@ -4635,7 +4809,7 @@ end
         WriteConsoleLog("[Registry]: {make_pet_neon_handler} runned", nil, "DEBUG")
         WriteFileLog("[Registry]: {make_pet_neon_handler} runned", "DEBUG")
         if not _G.InternalConfig.PetsToNeon then
-          GUI.Notify("Warning", "select atleast 1 pet to neon at first", "WARNING", "triangle-alert")
+          GUI.Notify("Warning", "Select atleast 1 <Pet To Neon> at first.", "WARNING", "triangle-alert")
           return
         end
         for k,v in _G.InternalConfig.PetsToNeon do
@@ -4645,15 +4819,15 @@ end
           if not _task.started then
             task.wait(.2)
           end
-          local ok, _ = safeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
+          local ok, _ = SafeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
           if ok then 
             WriteConsoleLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), string.format("[🧿]:[✅] Pet %s is Neon now!", k), "DEBUG")
             WriteFileLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), "DEBUG") 
-            GUI.Notify("Info", string.format("Pet %s is Neon now!", k), "INFO", "circle-check")
+            GUI.Notify("Success", string.format("Pet %s is Neon now!", k), "SUCCESS", "circle-check")
           else
             WriteConsoleLog(string.format("[AutoNeon]: Failed to make pet {%s} neon", k), string.format("[🧿]:[❌] Failed to make pet %s neon", k), "DEBUG")
             WriteFileLog(string.format("[AutoNeon]: Failed to make {%s} neon", k), "DEBUG") 
-            GUI.Notify("Info", string.format("Failed to make pet %s neon", k), "INFO", "circle-check")
+            GUI.Notify("Error", string.format("Failed to make pet %s neon", k), "ERROR", "circle-x")
           end
           task.wait(1.5)
           LocationQueue.Complete(_task)
@@ -4682,7 +4856,7 @@ end
         WriteConsoleLog("[Registry]: {make_pet_mega_neon_handler} runned", nil, "DEBUG")
         WriteFileLog("[Registry]: {make_pet_mega_neon_handler} runned", "DEBUG")
         if not _G.InternalConfig.PetsToMegaNeon then
-          GUI.Notify("Warning", "select atleast 1 pet to mega-neon at first", "WARNING", "triangle-alert")
+          GUI.Notify("Warning", "Select atleast 1 <Pet To Mega Neon> at first.", "WARNING", "triangle-alert")
           return
         end
         for k,v in _G.InternalConfig.PetsToMegaNeon do
@@ -4692,15 +4866,15 @@ end
           while not _task.started do
             task.wait(.2)
           end
-          local ok, _ = safeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
+          local ok, _ = SafeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
           if ok then 
             WriteConsoleLog(string.format("[AutoMegaNeon]: Pet {%s} is Mega-Neon now", k), string.format("[🧿]:[✅] Pet %s is Mega-Neon now!", k), "DEBUG")
             WriteFileLog(string.format("[AutoMegaNeon]: Pet {%s} is Mega-Neon now", k), "DEBUG") 
-            GUI.Notify("Info", string.format("Pet %s is Neon now!", k), "INFO", "circle-check")
+            GUI.Notify("Success", string.format("Pet %s is Neon now!", k), "SUCCESS", "circle-check")
           else
             WriteConsoleLog(string.format("[AutoMegaNeon]: Failed to make pet {%s} mega-neon", k), string.format("[🧿]:[❌] Failed to make pet %s mega-neon", k), "DEBUG")
             WriteFileLog(string.format("[AutoMegaNeon]: Failed to make {%s} mega-neon", k), "DEBUG") 
-            GUI.Notify("Info", string.format("Failed to make pet %s mega-neon", k), "INFO", "circle-check")
+            GUI.Notify("Error", string.format("Failed to make pet %s mega-neon", k), "ERROR", "circle-x")
           end
           task.wait(1.5)
           LocationQueue.Complete(_task)
@@ -4732,7 +4906,7 @@ end
       WriteFileLog("Discord webhook enabled", "DEBUG")
       if not _G.InternalConfig.DiscordWebhookUrl then
         GUI.ToggleButtonSetValue(DiscordWebhooksToggleButton, false)
-        GUI.Notify("Warning", "set discord webhook URL at first", "WARNING", "triangle-alert")
+        GUI.Notify("Warning", "Set <Webhook URL> at first.", "WARNING", "triangle-alert")
         return
       end
       Cooldown.Webhooks.DiscordWebhookSendDelay = Cooldown.Webhooks.DiscordWebhookSendDelay or tonumber(DiscordWebhookSendDelayTextField.CurrentValue)
@@ -4767,14 +4941,14 @@ end
           "Farm-Log",
           desc
         )
-        GUI.Notify("Info", "Discord webhook sent.", "INFO", "mail-check")
+        GUI.Notify("Success", "Discord webhook sent.", "SUCCESS", "mail-check")
         Cooldown.Webhooks.DiscordWebhookSendDelay = tonumber(DiscordWebhookSendDelayTextField.CurrentValue)
       end,
       function()
         return Cooldown.Webhooks.DiscordWebhookSendDelay == 0  
       end,
       function()
-        GUI.Notify("Error", "Something went wrong while trying to send discord webhook", "ERROR", "mail-minus")
+        GUI.Notify("Error", "Something went wrong while trying to send discord webhook.", "ERROR", "mail-minus")
         Cooldown.Webhooks.DiscordWebhookSendDelay = 8
         WriteConsoleLog("Something went wrong while trying to send discord webhook", nil, "ERROR")
         WriteFileLog("Something went wrong while trying to send discord webhook", "ERROR")
@@ -4880,13 +5054,13 @@ end
       )
       local ok, _ = pcall(Webhook, "Farm-Log", desc)
       if ok then
-        GUI.Notify("Info", "Discord webhook sent.", "INFO", "mail-check")
+        GUI.Notify("Success", "Discord webhook sent.", "SUCCESS", "mail-check")
         WriteConsoleLog("Discord webhook sent", nil, "DEBUG")
         WriteFileLog("Discord webhook sent", "DEBUG")
       else
         WriteConsoleLog("Something went wrong while trying to send discord webhook", nil, "ERROR")
         WriteFileLog("Something went wrong while trying to send discord webhook", "ERROR")
-        GUI.Notify("Error", "Something went wrong while trying to send discord webhook", "ERROR", "mail-minus")
+        GUI.Notify("Error", "Something went wrong while trying to send discord webhook.", "ERROR", "mail-minus")
       end
     end)
   end
@@ -4956,12 +5130,12 @@ end
     WriteFileLog("Telegram webhooks triggered", "DEBUG") 
     if v then
       if not _G.InternalConfig.TelegramBotApi then
-        GUI.Notify("Warning", "set Bot Api Key at first", "WARNING", "triangle-alert")
+        GUI.Notify("Warning", "Set <Bot API Key> at first.", "WARNING", "triangle-alert")
         GUI.ToggleButtonSetValue(TelegramWebhooksToggleButton, false)
         return
       end
       if not _G.InternalConfig.TelegramChatId then
-        GUI.Notify("Warning", "set Chat Id at first", "WARNING", "triangle-alert")
+        GUI.Notify("Warning", "Set <Chat Id> at first.", "WARNING", "triangle-alert")
         GUI.ToggleButtonSetValue(TelegramChatIdTextField, false)
         return
       end
@@ -4997,14 +5171,14 @@ end
         format_time(farmed.time)
         )
         telegram_webhook(msg)
-        GUI.Notify("Info", "Telegram webhook sent.", "INFO", "mail-check")
+        GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
         Cooldown.Webhooks.TelegramWebhookSendDelay = tonumber(TelegramWebhookSendDelayTextField.CurrentValue)
       end,
       function()
         return _G.InternalConfig.TelegramWebhookSendDelay == 0
       end,
       function()
-        GUI.Notify("Error", "Something went wrong while trying to send telegram webhook", "ERROR", "mail-minus")
+        GUI.Notify("Error", "Something went wrong while trying to send telegram webhook.", "ERROR", "mail-minus")
         Cooldown.Webhooks.TelegramWebhookSendDelay = 8
         WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
         WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
@@ -5050,11 +5224,11 @@ end
     WriteFileLog("Send manually triggered", "DEBUG") 
     if v then
       if not _G.InternalConfig.TelegramBotApi then
-        GUI.Notify("Warning", "Set <Bot Api Key> at first", "WARNING", "triangle-alert")
+        GUI.Notify("Warning", "Set <Bot API Key> at first.", "WARNING", "triangle-alert")
         return
       end
       if not _G.InternalConfig.TelegramChatId then
-        GUI.Notify("Warning", "Set <Chat Id> at first", "WARNING", "triangle-alert")
+        GUI.Notify("Warning", "Set <Chat Id> at first.", "WARNING", "triangle-alert")
         return
       end
       Registry.RunTask("telegram_webhook_send_manually_handler", function(v)
@@ -5086,13 +5260,13 @@ end
         )
         local ok, _ = pcall(telegram_webhook, msg)
         if ok then
-          GUI.Notify("Info", "Telegram webhook sent.", "INFO", "mail-check")
+          GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
           WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
           WriteFileLog("Telegram webhook sent", "DEBUG")
         else
           WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
           WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
-          GUI.Notify("Error", "Something went wrong while trying to send telegram webhook", "ERROR", "mail-minus")
+          GUI.Notify("Error", "Something went wrong while trying to send telegram webhook.", "ERROR", "mail-minus")
         end
       end)
     end
@@ -5116,7 +5290,7 @@ end
 		if not ok then
       WriteConsoleLog("Telegram HTTP error while checking bot API", "[-] Telegram HTTP error while checking bot API.", "ERROR")
       WriteFileLog("Telegram HTTP error while checking bot API", "ERROR")
-      GUI.Notify("Error", string.format("Telegram HTTP error while checking bot API. Setting value to {%s}", (_G.InternalConfig.TelegramBotApi or "")), "ERROR", "mail-warning")
+      GUI.Notify("Warning", string.format("Telegram HTTP error while checking bot API. Setting value to {%s}", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
       GUI.TextFieldSetValue(TelegramBotApiKeyTextField, _G.InternalConfig.TelegramBotApi or "") 
       return
 		end
@@ -5132,13 +5306,13 @@ end
 		  end
       WriteConsoleLog("Invalid bot API key: " .. desc, "[-] Invalid bot API key: " .. desc .. ".", "ERROR")
       WriteFileLog("Invalid bot API key: " .. desc, "ERROR")
-      GUI.Notify("Error", "Invalid bot API key: " .. desc .. string.format(". Setting value to {%s}", (_G.InternalConfig.TelegramBotApi or "")), "ERROR", "circle-x")
+      GUI.Notify("Warning", "Invalid bot API key: " .. desc .. string.format(". Setting value to {%s}", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
       GUI.TextFieldSetValue(TelegramBotApiKeyTextField, _G.InternalConfig.TelegramBotApi or "") 
 	  else
       _G.InternalConfig.TelegramBotApi = table.unpack(v)
       WriteConsoleLog(string.format("Telegram bot API key is valid: {%s}", table.unpack(v)), "[+] Telegram bot API key is valid.", "DEBUG")
       WriteFileLog(string.format("Telegram bot API key is valid: {%s}", table.unpack(v)), "DEBUG")
-      GUI.Notify("Info", "Telegram bot API key is valid", "INFO", "circle-x")
+      GUI.Notify("Info", "Telegram bot API key is valid.", "INFO", "mail-plus")
     end
   end
 
@@ -5166,7 +5340,7 @@ end
 		if not ok then
       WriteConsoleLog("Telegram HTTP error while trying to send message to chat", "[-] Telegram HTTP error while trying to send message to chat.", "DEBUG")
       WriteFileLog("Telegram HTTP error while trying to send message to chat", "DEBUG")
-      GUI.Notify("Error", string.format("Telegram HTTP error while trying to send message to chat. Setting value to {%s}", (_G.InternalConfig.TelegramChatid or "")), "ERROR", "circle-x")
+      GUI.Notify("Warning", string.format("Telegram HTTP error while trying to send message to chat. Setting value to {%s}", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "mail-warning")
 			GUI.TextFieldSetValue(TelegramChatIdTextField, (_G.InternalConfig.TelegramChatid or ""))
       return
 		end
@@ -5183,7 +5357,7 @@ end
       WriteConsoleLog("Error while trying to send message to chat: " .. data.description or "Unknown Error", "[-] Error while trying to send message to chat: " .. data.description or "Unknown Error.", "ERROR")
       WriteFileLog("Error while trying to send message to chat: " .. data.description or "Unknown Error", "ERROR")
       GUI.TextFieldSetValue(TelegramChatIdTextField, (_G.InternalConfig.TelegramChatid or ""))
-      GUI.Notify("Error", string.format("Error while trying to send message to chat: " .. data.description or "Unknown Error. " .. "Setting value to {%s}", (_G.InternalConfig.TelegramChatid or "")), "ERROR", "circle-x")
+      GUI.Notify("Warning", string.format("Error while trying to send message to chat: " .. data.description or "Unknown Error. " .. "Setting value to {%s}", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "circle-warning")
 		end
   end
 
@@ -5248,13 +5422,14 @@ end
     local trade_specified_pets = {}
     local recycler_specific_pets = {}
     local auto_give_potion_specific_pets = {}
-    
+    local pet_pen_specific_pets = {}
 
     local saved_trade_specified_pets = TradeBlacklistSpecificPetsDropdown.CurrentOption
     local saved_recycler_specific_pets = RecyclerPetPenBlacklistedSpecificPetsDropdown.CurrentOption
     local saved_auto_give_potion_specific_pets = AutoGivePotionBlacklistedSpecificPetsDropdown.CurrentOption
     local saved_meganeon = PetToMegaNeonDropdown.CurrentOption
     local saved_neon = PetToNeonDropdown.CurrentOption
+    local saved_pet_pen_exclude_pets = PetPenBlacklistedSpecificPetsDropdown.CurrentOption
     local saved_pets_to_give_potion = nil
     local pets_to_give_potion = nil
     if _G.pets_to_give_potion_should_be_updated then
@@ -5266,19 +5441,19 @@ end
       saved_pet_to_manual_farm = {}
     end
 
-    local saved_pet_farm_exclude_pets = {}
+    local saved_pet_pen_specific_pets = {}
     local pet_farm_exclude_pets = {}
 
     local __neon_temp = {}
     local __meganeon_temp = {}
     local neon = {}
     local meganeon = {}
-    local _rep = {}
     local owned = GetOwnedPets()
     for k,v in pairs(owned) do
       table.insert(trade_specified_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(recycler_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      table.insert(pet_pen_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then
         if not (v.name:lower()):match("egg") then
           table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
@@ -5382,6 +5557,13 @@ end
         saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
       end
     end
+    for k,v in ipairs(saved_pet_pen_specific_pets) do
+      local unique = v:split("unique: ")[2]
+      if not owned[unique] then
+        GUI.Notify("Warning", string.format("[PetPen Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
+        saved_pet_pen_specific_pets[k] = nil
+      end
+    end
 
     GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, pet_farm_exclude_pets)
     GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, saved_pet_farm_exclude_pets)
@@ -5408,6 +5590,9 @@ end
     
     GUI.DropdownUpdateOptionList(TradeBlacklistSpecificPetsDropdown, trade_specified_pets)
     GUI.DropdownSetValue(TradeBlacklistSpecificPetsDropdown, saved_trade_specified_pets)
+
+    GUI.DropdownUpdateOptionList(PetPenBlacklistedSpecificPetsDropdown, pet_pen_specific_pets)
+    GUI.DropdownUpdateOptionList(PetPenBlacklistedSpecificPetsDropdown, saved_pet_pen_specific_pets)
 
     Cooldown.Other.Deadline10sUpdates = 10
   end,
