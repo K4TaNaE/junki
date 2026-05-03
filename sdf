@@ -1657,7 +1657,7 @@ end
   local PetPenUsePriorityDropdown = GUI.InitDropdown(AutofarmTab, "Use Priority (required)", {"any", "pets", "eggs"}, {"any"}, false, "petpenuseprioritydropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenUsePriority(v) end)
   local PetPenPrioritizedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Prioritized Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "petpenprioritizedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenPrioritizedRarities(v) end)
   local PetPenStealableToggleButton = GUI.InitToggleButton(AutofarmTab, "Stealable", false, "petpenstealabletogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.TogglePetPenStealable(v) end)
-  local PetPenJustAutoCollectProgressionToggleButton = GUI.InitToggleButton(AutofarmTab, "Just Auto Collect Progression", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleJustAutoCollectProgression(v) end)
+  local PetPenJustAutoCollectProgressionToggleButton = GUI.InitToggleButton(AutofarmTab, "Just Auto Collect Progression", false, "petpenjustautocollectprogressiontogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleJustAutoCollectProgression(v) end)
   GUI.InitDivider(AutofarmTab)
   local PetPenPetPenBlacklistedRarirtiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "petpenblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedRarities(v) end)
   local PetPenBlacklistedAgesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, true, "petpenblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedAges(v) end)
@@ -1764,7 +1764,7 @@ end
       while money == ClientData.get("money") and os.clock() < deadline do
         task.wait(.1)
       end
-      CalculateMoney()
+      CalculateMoney(RuntimeStatsBucksEarnedLabel, RuntimeStatsTotalBucksLabel)
     else
       task.wait(.5)
     end
@@ -1843,7 +1843,7 @@ end
     if pet_has_ailment and Equiped() and not HasAilment(ailment) then
       __pet_callback(petData[1], petData[2], ailment)
     end
-    CalculateMoney()
+    CalculateMoney(RuntimeStatsBucksEarnedLabel, RuntimeStatsTotalBucksLabel)
     UpdateGui("baby_needs", farmed.baby_ailments)
     GUI.LabelUpdate(RuntimeStatsBabyNeedsCompletedLabel, string.format("Baby needs completed : %d", farmed.baby_ailments), "baby", Color3.fromRGB(203, 92, 255), false)
   end
@@ -5218,6 +5218,16 @@ end
       createLabel("total_bucks", "💸 Total bucks", 8)
       createLabel("__", "---------------------------------------", 9, true)
       createLabel("timer", "⏰ Runtime", 10)    
+
+      UpdateGui("bucks", farmed.money)
+      UpdateGui("fullgrown", farmed.pets_fullgrown)
+      UpdateGui("pet_needs", farmed.ailments)
+      UpdateGui("potions", farmed.potions)
+      UpdateGui("friendship", farmed.friendship_levels)
+      UpdateGui("baby_needs", farmed.baby_ailments)
+      UpdateGui("eggs", farmed.eggs_hatched)
+      UpdateGui("total_bucks", farmed.total_money)
+      UpdateGui("timer", farmed.time)
     else
       if hui:FindFirstChild("StatsOverlay") then
         hui:FindFirstChild("StatsOverlay"):Destroy()
@@ -5539,6 +5549,7 @@ end
     local saved_meganeon = PetToMegaNeonDropdown.CurrentOption
     local saved_neon = PetToNeonDropdown.CurrentOption
     local saved_pet_pen_specific_pets = PetPenBlacklistedSpecificPetsDropdown.CurrentOption
+    local saved_pet_farm_exclude_pets = PetAutoFarmPetsToExcludeDropdown.CurrentOption
     local saved_pets_to_give_potion = nil
     local pets_to_give_potion = nil
     if _G.pets_to_give_potion_should_be_updated then
