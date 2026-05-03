@@ -135,6 +135,7 @@ local _script = coroutine.create(function()
               HandlePetPenPrioritizedRarities = function() end,
               TogglePetPenStealable = function() end,
               ToggleJustAutoCollectProgression = function() end,
+              HandleMinimumCashReserve = function() end
             }
           }
         }
@@ -315,17 +316,20 @@ local _script = coroutine.create(function()
   local LocalPlayer = game:GetService("Players").LocalPlayer
   local API = ReplicatedStorage.API
   local loader = require(ReplicatedStorage:WaitForChild("Fsys")).load
-  local UIManager = loader("UIManager")
-  local ClientData = loader("ClientData")
-  local InventoryDB = loader("InventoryDB")
-  local PetEntityManager = loader("PetEntityManager")
-  local InteriorsM = loader("InteriorsM")
-  local HouseClient = loader("HouseClient")
-  local PetActions = loader("PetActions")
-  local StateManagerClient = loader("StateManagerClient")
+  local UIManager = require(ReplicatedStorage.ClientModules.Core.UIManager.UIManager)
+  local ClientData = require(ReplicatedStorage.ClientModules.Core.ClientData)
+  local InventoryDB = require(ReplicatedStorage.ClientDB.Inventory.InventoryDB)
+  local PetEntityManager = require(ReplicatedStorage.ClientModules.Game.PetEntities.PetEntityManager)
+  local InteriorsM = require(ReplicatedStorage.ClientModules.Core.InteriorsM.InteriorsM)
+  local HouseClient = require(ReplicatedStorage.ClientModules.Game.HouseClient)
+  local PetActions = require(ReplicatedStorage.ClientModules.Game.PetActions)
+  local StateManagerClient = require(ReplicatedStorage.ClientModules.Game.StateManagerClient)
   local Calculator = require(ReplicatedStorage.new.modules.PetRecycler.PetRecyclerCalculator)
   local AilmentsDB = require(ReplicatedStorage.new.modules.Ailments.AilmentsDB)
-  local LiveOpsTime = loader("LiveOpsTime")
+  local LiveOpsTime = require(ReplicatedStorage.SharedModules.Game.LiveOpsTime)
+  local CloudValues = require(ReplicatedStorage.ClientModules.CloudValues)  
+  local TradeLicenseHelper = require(ReplicatedStorage.SharedModules.TradeLicenseHelper)
+  local ClientGamepassHelper = require(ReplicatedStorage.ClientModules.Game.ClientGamepassHelper)
   local HttpService = game:GetService("HttpService")
   local StateDB = {
     total_fullgrowned = {},
@@ -770,7 +774,6 @@ local _script = coroutine.create(function()
     return {
       callback = callback,
       completed = false,
-      started = false,
       resume = nil,
     }
   end
@@ -780,19 +783,10 @@ local _script = coroutine.create(function()
     LocationQueue._running = true
     while #LocationQueue._queue > 0 do
       local _task = table.remove(LocationQueue._queue, 1)
-      _task.started = true
       _task.callback()
-      local startTime = os.clock()
-      while not _task.completed do
-        if os.clock() - startTime >= 65 then
-          WriteConsoleLog(string.format("[Location Change Queue]: Task reached the deadline. Crashing. function: {%s}",(debug.info(_task.callback, "n") or tostring(_task.callback))), nil, "ERROR")
-          WriteFileLog(string.format("[Location Change Queue]: Task reached the deadline. Crashing. function: {%s}",(debug.info(_task.callback, "n") or tostring(_task.callback))), "ERROR")
-          _task.completed = true
-          break
-        end
-        _task.resume = coroutine.running()
-        coroutine.yield()
-      end
+      _task.completed = true
+      _task.resume = coroutine.running()
+      coroutine.yield()
     end
     LocationQueue._running = false
   end
@@ -820,9 +814,7 @@ local _script = coroutine.create(function()
     return {
       callback = callback,
       completed = false,
-      started = false,
       resume = nil,
-      finished = false
     }
   end
 
@@ -831,20 +823,10 @@ local _script = coroutine.create(function()
     TaskQueue._running = true
     while #TaskQueue._queue > 0 do
       local _task = table.remove(TaskQueue._queue, 1)
-      _task.started = true
       _task.callback() -- specialno ne pcall, poomuchto funkcija kotoraya vyzyvaet location queu asma osibku obrabotaet s svoim cooldown
-      _task.finished = true
-      local startTime = os.clock()
-      while not _task.completed do
-        if os.clock() - startTime >= 65 then
-          WriteConsoleLog(string.format("[Location Change Queue]: Task reached the deadline. Crashing. function: {%s}",(debug.info(_task.callback, "n") or tostring(_task.callback))), nil, "ERROR")
-          WriteFileLog(string.format("[Location Change Queue]: Task reached the deadline. Crashing. function: {%s}",(debug.info(_task.callback, "n") or tostring(_task.callback))), "ERROR")
-          _task.completed = true
-          break
-        end
-        _task.resume = coroutine.running()
-        coroutine.yield()
-      end
+      _task.completed = true
+      _task.resume = coroutine.running()
+      coroutine.yield()
     end
     TaskQueue._running = false
   end
@@ -1229,7 +1211,7 @@ local _script = coroutine.create(function()
   end
 
   local function License() 
-    if loader("TradeLicenseHelper").player_has_trade_license(LocalPlayer) then
+    if TradeLicenseHelper.player_has_trade_license(LocalPlayer) then
       WriteConsoleLog("Trade license found", "[📜]:[✅] Trade license found", "DEBUG")
       WriteFileLog("Trade license found", "DEBUG")
       GUI.Notify("Info", "Trade license found.", "INFO", "scroll")
@@ -1362,6 +1344,18 @@ end
     local seconds = sec % 60
     return string.format("%02d:%02d:%02d", hours, minutes, seconds)
   end
+
+  local function GetPetPenSlots() 
+    local maxTotalPets = CloudValues:getValue("idle_progression", "maxTotalPets") or 0
+    local extraSlotGamepassIds = CloudValues:getValue("idle_progression", "extraSlotGamepassIds") or {}
+    local purchasedExtraSlots = 0
+    for _, gamepassId in ipairs(extraSlotGamepassIds) do
+      if ClientGamepassHelper.owns_gamepass(gamepassId) then
+        purchasedExtraSlots = purchasedExtraSlots + 1
+      end
+    end
+    return maxTotalPets + purchasedExtraSlots
+  end
   
   local function CheckInternet()
     local ok, res = pcall(function()
@@ -1394,11 +1388,11 @@ end
     local big = {}
     local tiny = {}
     for k,v in pairs(GetOwnedCategory("food")) do
-    if (v.remote:lower()):match("tiny_pet_age_potion") then
-      tiny[k] = true
-    elseif (v.remote:lower()):match("pet_age_potion") then
-      big[k] = true
-    end
+      if (v.remote:lower()):match("tiny_pet_age_potion") then
+        tiny[k] = true
+      elseif (v.remote:lower()):match("pet_age_potion") then
+        big[k] = true
+      end
     end
     if count(big) == 0 then big = nil end
     if count(tiny) == 0 then tiny = nil end
@@ -1626,6 +1620,8 @@ end
   local GiftToBuyDropdown = GUI.InitDropdown(AutofarmTab, "Gift To Buy", {"Small Gift - 70$", "Big Gift - 199$", "Massive Gift - 499$"}, "", false, "gifttobuytextfield", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.GiftToBuyHandler(v) end)
   local GiftBuyCountTextField = GUI.InitTextField(AutofarmTab, "Buy count", "", "     ", false, "giftbuycounttextfield", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.GiftBuyCountHandler(v) end)
   GUI.InitDivider(AutofarmTab)
+  local AutoBuyMinimumCashReserveTextField = GUI.InitTextField(AutofarmTab, "Minimum Cash Reserve", "", "        ", false, "autobuyminimumcashreservetextfield", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleMinimumCashReserve(v) end)
+  GUI.InitDivider(AutofarmTab)
   GUI.InitParagraph(AutofarmTab, "Hint : Buy Count", "Egg & Gift Auto Buy is disabled after specified value is reached. -1 for infinite buy.")
   local EggsBoughtLabel = GUI.InitLabel(AutofarmTab, "0 : Eggs bought", "egg", Color3.fromRGB(203, 92, 255), false)
   local GiftsBoughtLabel = GUI.InitLabel(AutofarmTab, "0 : Gifts bought", "gift", Color3.fromRGB(203, 92, 255), false)
@@ -1659,11 +1655,11 @@ end
   GUI.InitSection(AutofarmTab, "- Pet Pen -")
   local PetPenUsePetPenTogleButton = GUI.InitToggleButton(AutofarmTab, "Use Pet Pen", false, "usepetpentogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.TogglePetPen(v) end)
   local PetPenUsePriorityDropdown = GUI.InitDropdown(AutofarmTab, "Use Priority (required)", {"any", "pets", "eggs"}, {"any"}, false, "petpenuseprioritydropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenUsePriority(v) end)
-  local PetPenPrioritizedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Prioritized Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "petpenprioritizedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenPrioritizedRarities(v) end)
+  local PetPenPrioritizedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Prioritized Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "petpenprioritizedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenPrioritizedRarities(v) end)
   local PetPenStealableToggleButton = GUI.InitToggleButton(AutofarmTab, "Stealable", false, "petpenstealabletogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.TogglePetPenStealable(v) end)
   local PetPenJustAutoCollectProgressionToggleButton = GUI.InitToggleButton(AutofarmTab, "Just Auto Collect Progression", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleJustAutoCollectProgression(v) end)
   GUI.InitDivider(AutofarmTab)
-  local PetPenPetPenBlacklistedRarirtiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {""}, true, "petpenblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedRarities(v) end)
+  local PetPenPetPenBlacklistedRarirtiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {'common', "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "petpenblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedRarities(v) end)
   local PetPenBlacklistedAgesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, true, "petpenblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedAges(v) end)
   local PetPenBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "petpenblacklistedpropertydropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedProperties(v) end)
   local PetPenBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {}, true, "petpenblacklistedspecificpetsdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetPenBlacklistedSpecificPets(v) end)
@@ -1871,22 +1867,21 @@ end
       local baby_has_ailment = HasAilmentBaby("camping")
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("MainMap", LocalPlayer, "Default") 
+        Gotopart("_camp")
+        local deadline = os.clock() + 60
+        repeat 
+          task.wait(1)
+        until not HasAilment("camping") or os.clock() > deadline  
+        if os.clock() > deadline then 
+          print(string.format("🟥 Task camping for %s - Out of limits!", actual_pet.remote)) 
+          return
+        end        
+        print(string.format("🟩 Task camping for %s - done!", actual_pet.remote)) 
+        Enstat(age, friendship, money, "camping", baby_has_ailment)
       end)
-      while not _task.started do
-        task.wait(.2)
-      end
-      Gotopart("_camp")
-      local deadline = os.clock() + 60
-      repeat 
+      while not _task.completed do
         task.wait(1)
-      until not HasAilment("camping") or os.clock() > deadline  
-      LocationQueue.Complete(_task)
-      if os.clock() > deadline then 
-        print(string.format("🟥 Task camping for %s - Out of limits!", actual_pet.remote)) 
-        return
-      end        
-      print(string.format("🟩 Task camping for %s - done!", actual_pet.remote)) 
-      Enstat(age, friendship, money, "camping", baby_has_ailment)
+      end
     end,
     ["hungry"] = function() 
       local pet = ClientData.get("pet_char_wrappers")[1]
@@ -1995,20 +1990,19 @@ end
       local baby_has_ailment = HasAilmentBaby("sick")
       local _task = LocationQueue.Enqueue(function() 
         EmulateLocation("Hospital")
+        SafeInvoke("HousingAPI/ActivateInteriorFurniture",
+          "f-14",
+          "UseBlock",
+          "Yes",
+          LocalPlayer.Character
+        )
+        task.wait(.6)
+        print(string.format("🟩 Task sick for %s - done!", actual_pet.remote)) 
+        Enstat(age, friendship, money, "sick", baby_has_ailment)
       end)
-      while not _task.started do
-        task.wait(.2)
+      while not _task.completed do
+        task.wait(1)
       end
-      SafeInvoke("HousingAPI/ActivateInteriorFurniture",
-        "f-14",
-        "UseBlock",
-        "Yes",
-        LocalPlayer.Character
-      )
-      LocationQueue.Complete(_task)
-      task.wait(.6)
-      print(string.format("🟩 Task sick for %s - done!", actual_pet.remote)) 
-      Enstat(age, friendship, money, "sick", baby_has_ailment)
     end,
     ["bored"] = function() 
       local pet = ClientData.get("pet_char_wrappers")[1]
@@ -2019,22 +2013,21 @@ end
       local baby_has_ailment = HasAilmentBaby("bored")
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("MainMap", LocalPlayer, "Default")
+        Gotopart("_playground")
+        local deadline = os.clock() + 60
+        repeat 
+          task.wait(1)
+        until not HasAilment("bored") or os.clock() > deadline
+        if os.clock() > deadline then 
+          print(string.format("🟥 Task bored for %s - Out of limits!", actual_pet.remote)) 
+          return		
+        end        
+        print(string.format("🟩 Task bored for %s - done!", actual_pet.remote)) 
+        Enstat(age, friendship, money, "bored", baby_has_ailment)  
       end)
-      while not _task.started do
-        task.wait(.2)
-      end
-      Gotopart("_playground")
-      local deadline = os.clock() + 60
-      repeat 
+      while not _task.completed do
         task.wait(1)
-      until not HasAilment("bored") or os.clock() > deadline
-      LocationQueue.Enqueue(_task)
-      if os.clock() > deadline then 
-        print(string.format("🟥 Task bored for %s - Out of limits!", actual_pet.remote)) 
-        return		
-      end        
-      print(string.format("🟩 Task bored for %s - done!", actual_pet.remote)) 
-      Enstat(age, friendship, money, "bored", baby_has_ailment)  
+      end
     end,
     ["salon"] = function() 
       local pet = ClientData.get("pet_char_wrappers")[1]
@@ -2045,22 +2038,21 @@ end
       local baby_has_ailment = HasAilmentBaby("salon")
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("Salon")
+        local deadline = os.clock() + 60
+        repeat 
+          task.wait(1)
+        until not HasAilment("salon") or os.clock() > deadline
+        if os.clock() > deadline then 
+          print(string.format("🟥 Task salon for %s - Out of limits!", actual_pet.remote)) 
+          return		
+        end        
+        print(string.format("🟩 Task salon for %s - done!", actual_pet.remote)) 
+        Enstat(age, friendship, money, "salon", baby_has_ailment)
       end)
-      while not _task.started do
-        task.wait(.2)
-      end
-      local deadline = os.clock() + 60
-      repeat 
+      while not _task.completed do
         task.wait(1)
-      until not HasAilment("salon") or os.clock() > deadline
-      LocationQueue.Complete(_task)
-      if os.clock() > deadline then 
-        print(string.format("🟥 Task salon for %s - Out of limits!", actual_pet.remote)) 
-        return		
-      end        
-      print(string.format("🟩 Task salon for %s - done!", actual_pet.remote)) 
-      Enstat(age, friendship, money, "salon", baby_has_ailment)
-      end,
+      end
+    end,
     ["play"] = function() 
       local pet = ClientData.get("pet_char_wrappers")[1]
       local cdata = ClientData.get("inventory").pets[actual_pet.unique]
@@ -2123,22 +2115,21 @@ end
       local baby_has_ailment = HasAilmentBaby("beach_party")
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("MainMap", LocalPlayer, "Default")
+        Gotopart("_beach")
+        local deadline = os.clock() + 60
+        repeat 
+          task.wait(1)
+        until not HasAilment("beach_party") or os.clock() > deadline
+        if os.clock() > deadline then 
+          print(string.format("🟥 Task beach-party for %s - Out of limits!", actual_pet.remote)) 
+          return		
+        end        
+        print(string.format("🟩 Task beach-party for %s - done!", actual_pet.remote)) 
+        Enstat(age, friendship, money, "beach_party", baby_has_ailment)  
       end)
-      while not _task.started do
-        task.wait(.2)
-      end
-      Gotopart("_beach")
-      local deadline = os.clock() + 60
-      repeat 
+      while not _task.completed do
         task.wait(1)
-      until not HasAilment("beach_party") or os.clock() > deadline
-      LocationQueue.Complete(_task)
-      if os.clock() > deadline then 
-        print(string.format("🟥 Task beach-party for %s - Out of limits!", actual_pet.remote)) 
-        return		
-      end        
-      print(string.format("🟩 Task beach-party for %s - done!", actual_pet.remote)) 
-      Enstat(age, friendship, money, "beach_party", baby_has_ailment)  
+      end
     end,
     ["ride"] = function()
       local pet = ClientData.get("pet_char_wrappers")[1]
@@ -2234,21 +2225,20 @@ end
       local baby_has_ailment = HasAilmentBaby("school")
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("School")
+        local deadline = os.clock() + 60
+        repeat 
+          task.wait(1)
+        until not HasAilment("school") or os.clock() > deadline
+        if os.clock() > deadline then 
+          print(string.format("🟥 Task school for %s - Out of limits!", actual_pet.remote)) 
+          return		
+        end        
+        print(string.format("🟩 Task school for %s - done!", actual_pet.remote)) 
+        Enstat(age, friendship, money, "school", baby_has_ailment)
       end)
-      while not _task.started do
-        task.wait(.2)
-      end
-      local deadline = os.clock() + 60
-      repeat 
+      while not _task.completed do
         task.wait(1)
-      until not HasAilment("school") or os.clock() > deadline
-      LocationQueue.Complete(_task)
-      if os.clock() > deadline then 
-        print(string.format("🟥 Task school for %s - Out of limits!", actual_pet.remote)) 
-        return		
-      end        
-      print(string.format("🟩 Task school for %s - done!", actual_pet.remote)) 
-      Enstat(age, friendship, money, "school", baby_has_ailment)
+      end
     end,
     ["sleepy"] = function()
       local pet = ClientData.get("pet_char_wrappers")[1]
@@ -2300,21 +2290,20 @@ end
       local baby_has_ailment = HasAilmentBaby("pizza_party")
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("PizzaShop")
+        local deadline = os.clock() + 60
+        repeat 
+          task.wait(1)
+        until not HasAilment("pizza_party") or os.clock() > deadline
+        if os.clock() > deadline then 
+          print(string.format("🟥 Task pizza-party for %s - Out of limits!", actual_pet.remote)) 
+          return		
+        end       
+        print(string.format("🟩 Task pizza-party for %s - done!", actual_pet.remote)) 
+        Enstat(age, friendship, money, "pizza_party", baby_has_ailment)  
       end)
-      while not _task.started do
-        task.wait(.2)
-      end
-      local deadline = os.clock() + 60
-      repeat 
+      while not _task.completed do
         task.wait(1)
-      until not HasAilment("pizza_party") or os.clock() > deadline
-      LocationQueue.Complete(_task)
-      if os.clock() > deadline then 
-        print(string.format("🟥 Task pizza-party for %s - Out of limits!", actual_pet.remote)) 
-        return		
-      end       
-      print(string.format("🟩 Task pizza-party for %s - done!", actual_pet.remote)) 
-      Enstat(age, friendship, money, "pizza_party", baby_has_ailment)  
+      end
     end,
     ["pet_me"] = function()
       local pet = ClientData.get("pet_char_wrappers")[1]
@@ -2341,22 +2330,21 @@ end
       end
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("MainMap", LocalPlayer, "Default")
+        Gotopart("_camp")
+        local deadline = os.clock() + 60
+        repeat 
+          task.wait(1)
+        until not HasAilmentBaby("camping") or os.clock() > deadline
+        if os.clock() > deadline then 
+          print("🟥 Task camping for baby - Out of limits!")
+          return		
+        end		
+        print("🟩 Task camping for baby - done!")
+        EnstatBaby(money, "camping", pet_has_ailment, { age, friendship, })
       end)
-      while not _task.started do
-        task.wait(.2)
-      end
-      Gotopart("_camp")
-      local deadline = os.clock() + 60
-      repeat 
+      while not _task.completed do
         task.wait(1)
-      until not HasAilmentBaby("camping") or os.clock() > deadline
-      LocationQueue.Complete(_task)
-      if os.clock() > deadline then 
-        print("🟥 Task camping for baby - Out of limits!")
-        return		
-      end		
-      print("🟩 Task camping for baby - done!")
-      EnstatBaby(money, "camping", pet_has_ailment, { age, friendship, })
+      end
     end,
     ["hungry"] = function() 
       local money = ClientData.get("money")
@@ -2450,20 +2438,19 @@ end
       end
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("Hospital")
+        SafeInvoke("HousingAPI/ActivateInteriorFurniture",
+          "f-14",
+          "UseBlock",
+          "Yes",
+          LocalPlayer.Character
+        )
+        task.wait(.6)
+        print("🟩 Task sick for baby - done!")
+        EnstatBaby(money, "sick", pet_has_ailment, { age, friendship, }) 
       end)
-      while not _task.started do
-        task.wait(.2)
+      while not _task.completed do
+        task.wait(1)
       end
-      SafeInvoke("HousingAPI/ActivateInteriorFurniture",
-        "f-14",
-        "UseBlock",
-        "Yes",
-        LocalPlayer.Character
-      )
-      LocationQueue.Complete(_task)
-      task.wait(.6)
-      print("🟩 Task sick for baby - done!")
-      EnstatBaby(money, "sick", pet_has_ailment, { age, friendship, }) 
     end,
     ["bored"] = function() 
       local money = ClientData.get("money")
@@ -2475,22 +2462,21 @@ end
       end
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("MainMap", LocalPlayer, "Default")
+        Gotopart("_playground")
+        local deadline = os.clock() + 60
+        repeat 
+          task.wait(1)
+        until not HasAilmentBaby("bored") or os.clock() > deadline
+        if os.clock() > deadline then 
+          print("🟥 Task bored for baby - Out of limits!")
+          return		
+        end		
+        print("🟩 Task bored for baby - done!")
+        EnstatBaby(money, "bored", pet_has_ailment, { age, friendship, }) 
       end)
-      while not _task.started do
-        task.wait(.2)
-      end
-      Gotopart("_playground")
-      local deadline = os.clock() + 60
-      repeat 
+      while not _task.completed do
         task.wait(1)
-      until not HasAilmentBaby("bored") or os.clock() > deadline
-      LocationQueue.Complete(_task)
-      if os.clock() > deadline then 
-        print("🟥 Task bored for baby - Out of limits!")
-        return		
-      end		
-      print("🟩 Task bored for baby - done!")
-      EnstatBaby(money, "bored", pet_has_ailment, { age, friendship, })  
+      end 
     end,
     ["salon"] = function() 
       local money = ClientData.get("money")
@@ -2502,21 +2488,20 @@ end
       end
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("Salon")
+        local deadline = os.clock() + 60
+        repeat 
+          task.wait(1)
+        until not HasAilmentBaby("salon") or os.clock() > deadline
+        if os.clock() > deadline then 
+          print("🟥 Task salon for baby - Out of limits!")
+          return		
+        end		
+        print("🟩 Task salon for baby - done!")
+        EnstatBaby(money, "salon", pet_has_ailment, { age, friendship, }) 
       end)
-      while not _task.started do
-        task.wait(.2)
-      end
-      local deadline = os.clock() + 60
-      repeat 
+      while not _task.completed do
         task.wait(1)
-      until not HasAilmentBaby("salon") or os.clock() > deadline
-      LocationQueue.Complete(_task)
-      if os.clock() > deadline then 
-        print("🟥 Task salon for baby - Out of limits!")
-        return		
-      end		
-      print("🟩 Task salon for baby - done!")
-      EnstatBaby(money, "salon", pet_has_ailment, { age, friendship, }) 
+      end
     end,
     ["beach_party"] = function() 
       local money = ClientData.get("money")
@@ -2528,22 +2513,21 @@ end
       end
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("MainMap", LocalPlayer, "Default")
+        Gotopart("_beach")
+        local deadline = os.clock() + 60
+        repeat 
+          task.wait(1)
+        until not HasAilmentBaby("beach_party") or os.clock() > deadline
+        if os.clock() > deadline then 
+          print("🟥 Task beach-party for baby - Out of limits!")
+          return		
+        end		
+        print("🟩 Task beach-party for baby - done!")
+        EnstatBaby(money, "beach_party", pet_has_ailment, { age, friendship, })  
       end)
-      while not _task.started do
-        task.wait(.2)
-      end
-      Gotopart("_beach")
-      local deadline = os.clock() + 60
-      repeat 
+      while not _task.completed do
         task.wait(1)
-      until not HasAilmentBaby("beach_party") or os.clock() > deadline
-      LocationQueue.Complete(_task)
-      if os.clock() > deadline then 
-        print("🟥 Task beach-party for baby - Out of limits!")
-        return		
-      end		
-      print("🟩 Task beach-party for baby - done!")
-      EnstatBaby(money, "beach_party", pet_has_ailment, { age, friendship, })  
+      end
     end,
     ["dirty"] = function() 
       local money = ClientData.get("money")
@@ -2580,21 +2564,20 @@ end
       end
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("School")
+        local deadline = os.clock() + 60
+        repeat 
+          task.wait(1)
+        until not HasAilmentBaby("school") or os.clock() > deadline
+        if os.clock() > deadline then 
+          print("🟥 Task school for baby - Out of limits!")
+          return		
+        end		
+        print("🟩 Task school for baby - done!")
+        EnstatBaby(money, "school", pet_has_ailment, { age, friendship, })  
       end)
-      while not _task.started do
-        task.wait(.2)
-      end
-      local deadline = os.clock() + 60
-      repeat 
+      while not _task.completed do
         task.wait(1)
-      until not HasAilmentBaby("school") or os.clock() > deadline
-      LocationQueue.Complete(_task)
-      if os.clock() > deadline then 
-        print("🟥 Task school for baby - Out of limits!")
-        return		
-      end		
-      print("🟩 Task school for baby - done!")
-      EnstatBaby(money, "school", pet_has_ailment, { age, friendship, })  
+      end        
     end,
     ["sleepy"] = function() 
       local money = ClientData.get("money")
@@ -2631,21 +2614,20 @@ end
       end
       local _task = LocationQueue.Enqueue(function()
         EmulateLocation("PizzaShop")
+        local deadline = os.clock() + 60
+        repeat 
+          task.wait(1)
+        until not HasAilmentBaby("pizza_party") or os.clock() > deadline
+        if os.clock() > deadline then 
+          print("🟥 Task pizza-party for baby - Out of limits!")
+          return		
+        end		
+        print("🟩 Task pizza-party for baby - done!")
+        EnstatBaby(money, "pizza_party", pet_has_ailment, { age, friendship, })  
       end)
-      while not _task.started do
-        task.wait(.2)
-      end
-      local deadline = os.clock() + 60
-      repeat 
+      while not _task.completed do
         task.wait(1)
-      until not HasAilmentBaby("pizza_party") or os.clock() > deadline
-      LocationQueue.Complete(_task)
-      if os.clock() > deadline then 
-        print("🟥 Task pizza-party for baby - Out of limits!")
-        return		
-      end		
-      print("🟩 Task pizza-party for baby - done!")
-      EnstatBaby(money, "pizza_party", pet_has_ailment, { age, friendship, })  
+      end
     end,
   }
 
@@ -2940,10 +2922,9 @@ end
       end
       Cooldown.AutoFarm.PetAutoFarm = 15
     end)
-    while not _task.finished do
+    while not _task.completed do
       task.wait(1)
     end
-    TaskQueue.Complete(_task)
   end
 
   local function __init_manual_pet_farm()
@@ -3010,10 +2991,9 @@ end
       end
       Cooldown.AutoFarm.PetAutoFarm = 15
     end)
-    while not _task.finished do
+    while not _task.completed do
       task.wait(1)
     end
-    TaskQueue.Complete(_task)
   end
 
   GUI.Tabs.Main.Sections.Optimization.Callbacks.SetFpsCap = function(v)
@@ -3426,10 +3406,9 @@ end
             end
           end
         end)
-        while not _task.finished do
+        while not _task.completed do
           task.wait(1)
         end
-        TaskQueue.Complete(_task)
         Cooldown.AutoFarm.BabyAutoFarm = 15
       end,
       function()
@@ -3551,8 +3530,18 @@ end
         WriteFileLog("[Registry]: {egg_auto_buy_handler} runned", "DEBUG")
         local money = ClientData.get("money")
         local egg = table.unpack(EggToBuyDropdown.CurrentOption) 
-        local can_afford = math.floor(money / EggRemotes[egg][2]) 
+        local reserve_money = money - (_G.InternalConfig.MinimumCashReserve and _G.InternalConfig.MinimumCashReserve) or 0
+        if reserve_money >= 0 then
+          GUI.Notify("Warning", "[Egg AutoBuy]: Minimal value of cash reached. Can't buy more eggs. Timeout [300]s.")
+          Cooldown.AutoFarm.TryBuyEggAfter = 300
+          return
+        end
+        local can_afford = math.floor(reserve_money / EggRemotes[egg][2]) 
         local bc = math.min(can_afford, _G.InternalConfig.EggsToBuyLeft, 99) 
+        if bc == 0 then
+          Cooldown.AutoFarm.TryBuyEggAfter = 300
+          return
+        end
         GUI.Notify("Info", "Buying eggs..", "INFO", "info")
         SafeInvoke("ShopAPI/BuyItem",
           "pets",
@@ -3654,8 +3643,18 @@ end
         WriteFileLog("[Registry]: {gift_auto_buy_handler} runned", "DEBUG")
         local money = ClientData.get("money")
         local gift = table.unpack(GiftToBuyDropdown.CurrentOption) 
-        local can_afford = math.floor(money / GiftRemotes[gift][2]) 
+        local reserve_money = money - (_G.InternalConfig.MinimumCashReserve and _G.InternalConfig.MinimumCashReserve) or 0
+        if reserve_money >= 0 then
+          GUI.Notify("Warning", "[Gift AutoBuy]: Minimal value of cash reached. Can't buy more gifts. Timeout [300]s.")
+          Cooldown.AutoFarm.TryBuyGiftAfter = 300
+          return
+        end
+        local can_afford = math.floor(reserve_money / GiftRemotes[gift][2]) 
         local bc = math.min(can_afford, _G.InternalConfig.GiftsToBuyLeft, 99) 
+        if bc == 0 then
+          Cooldown.AutoFarm.TryBuyGiftAfter = 300
+          return
+        end
         GUI.Notify("Info", "Buying gifts..", "INFO", "info")
         SafeInvoke("ShopAPI/BuyItem",
           "gifts",
@@ -3729,6 +3728,22 @@ end
     WriteFileLog(string.format("Gift buy count value set: {%d}", _G.InternalConfig.GiftsToBuyLeft), "DEBUG")
   end
 
+  GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleMinimumCashReserve = function(v) 
+    WriteConsoleLog("Minimum cash reserver triggered", nil, "DEBUG")
+    WriteFileLog("Minimum cash reserver triggered", "DEBUG")
+    if v:match("^%s*$") then 
+      _G.InternalConfig.MinimumCashReserve = nil
+      return 
+    end
+    local num = tonumber(v)
+    if num then
+      _G.InternalConfig.MinimumCashReserve = num
+    else
+      GUI.Notify("Warning", "Wrong value.", "WARNING", "triangle-alert")
+      _G.InternalConfig.MinimumCashReserve = nil
+    end
+  end
+
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.TogglePetRecycler = function(v) 
     WriteConsoleLog("Auto recycle pets triggered", nil, "DEBUG")
     WriteFileLog("Auto recycle pets triggered", "DEBUG")
@@ -3769,29 +3784,28 @@ end
         if val >= 4500 then 
           local _task = LocationQueue.Enqueue(function()
             emulate_location("Nursery")
-          end)
-          while not _task.started do
-            task.wait(.2)
-          end
-          if not ClientData.get("pet_recycler_manager").timestamp then
-            SafeInvoke("HousingAPI/ActivateInteriorFurniture",
-              "f-9",
-              "UseBlock",
-              {
-                action = "use",
-                uniques = pets_to_exchange
-              },
-              LocalPlayer.Character
-            )
-            LocationQueue.Complete(_task)
-            task.wait(1)
-            local tmps = ClientData.get("pet_recycler_manager").timestamp
-            local ok, tms = pcall(LiveOpsTime.get_time_until, tmps)
-            if not ok or not tms then 
-              tms = 300
+            if not ClientData.get("pet_recycler_manager").timestamp then
+              SafeInvoke("HousingAPI/ActivateInteriorFurniture",
+                "f-9",
+                "UseBlock",
+                {
+                  action = "use",
+                  uniques = pets_to_exchange
+                },
+                LocalPlayer.Character
+              )
+              task.wait(1)
+              local tmps = ClientData.get("pet_recycler_manager").timestamp
+              local ok, tms = pcall(LiveOpsTime.get_time_until, tmps)
+              if not ok or not tms then 
+                tms = 300
+              end
+              Cooldown.AutoFarm.PetRecycler = tms + 5
+              return
             end
-            Cooldown.AutoFarm.PetRecycler = tms + 5
-            return
+          end)
+          while not _task.completed do
+            task.wait(1)
           end
         else 
           WriteConsoleLog(string.format("Not enough points to use pet recycler (%d of 4500). Next try in [300]s", val), string.format("[♻️]:[❌] Not enough points to use pet recycler (%d of 4500). Next try in [300]s.", val), "DEBUG")
@@ -3886,6 +3900,8 @@ end
       if table.unpack(AutoGivePotionModeDropdown.CurrentOption) == "automated" then
         Registry.RegisterTask("automated_auto_give_potion_handler", function()
           Cooldown.AutoFarm.TryUsePotionAfter = nil
+          WriteConsoleLog("[Registry]: {automated_auto_give_potion_handler} runned", nil, "DEBUG")
+          WriteFileLog("[Registry]: {automated_auto_give_potion_handler} runned", "DEBUG")
           local potions = get_potions()
           if not potions[1] and not potions[2] then 
             WriteConsoleLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "🧪 No potions detected. Cooldown: [180]s.", "DEBUG")
@@ -3897,7 +3913,6 @@ end
 
           local pet_to_grow = {}
           local owned_pets = GetOwnedPets()
-          local _temp_prioritized = count(AutoGivePotionSetHigherPriorityForDropdown) > 0 and AutoGivePotionSetHigherPriorityForDropdown.CurrentOptions
 
           for k,v in pairs(owned_pets) do
             if _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities and _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities[v.rarity] then continue end
@@ -3911,22 +3926,32 @@ end
             if _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities and _G.InternalConfig.AutoGivePotionDLib.BlacklistedSpecificPets[k] then continue end
             table.insert(pet_to_grow, { k, v.age, v.rarity, v.remote, })
           end
-          if _temp_prioritized then
-            for _,r in ipairs(Rarities) do
-              for k,v in ipairs(pet_to_grow) do
-                if v[3] == r then
-                  table.insert(_temp_prioritized, { k, v.age, v.rarity, v.remote, })
-                end
-              end
-            end
-            pet_to_grow = table.clone(_temp_prioritized)
-          end
+
           if #pet_to_grow == 0 then 
             WriteConsoleLog("[AutoGivePotion]: No pets to grow up. Cooldown [180]s", "🧪 No pets to grow up. Cooldown: [180]s.", "DEBUG")
             WriteFileLog("[AutoGivePotion]: No pets to grow up. Cooldown [180]s", "DEBUG")
             GUI.Notify("Info", "[AutoGivePotion]: No pets to grow up. Cooldown [180]s.", "INFO", "info")
             Cooldown.Cooldown.TryUsePotionAfter = 180
             return
+          end
+
+          if _G.InternalConfig.AutoGivePotionDLib.HigherPriority then
+            local _temp = {} 
+            local _used = {}
+            for _,v in ipairs(_G.InternalConfig.AutoGivePotionDLib.HigherPriority) do
+              for _,b in ipairs(pet_to_grow) do
+                if b[3] == v then
+                  table.insert(_temp, { b[1], b[2], b[3], b[4], })
+                  _used[b[1]] = true
+                end
+              end
+            end
+            for _,v in ipairs(pet_to_grow) do
+              if not _used[v[1]] then
+                table.insert(_temp, { v[1], v[2], v[3], v[4], })
+              end
+            end
+            pet_to_grow = _temp
           end
 
           local equiped_pet = ClientData.get("pet_char_wrappers")[1]
@@ -4019,7 +4044,7 @@ end
               end
             end 
           end)
-          while not _task.finished do
+          while not _task.completed do
             task.wait(1)
           end
           SafeInvoke("ToolAPI/Equip",
@@ -4029,7 +4054,6 @@ end
               equip_as_last = false
             }
           )
-          TaskQueue.Complete(_task)
           Cooldown.AutoFarm.TryUsePotionAfter = 180
         end,
         function()
@@ -4046,6 +4070,8 @@ end
         end
         Registry.RegisterTask("manual_auto_give_potion_handler", function()
           Cooldown.AutoFarm.TryUsePotionAfter = nil
+          WriteConsoleLog("[Registry]: {manual_auto_give_potion_handler} runned", nil, "DEBUG")
+          WriteFileLog("[Registry]: {manual_auto_give_potion_handler} runned", "DEBUG")
           local potions = get_potions()
           if not potions[1] and not potions[2] then 
             WriteConsoleLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "🧪 No potions detected. Cooldown: [180]s.", "DEBUG")
@@ -4145,7 +4171,7 @@ end
               end
             end 
           end)
-          while not _task.finished do
+          while not _task.completed do
             task.wait(1)
           end
           InstantListPetToGivePotion()
@@ -4156,7 +4182,6 @@ end
               equip_as_last = false
             }
           )
-          TaskQueue.Complete(_task)
           Cooldown.AutoFarm.TryUsePotionAfter = 180
         end,
         function()
@@ -4203,8 +4228,8 @@ end
       return
     end 
     _G.InternalConfig.AutoGivePotionDLib.HigherPriority = {}
-    for _,v in pairs(v) do
-      _G.InternalConfig.AutoGivePotionDLib.HigherPriority[v] = true
+    for _,v in ipairs(v) do
+      table.insert(_G.InternalConfig.AutoGivePotionDLib.HigherPriority, PetRarities[v])
     end
   end
 
@@ -4281,17 +4306,91 @@ end
   --kuni
 
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.TogglePetPen = function(v) 
-    WriteConsoleLog("Pet Pen triggered", nil, "DEBUG")
-    WriteFileLog("Pet Pen triggered", "DEBUG")
+    WriteConsoleLog("Pet pen triggered", nil, "DEBUG")
+    WriteFileLog("Pet pen triggered", "DEBUG")
     if v then
-      WriteConsoleLog("Pet Pen enabled", nil, "DEBUG")
-      WriteFileLog("Pet Pen enabled", "DEBUG")
+      WriteConsoleLog("Pet pen enabled", nil, "DEBUG")
+      WriteFileLog("Pet pen enabled", "DEBUG")
       if Registry.Exists("pet_pen_progression_collection_handler") then
         GUI.ToggleButtonSetValue(PetPenJustAutoCollectProgressionToggleButton, false)
       end
+      Registry.RegisterTask("pet_pen_progression_collection_handler", function()
+        -- ==============
+        Cooldown.AutoFarm.AutoCollectProgression = nil
+        WriteConsoleLog("[Registry]: {pet_pen_handler} runned", nil, "DEBUG")
+        WriteFileLog("[Registry]: {pet_pen_handler} runned", "DEBUG")
+        SafeInvoke("IdleProgressionAPI/CommitAllProgression", true)
+        Cooldown.AutoFarm.AutoCollectProgression = 300
+        -- ==============
+      end,
+      function()
+        return Cooldown.AutoFarm.AutoCollectProgression == 0
+      end,
+      function()
+        Cooldown.AutoFarm.AutoCollectProgression = 5
+      end)
       Cooldown.AutoFarm.PetPenCheckAfter = 0
       Registry.RegisterTask("pet_pen_handler", function()
         Cooldown.AutoFarm.PetPenCheckAfter = nil
+        WriteConsoleLog("[Registry]: {pet_pen_handler} runned", nil, "DEBUG")
+        WriteFileLog("[Registry]: {pet_pen_handler} runned", "DEBUG")
+
+        local slots = GetPetPenSlots()
+        local active_pets = ClientData.get("idle_progression_manager")['active_pets']
+        local pets_to_place = {}
+        if slots ~= count(active_pets) then 
+          for k,v in pairs(GetOwnedPets()) do
+            if not v.remote == "practice_dog" then
+              if table.unpack(PetPenUsePriorityDropdown.CurrentOption) == "eggs" and not (v.name:lower()):match("egg") then continue 
+              elseif table.unpack(PetPenUsePriorityDropdown.CurrentOption) == "pets" and (v.name:lower()):match("egg") then continue
+              end
+
+              if _G.InternalConfig.PetPenDLib.BlacklistedRarities and _G.InternalConfig.PetPenDLib.BlacklistedRarities[v.rarity] then continue end
+              if _G.InternalConfig.PetPenDLib.BlacklistedAges and _G.InternalConfig.PetPenDLib.BlacklistedAges[v.age] then continue end
+              if _G.InternalConfig.PetPenDLib.BlacklistedProperties then 
+                if v.neon and _G.InternalConfig.PetPenDLib.BlacklistedProperties["neon"] then continue end
+                if v.mega_neon and _G.InternalConfig.PetPenDLib.BlacklistedProperties["meganeon"] then continue end
+                if v.flyable and _G.InternalConfig.PetPenDLib.BlacklistedProperties["flyable"] then continue end
+                if v.rideable and _G.InternalConfig.PetPenDLib.BlacklistedProperties["rideable"] then continue end
+              end
+              if _G.InternalConfig.PetPenDLib.BlacklistedSpecificPets and _G.InternalConfig.PetPenDLib.BlacklistedSpecificPets[k] then continue end
+
+              table.insert(pets_to_place, {k, v.rarity})
+            end
+          end
+        end
+        if #pets_to_place == 0 then
+          GUI.Notify("Warning", "[PetPen]: No pets to place to pet pen.", "WARNING", "triangle-alert")
+          Cooldown.AutoFarm.PetPenCheckAfter = 300
+          return
+        end
+        if _G.InternalConfig.PetPenDLib.PrioritizedRarities then
+          local _temp = {} 
+          local _used = {}
+          for _,v in ipairs(_G.InternalConfig.PetPenDLib.PrioritizedRarities) do
+            for a,b in ipairs(pets_to_place) do
+              if b[2] == v then
+                table.insert(_temp, b[1])
+                _used[b[1]] = true
+              end
+            end
+          end
+          for k,v in ipairs(pets_to_place) do
+            if not _used[v[1]] then
+              table.insert(_temp, v[1]) 
+            end
+          end
+          pets_to_place = _temp
+        else
+          local _temp = {}
+          for k,v in ipairs(pets_to_place) do
+            table.insert(_temp, v[1])
+          end
+          pets_to_place = _temp
+        end
+
+
+
 
       end,
       function()
@@ -4304,7 +4403,9 @@ end
       WriteConsoleLog("Pet Pen disabled", nil, "DEBUG")
       WriteFileLog("Pet Pen disabled", "DEBUG")
       Registry.UnregisterTask("pet_pen_handler")
+      Registry.UnregisterTask("pet_pen_progression_collection_handler")
       Cooldown.AutoFarm.PetPenCheckAfter = nil
+      Cooldown.Autofarm.AutoCollectProgression = nil
     end
   end 
   
@@ -4322,7 +4423,7 @@ end
     end
     _G.InternalConfig.PetPenDLib.PrioritizedRarities = {}
     for _,v in ipairs(v) do
-      _G.InternalConfig.PetPenDLib.PrioritizedRarities[PetRarities[v]] = true
+      table.insert(_G.InternalConfig.PetPenDLib.PrioritizedRarities, PetRarities[v]) 
     end
   end
 
@@ -4355,6 +4456,8 @@ end
       Registry.RegisterTask("pet_pen_progression_collection_handler", function()
         -- ==============
         Cooldown.AutoFarm.AutoCollectProgression = nil
+        WriteConsoleLog("[Registry]: {pet_pen_progression_collection_handler} runned", nil, "DEBUG")
+        WriteFileLog("[Registry]: {pet_pen_progression_collection_handler} runned", "DEBUG")
         SafeInvoke("IdleProgressionAPI/CommitAllProgression", true)
         Cooldown.AutoFarm.AutoCollectProgression = 300
         -- ==============
@@ -4814,25 +4917,24 @@ end
           GUI.Notify("Warning", "Select atleast 1 <Pet To Neon> at first.", "WARNING", "triangle-alert")
           return
         end
-        for k,v in _G.InternalConfig.PetsToNeon do
-          local _task = LocationQueue.Enqueue(function()
-            EmulateLocation("Cave")
-          end)
-          if not _task.started then
-            task.wait(.2)
+        local _task = LocationQueue.Enqueue(function()
+          EmulateLocation("Cave")
+          for k,v in _G.InternalConfig.PetsToNeon do
+            local ok, _ = SafeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
+            if ok then 
+              WriteConsoleLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), string.format("[🧿]:[✅] Pet %s is Neon now!", k), "DEBUG")
+              WriteFileLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), "DEBUG") 
+              GUI.Notify("Success", string.format("Pet %s is Neon now!", k), "SUCCESS", "circle-check")
+            else
+              WriteConsoleLog(string.format("[AutoNeon]: Failed to make pet {%s} neon", k), string.format("[🧿]:[❌] Failed to make pet %s neon", k), "DEBUG")
+              WriteFileLog(string.format("[AutoNeon]: Failed to make {%s} neon", k), "DEBUG") 
+              GUI.Notify("Error", string.format("Failed to make pet %s neon", k), "ERROR", "circle-x")
+            end
+            task.wait(1.5)
           end
-          local ok, _ = SafeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
-          if ok then 
-            WriteConsoleLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), string.format("[🧿]:[✅] Pet %s is Neon now!", k), "DEBUG")
-            WriteFileLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), "DEBUG") 
-            GUI.Notify("Success", string.format("Pet %s is Neon now!", k), "SUCCESS", "circle-check")
-          else
-            WriteConsoleLog(string.format("[AutoNeon]: Failed to make pet {%s} neon", k), string.format("[🧿]:[❌] Failed to make pet %s neon", k), "DEBUG")
-            WriteFileLog(string.format("[AutoNeon]: Failed to make {%s} neon", k), "DEBUG") 
-            GUI.Notify("Error", string.format("Failed to make pet %s neon", k), "ERROR", "circle-x")
-          end
-          task.wait(1.5)
-          LocationQueue.Complete(_task)
+        end)
+        while not _task.completed do
+          task.wait(1)
         end
         _G.InternalConfig.PetsToNeon = nil
         NeonAndMegaNeonInstantListUpdate()
@@ -4861,25 +4963,24 @@ end
           GUI.Notify("Warning", "Select atleast 1 <Pet To Mega Neon> at first.", "WARNING", "triangle-alert")
           return
         end
-        for k,v in _G.InternalConfig.PetsToMegaNeon do
-          local _task = LocationQueue.Enqueue(function()
-            EmulateLocation("Cave")
-          end)
-          while not _task.started do
-            task.wait(.2)
+        local _task = LocationQueue.Enqueue(function()
+          EmulateLocation("Cave")
+          for k,v in _G.InternalConfig.PetsToMegaNeon do
+            local ok, _ = SafeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
+            if ok then 
+              WriteConsoleLog(string.format("[AutoMegaNeon]: Pet {%s} is Mega-Neon now", k), string.format("[🧿]:[✅] Pet %s is Mega-Neon now!", k), "DEBUG")
+              WriteFileLog(string.format("[AutoMegaNeon]: Pet {%s} is Mega-Neon now", k), "DEBUG") 
+              GUI.Notify("Success", string.format("Pet %s is Neon now!", k), "SUCCESS", "circle-check")
+            else
+              WriteConsoleLog(string.format("[AutoMegaNeon]: Failed to make pet {%s} mega-neon", k), string.format("[🧿]:[❌] Failed to make pet %s mega-neon", k), "DEBUG")
+              WriteFileLog(string.format("[AutoMegaNeon]: Failed to make {%s} mega-neon", k), "DEBUG") 
+              GUI.Notify("Error", string.format("Failed to make pet %s mega-neon", k), "ERROR", "circle-x")
+            end
+            task.wait(1.5)
           end
-          local ok, _ = SafeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
-          if ok then 
-            WriteConsoleLog(string.format("[AutoMegaNeon]: Pet {%s} is Mega-Neon now", k), string.format("[🧿]:[✅] Pet %s is Mega-Neon now!", k), "DEBUG")
-            WriteFileLog(string.format("[AutoMegaNeon]: Pet {%s} is Mega-Neon now", k), "DEBUG") 
-            GUI.Notify("Success", string.format("Pet %s is Neon now!", k), "SUCCESS", "circle-check")
-          else
-            WriteConsoleLog(string.format("[AutoMegaNeon]: Failed to make pet {%s} mega-neon", k), string.format("[🧿]:[❌] Failed to make pet %s mega-neon", k), "DEBUG")
-            WriteFileLog(string.format("[AutoMegaNeon]: Failed to make {%s} mega-neon", k), "DEBUG") 
-            GUI.Notify("Error", string.format("Failed to make pet %s mega-neon", k), "ERROR", "circle-x")
-          end
-          task.wait(1.5)
-          LocationQueue.Complete(_task)
+        end)
+        while not _task.completed do
+          task.wait(1)
         end
         _G.InternalConfig.PetsToMegaNeon = nil
         NeonAndMegaNeonInstantListUpdate()
@@ -4957,7 +5058,6 @@ end
       end)
     else
       Registry.UnregisterTask("discord_webhook_send_handler")
-      _G.InternalConfig.DiscordWebhookUrl = nil
       Cooldown.Webhooks.DiscordWebhookSendDelay = nil
       Registry.UnregisterTask("discord_webhook_url")
       WriteConsoleLog("Discord webhook disabled", nil, "DEBUG")
@@ -5170,7 +5270,7 @@ end
         farmed.baby_ailments,
         farmed.eggs_hatched,
         ClientData.get("money"),
-        format_time(farmed.time)
+        FormatTime(farmed.time)
         )
         telegram_webhook(msg)
         GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
@@ -5188,9 +5288,10 @@ end
       WriteConsoleLog("Telegram webhooks enabled", nil, "DEBUG")
       WriteFileLog("Telegram webhooks enabled", "DEBUG")
     else
-      Registry.UnregisterTask("telegram_webhook_send_handler")
       WriteConsoleLog("Telegram webhooks disabled", nil, "DEBUG")
       WriteFileLog("Telegram webhooks disabled", "DEBUG")
+      Registry.UnregisterTask("telegram_webhook_send_handler")
+      Cooldown.Webhooks.TelegramWebhookSendDelay = nil
     end
   end
 
@@ -5258,7 +5359,7 @@ end
         farmed.baby_ailments,
         farmed.eggs_hatched,
         ClientData.get("money"),
-        format_time(farmed.time)
+        FormatTime(farmed.time)
         )
         local ok, _ = pcall(telegram_webhook, msg)
         if ok then
@@ -5326,6 +5427,11 @@ end
       GUI.ToggleButtonSetValue(TelegramWebhooksToggleButton, false)
       return
     end
+    if not _G.InternalConfig.TelegramBotApi then
+      GUI.TextFieldSetValue(TelegramChatIdTextField, "")
+      GUI.Notify("Warning", "Set <Bot API Key> at first.", "WARNING", "triangle-alert")
+      return
+    end
     WriteConsoleLog("Trying to send message through telegram bot to check chat id", "Trying to send message through telegram bot to check chat id..", "DEBUG")
     WriteFileLog(string.format("Trying to send message through telegram bot to check chat id", "DEBUG"))
 		local ok, res = pcall(function()
@@ -5360,7 +5466,7 @@ end
       WriteConsoleLog("Error while trying to send message to chat: " .. data.description or "Unknown Error", "[-] Error while trying to send message to chat: " .. data.description or "Unknown Error.", "ERROR")
       WriteFileLog("Error while trying to send message to chat: " .. data.description or "Unknown Error", "ERROR")
       GUI.TextFieldSetValue(TelegramChatIdTextField, (_G.InternalConfig.TelegramChatid or ""))
-      GUI.Notify("Warning", string.format("Error while trying to send message to chat: " .. data.description or "Unknown Error. " .. "Setting value to {%s}", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "circle-warning")
+      GUI.Notify("Warning", string.format("Error while trying to send message to chat: " .. data.description or "Unknown Error. " .. "Setting value to {%s}", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "triangle-alert")
 		end
   end
 
