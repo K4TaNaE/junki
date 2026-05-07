@@ -5686,27 +5686,27 @@ end
         saved_trade_specified_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
       end
     end
-    for k,v in ipairs(saved_recycler_specific_pets) do
-      local unique = v:split("unique: ")[2]
-      if not owned[unique] then 
-        GUI.Notify("Warning", string.format("[Pet Recycler Blacklist] Pet %s is no longer available.", saved_recycler_specific_pets[k]), "WARNING", "triangle-alert")
-        saved_recycler_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
-      end
-    end
-    for k,v in ipairs(saved_auto_give_potion_specific_pets) do
-      local unique = v:split("unique: ")[2]
-      if not owned[unique] then 
-        GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
-        saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
-      end
-    end
-    for k,v in ipairs(saved_pet_pen_specific_pets) do
-      local unique = v:split("unique: ")[2]
-      if not owned[unique] then
-        GUI.Notify("Warning", string.format("[PetPen Blacklist] Pet %s is no longer available.", saved_pet_pen_specific_pets[k]), "WARNING", "triangle-alert")
-        saved_pet_pen_specific_pets[k] = nil
-      end
-    end
+    -- for k,v in ipairs(saved_recycler_specific_pets) do
+    --   local unique = v:split("unique: ")[2]
+    --   if not owned[unique] then 
+    --     GUI.Notify("Warning", string.format("[Pet Recycler Blacklist] Pet %s is no longer available.", saved_recycler_specific_pets[k]), "WARNING", "triangle-alert")
+    --     saved_recycler_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+    --   end
+    -- end
+    -- for k,v in ipairs(saved_auto_give_potion_specific_pets) do
+    --   local unique = v:split("unique: ")[2]
+    --   if not owned[unique] then 
+    --     GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
+    --     saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+    --   end
+    -- end
+    -- for k,v in ipairs(saved_pet_pen_specific_pets) do
+    --   local unique = v:split("unique: ")[2]
+    --   if not owned[unique] then
+    --     GUI.Notify("Warning", string.format("[PetPen Blacklist] Pet %s is no longer available.", saved_pet_pen_specific_pets[k]), "WARNING", "triangle-alert")
+    --     saved_pet_pen_specific_pets[k] = nil
+    --   end
+    -- end
 
     GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, pet_farm_exclude_pets)
     GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, saved_pet_farm_exclude_pets)
@@ -5725,17 +5725,17 @@ end
       GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, saved_pets_to_give_potion)
     end
 
-    GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, auto_give_potion_specific_pets)
-    GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, saved_auto_give_potion_specific_pets)
+    -- GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, auto_give_potion_specific_pets)
+    -- GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, saved_auto_give_potion_specific_pets)
     
-    GUI.DropdownUpdateOptionList(RecyclerPetPenBlacklistedSpecificPetsDropdown, recycler_specific_pets)
-    GUI.DropdownSetValue(RecyclerPetPenBlacklistedSpecificPetsDropdown, saved_recycler_specific_pets)
+    -- GUI.DropdownUpdateOptionList(RecyclerPetPenBlacklistedSpecificPetsDropdown, recycler_specific_pets)
+    -- GUI.DropdownSetValue(RecyclerPetPenBlacklistedSpecificPetsDropdown, saved_recycler_specific_pets)
     
     GUI.DropdownUpdateOptionList(TradeBlacklistSpecificPetsDropdown, trade_specified_pets)
     GUI.DropdownSetValue(TradeBlacklistSpecificPetsDropdown, saved_trade_specified_pets)
 
-    GUI.DropdownUpdateOptionList(PetPenBlacklistedSpecificPetsDropdown, pet_pen_specific_pets)
-    GUI.DropdownSetValue(PetPenBlacklistedSpecificPetsDropdown, saved_pet_pen_specific_pets)
+    -- GUI.DropdownUpdateOptionList(PetPenBlacklistedSpecificPetsDropdown, pet_pen_specific_pets)
+    -- GUI.DropdownSetValue(PetPenBlacklistedSpecificPetsDropdown, saved_pet_pen_specific_pets)
 
     Cooldown.Other.Deadline10sUpdates = 10
   end,
