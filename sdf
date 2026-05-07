@@ -3239,7 +3239,7 @@ end
       _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = nil
       return
     end
-    _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = v:split("unique: ")[2]
+    _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = v[1]:split("unique: ")[2]
     actual_pet.unique = nil
   end
   
@@ -3608,7 +3608,7 @@ end
       return
     end
     if count == -1 then
-      _G.InternalConfig.EggsToBuyLeft = math.huge()
+      _G.InternalConfig.EggsToBuyLeft = 19999
     else
       _G.InternalConfig.EggsToBuyLeft = count
     end
@@ -3651,7 +3651,7 @@ end
         WriteFileLog("[Registry]: {gift_auto_buy_handler} runned", "DEBUG")
         local money = ClientData.get("money")
         local gift = table.unpack(GiftToBuyDropdown.CurrentOption) 
-        local reserve_money = money - (_G.InternalConfig.MinimumCashReserve and _G.InternalConfig.MinimumCashReserve) or 0
+        local reserve_money = money - (_G.InternalConfig.MinimumCashReserve or 0)
         if reserve_money >= 0 then
           GUI.Notify("Warning", "[Gift AutoBuy]: Minimal value of cash reached. Can't buy more gifts. Timeout [300]s.")
           Cooldown.AutoFarm.TryBuyGiftAfter = 300
@@ -5600,7 +5600,7 @@ end
           table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
         end
       elseif table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "any" then
-        table.insert(pet_farm_to_exclude, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+        table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       else
         if (v.name:lower()):match("egg") then
           table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
