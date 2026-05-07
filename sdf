@@ -5613,56 +5613,56 @@ end
       if v.neon and v.age == 6 then
         __meganeon_temp[v.remote] = (__meganeon_temp[v.remote] or 0) + 1
       end
-      if v.age < 6 then 
-        if pets_to_give_potion then
-          table.insert(pets_to_give_potion, v.name .. " | age: " .. v.age .. " | unique: " .. k)
-        end
-      end
+      -- if v.age < 6 then 
+      --   if pets_to_give_potion then
+      --     table.insert(pets_to_give_potion, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      --   end
+      -- end
     end
-    for k,v in pairs(__neon_temp) do
-      if v >= 4 then
-        table.insert(neon, GetNameFromRemote("pets", k))
-      end
-    end
-    for k,v in pairs(__meganeon_temp) do
-      if v >= 4 then
-        table.insert(meganeon, GetNameFromRemote("pets", k))
-      end
-    end
-    if pets_to_give_potion then
-      for k,v in ipairs(saved_pets_to_give_potion) do
-        local unique = v:split("unique: ")[2]
-        if not owned[unique] then
-          saved_pets_to_give_potion[k] = nil
-        end
-      end
-    end
-    for k,v in ipairs(saved_neon) do
-      local name = v:split(" | ")[1]
-      local found = false
-      for _,b in pairs(neon) do
-        if b == name then
-          found = true
-          break
-        end
-      end
-      if not found then
-        saved_neon[k] = nil
-      end
-    end
-    for k,v in ipairs(saved_meganeon) do
-      local name = v:split(" | ")[1]
-      local found = false
-      for a,b in pairs(meganeon) do
-        if b == name then
-          found = true
-          break
-        end
-      end
-      if not found then
-        saved_meganeon[k] = nil
-      end
-    end
+    -- for k,v in pairs(__neon_temp) do
+    --   if v >= 4 then
+    --     table.insert(neon, GetNameFromRemote("pets", k))
+    --   end
+    -- end
+    -- for k,v in pairs(__meganeon_temp) do
+    --   if v >= 4 then
+    --     table.insert(meganeon, GetNameFromRemote("pets", k))
+    --   end
+    -- end
+    -- if pets_to_give_potion then
+    --   for k,v in ipairs(saved_pets_to_give_potion) do
+    --     local unique = v:split("unique: ")[2]
+    --     if not owned[unique] then
+    --       saved_pets_to_give_potion[k] = nil
+    --     end
+    --   end
+    -- end
+    -- for k,v in ipairs(saved_neon) do
+    --   local name = v:split(" | ")[1]
+    --   local found = false
+    --   for _,b in pairs(neon) do
+    --     if b == name then
+    --       found = true
+    --       break
+    --     end
+    --   end
+    --   if not found then
+    --     saved_neon[k] = nil
+    --   end
+    -- end
+    -- for k,v in ipairs(saved_meganeon) do
+    --   local name = v:split(" | ")[1]
+    --   local found = false
+    --   for _,b in pairs(meganeon) do
+    --     if b == name then
+    --       found = true
+    --       break
+    --     end
+    --   end
+    --   if not found then
+    --     saved_meganeon[k] = nil
+    --   end
+    -- end
     if saved_pet_to_manual_farm then
       for k,v in ipairs(saved_pet_to_manual_farm) do
         local unique = v:split("unique: ")[2]
@@ -5714,11 +5714,11 @@ end
       GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, pet_farm_exclude_pets) -- tut ok pet_farm_to_exclude
       GUI.DropdownSetValue(PetAutoFarmPetToFarmDropdown, saved_pet_to_manual_farm)
     end
-    GUI.DropdownUpdateOptionList(PetToNeonDropdown, neon)
-    GUI.DropdownSetValue(PetToNeonDropdown, saved_neon)
+    -- GUI.DropdownUpdateOptionList(PetToNeonDropdown, neon)
+    -- GUI.DropdownSetValue(PetToNeonDropdown, saved_neon)
     
-    GUI.DropdownUpdateOptionList(PetToMegaNeonDropdown, meganeon)
-    GUI.DropdownSetValue(PetToMegaNeonDropdown, saved_meganeon)
+    -- GUI.DropdownUpdateOptionList(PetToMegaNeonDropdown, meganeon)
+    -- GUI.DropdownSetValue(PetToMegaNeonDropdown, saved_meganeon)
 
     if pets_to_give_potion and _G.pets_to_give_potion_should_be_updated then -- tut proverka na flag esce raz, vdrug za eto vremia chtoto pomenialos, i flag = nil
       GUI.DropdownUpdateOptionList(AutoGivePotionPetToGivePotionDropdown, pets_to_give_potion)
