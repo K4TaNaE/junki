@@ -718,7 +718,7 @@ local _script = coroutine.create(function()
           WriteFileLog(string.format("[Registry]: Task condition reached. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), "DEBUG")
           task.spawn(function() 
             -- local ok, _ = pcall(v._callback)
-            v._callback()
+            xpcall(v._callback, debug.traceback)
             if not ok then
               WriteConsoleLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), nil, "DEBUG")
               WriteFileLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), "DEBUG")
@@ -1591,11 +1591,11 @@ end
   local PetAutoFarmToggleButton = GUI.InitToggleButton(AutofarmTab, "Pet Auto Farm", false, "petautofarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.TogglePetAutoFarm(v) end)
   local PetAutoFarmFarmTypeDropdown = GUI.InitDropdown(AutofarmTab, "Farm Type", {"automated", "manual"}, {"automated"}, false, "petautofarmfarmtypedropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmType(v) end)
   GUI.InitDivider(AutofarmTab)
-  local PetAutoFarmFarmPriorityDropdown = GUI.InitDropdown(AutofarmTab, "Farm Priority", {"pets", "eggs"}, {"pets"}, false, "petautofarmfarmprioritydropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmPriority(v) end)
+  local PetAutoFarmFarmPriorityDropdown = GUI.InitDropdown(AutofarmTab, "Farm Priority", {"any", "pets", "eggs"}, {"any"}, false, "petautofarmfarmprioritydropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmPriority(v) end)
   local PetAutoFarmPotionFarmToggleButton = GUI.InitToggleButton(AutofarmTab, "Potion Farm", false, "petautofarmpotionfarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.TogglePotionFarm(v) end)
   local PetAutoFarmOpoositeFarmToggleButton = GUI.InitToggleButton(AutofarmTab, "Opposite Farm", false, "petautofarmoppositefarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.ToggleOppositeFarm(v) end)
   local PetAutoFarmDetect2DKittyToggleButton = GUI.InitToggleButton(AutofarmTab, "Detect 2D-Kitty", false, "petautofarmdetect2dkittytogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.ToggleDetect2DKitty(v) end)
-  local PetAutoFarmPetsToExcludeDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Exclude", {}, {"set <Farm Priority>"}, true, "petautofarmpetstoexcludedropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetsToExclude(v) end)
+  local PetAutoFarmPetsToExcludeDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Exclude", {}, {}, true, "petautofarmpetstoexcludedropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetsToExclude(v) end)
   GUI.InitDivider(AutofarmTab)
   local PetAutoFarmPetToFarmDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Farm (manual farm type)", {}, {"set <Farm Type> to manual"}, false, "petautofarmpettofarmdropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetToFarm(v) end)
   
@@ -3120,7 +3120,7 @@ end
         end)
       else 
         if not _G.InternalConfig.PetFarmDLib.PetToFarm then
-          GUI.ToggleButtonSetValue(PetAutoFarmPotionFarmToggleButton, false)
+          GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
           GUI.Notify("Warning", "Set <Pet To Farm> first.")
           return
         end
@@ -3239,7 +3239,7 @@ end
       _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = nil
       return
     end
-    _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = v:split("unique: ")[2]
+    _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = v[1]:split("unique: ")[2]
     actual_pet.unique = nil
   end
   
@@ -3608,7 +3608,7 @@ end
       return
     end
     if count == -1 then
-      _G.InternalConfig.EggsToBuyLeft = math.huge()
+      _G.InternalConfig.EggsToBuyLeft = 19999
     else
       _G.InternalConfig.EggsToBuyLeft = count
     end
@@ -3651,7 +3651,7 @@ end
         WriteFileLog("[Registry]: {gift_auto_buy_handler} runned", "DEBUG")
         local money = ClientData.get("money")
         local gift = table.unpack(GiftToBuyDropdown.CurrentOption) 
-        local reserve_money = money - (_G.InternalConfig.MinimumCashReserve and _G.InternalConfig.MinimumCashReserve) or 0
+        local reserve_money = money - (_G.InternalConfig.MinimumCashReserve or 0)
         if reserve_money >= 0 then
           GUI.Notify("Warning", "[Gift AutoBuy]: Minimal value of cash reached. Can't buy more gifts. Timeout [300]s.")
           Cooldown.AutoFarm.TryBuyGiftAfter = 300
@@ -5565,6 +5565,11 @@ end
     local recycler_specific_pets = {}
     local auto_give_potion_specific_pets = {}
     local pet_pen_specific_pets = {}
+    local pet_farm_exclude_pets = {}
+    local pet_to_manual_farm = nil
+    if _G.pet_farm_update then
+      pet_to_manual_farm = {}
+    end
 
     local saved_trade_specified_pets = TradeBlacklistSpecificPetsDropdown.CurrentOption
     local saved_recycler_specific_pets = RecyclerPetPenBlacklistedSpecificPetsDropdown.CurrentOption
@@ -5584,8 +5589,6 @@ end
       saved_pet_to_manual_farm = {}
     end
 
-    local pet_farm_exclude_pets = {}
-
     local __neon_temp = {}
     local __meganeon_temp = {}
     local neon = {}
@@ -5596,145 +5599,150 @@ end
       table.insert(recycler_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(pet_pen_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      if pet_to_manual_farm then
+        table.insert(pet_to_manual_farm, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      end
       if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then
         if not (v.name:lower()):match("egg") then
           table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
         end
+      elseif table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "any" then
+        table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       else
         if (v.name:lower()):match("egg") then
           table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
         end
       end
 
-      if v.age == 6 then
-        __neon_temp[v.id] = (__neon_temp[v.id] or 0) + 1
-      end
-      if v.neon and v.age == 6 then
-        __meganeon_temp[v.id] = (__meganeon_temp[v.id] or 0) + 1
-      end
-      if v.age < 6 then 
-        if pets_to_give_potion then
-          table.insert(pets_to_give_potion, v.name .. " | age: " .. v.age .. " | unique: " .. k)
-        end
-      end
+      -- if v.age == 6 then
+      --   __neon_temp[v.remote] = (__neon_temp[v.remote] or 0) + 1
+      -- end
+      -- if v.neon and v.age == 6 then
+      --   __meganeon_temp[v.remote] = (__meganeon_temp[v.remote] or 0) + 1
+      -- end
+      -- if v.age < 6 then 
+      --   if pets_to_give_potion then
+      --     table.insert(pets_to_give_potion, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      --   end
+      -- end
     end
-    for k,v in pairs(__neon_temp) do
-      if v >= 4 then
-        table.insert(neon, GetNameFromRemote("pets", k))
-      end
-    end
-    for k,v in pairs(__meganeon_temp) do
-      if v >= 4 then
-        table.insert(meganeon, GetNameFromRemote("pets", k))
-      end
-    end
-    if pets_to_give_potion then
-      for k,v in ipairs(saved_pets_to_give_potion) do
-        local unique = v:split("unique: ")[2]
-        if not owned[unique] then
-          saved_pets_to_give_potion[k] = nil
-        end
-      end
-    end
-    for k,v in ipairs(saved_neon) do
-      local name = v:split(" | ")[1]
-      local found = false
-      for _,b in pairs(neon) do
-        if b == name then
-          found = true
-          break
-        end
-      end
-      if not found then
-        saved_neon[k] = nil
-      end
-    end
-    for k,v in ipairs(saved_meganeon) do
-      local name = v:split(" | ")[1]
-      local found = false
-      for a,b in pairs(meganeon) do
-        if b == name then
-          found = true
-          break
-        end
-      end
-      if not found then
-        saved_meganeon[k] = nil
-      end
-    end
-    if saved_pet_to_manual_farm then
-      for k,v in ipairs(saved_pet_to_manual_farm) do
-        local unique = v:split("unique: ")[2]
-        if not owned[unique] then     
-          GUI.Notify("Warning", string.format("[PetAutoFarm] Pet %s is no longer available.", saved_pet_to_manual_farm[k]), "WARNING", "triangle-alert")
-          saved_pet_to_manual_farm[k] = nil
-        end
-      end
-    end
-    for k,v in ipairs(saved_pet_farm_exclude_pets) do
-      local unique = v:split("unique: ")[2]
-      if not owned[unique] then
-        GUI.Notify("Warning", string.format("[PetAutoFarm Blacklist] Pet %s is no longer available.", saved_pet_farm_exclude_pets[k]), "WARNING", "triangle-alert")
-        saved_pet_farm_exclude_pets[k] = nil
-      end
-    end
-    for k,v in ipairs(saved_trade_specified_pets) do
-      local unique = v:split("unique: ")[2]
-      if not owned[unique] then 
-        GUI.Notify("Warning", string.format("[AutoTrade Blacklist] Pet %s is no longer available.", saved_trade_specified_pets[k]), "WARNING", "triangle-alert")
-        saved_trade_specified_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
-      end
-    end
-    for k,v in ipairs(saved_recycler_specific_pets) do
-      local unique = v:split("unique: ")[2]
-      if not owned[unique] then 
-        GUI.Notify("Warning", string.format("[Pet Recycler Blacklist] Pet %s is no longer available.", saved_recycler_specific_pets[k]), "WARNING", "triangle-alert")
-        saved_recycler_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
-      end
-    end
-    for k,v in ipairs(saved_auto_give_potion_specific_pets) do
-      local unique = v:split("unique: ")[2]
-      if not owned[unique] then 
-        GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
-        saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
-      end
-    end
-    for k,v in ipairs(saved_pet_pen_specific_pets) do
-      local unique = v:split("unique: ")[2]
-      if not owned[unique] then
-        GUI.Notify("Warning", string.format("[PetPen Blacklist] Pet %s is no longer available.", saved_pet_pen_specific_pets[k]), "WARNING", "triangle-alert")
-        saved_pet_pen_specific_pets[k] = nil
-      end
-    end
+    -- for k,v in pairs(__neon_temp) do
+    --   if v >= 4 then
+    --     table.insert(neon, GetNameFromRemote("pets", k))
+    --   end
+    -- end
+    -- for k,v in pairs(__meganeon_temp) do
+    --   if v >= 4 then
+    --     table.insert(meganeon, GetNameFromRemote("pets", k))
+    --   end
+    -- end
+    -- if pets_to_give_potion then
+    --   for k,v in ipairs(saved_pets_to_give_potion) do
+    --     local unique = v:split("unique: ")[2]
+    --     if not owned[unique] then
+    --       saved_pets_to_give_potion[k] = nil
+    --     end
+    --   end
+    -- end
+    -- for k,v in ipairs(saved_neon) do
+    --   local name = v:split(" | ")[1]
+    --   local found = false
+    --   for _,b in pairs(neon) do
+    --     if b == name then
+    --       found = true
+    --       break
+    --     end
+    --   end
+    --   if not found then
+    --     saved_neon[k] = nil
+    --   end
+    -- end
+    -- for k,v in ipairs(saved_meganeon) do
+    --   local name = v:split(" | ")[1]
+    --   local found = false
+    --   for _,b in pairs(meganeon) do
+    --     if b == name then
+    --       found = true
+    --       break
+    --     end
+    --   end
+    --   if not found then
+    --     saved_meganeon[k] = nil
+    --   end
+    -- end
+    -- if saved_pet_to_manual_farm then
+    --   for k,v in ipairs(saved_pet_to_manual_farm) do
+    --     local unique = v:split("unique: ")[2]
+    --     if not owned[unique] then     
+    --       GUI.Notify("Warning", string.format("[PetAutoFarm] Pet %s is no longer available.", saved_pet_to_manual_farm[k]), "WARNING", "triangle-alert")
+    --       saved_pet_to_manual_farm[k] = nil
+    --     end
+    --   end
+    -- end
+    -- for k,v in ipairs(saved_pet_farm_exclude_pets) do
+    --   local unique = v:split("unique: ")[2]
+    --   if not owned[unique] then
+    --     GUI.Notify("Warning", string.format("[PetAutoFarm Blacklist] Pet %s is no longer available.", saved_pet_farm_exclude_pets[k]), "WARNING", "triangle-alert")
+    --     saved_pet_farm_exclude_pets[k] = nil
+    --   end
+    -- end
+    -- for k,v in ipairs(saved_trade_specified_pets) do
+    --   local unique = v:split("unique: ")[2]
+    --   if not owned[unique] then 
+    --     GUI.Notify("Warning", string.format("[AutoTrade Blacklist] Pet %s is no longer available.", saved_trade_specified_pets[k]), "WARNING", "triangle-alert")
+    --     saved_trade_specified_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+    --   end
+    -- end
+    -- for k,v in ipairs(saved_recycler_specific_pets) do
+    --   local unique = v:split("unique: ")[2]
+    --   if not owned[unique] then 
+    --     GUI.Notify("Warning", string.format("[Pet Recycler Blacklist] Pet %s is no longer available.", saved_recycler_specific_pets[k]), "WARNING", "triangle-alert")
+    --     saved_recycler_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+    --   end
+    -- end
+    -- for k,v in ipairs(saved_auto_give_potion_specific_pets) do
+    --   local unique = v:split("unique: ")[2]
+    --   if not owned[unique] then 
+    --     GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
+    --     saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+    --   end
+    -- end
+    -- for k,v in ipairs(saved_pet_pen_specific_pets) do
+    --   local unique = v:split("unique: ")[2]
+    --   if not owned[unique] then
+    --     GUI.Notify("Warning", string.format("[PetPen Blacklist] Pet %s is no longer available.", saved_pet_pen_specific_pets[k]), "WARNING", "triangle-alert")
+    --     saved_pet_pen_specific_pets[k] = nil
+    --   end
+    -- end
 
     GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, pet_farm_exclude_pets)
     GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, saved_pet_farm_exclude_pets)
     if saved_pet_to_manual_farm and _G.pet_farm_update then
-      GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, pet_farm_exclude_pets) -- tut ok pet_farm_to_exclude
-      GUI.SetValue(PetAutoFarmPetToFarmDropdown, saved_pet_farm_exclude_pets)
+      GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, pet_to_manual_farm)
+      GUI.DropdownSetValue(PetAutoFarmPetToFarmDropdown, saved_pet_to_manual_farm)
     end
-    GUI.DropdownUpdateOptionList(PetToNeonDropdown, neon)
-    GUI.DropdownSetValue(PetToNeonDropdown, saved_neon)
+    -- GUI.DropdownUpdateOptionList(PetToNeonDropdown, neon)
+    -- GUI.DropdownSetValue(PetToNeonDropdown, saved_neon)
     
-    GUI.DropdownUpdateOptionList(PetToMegaNeonDropdown, meganeon)
-    GUI.DropdownSetValue(PetToMegaNeonDropdown, saved_meganeon)
+    -- GUI.DropdownUpdateOptionList(PetToMegaNeonDropdown, meganeon)
+    -- GUI.DropdownSetValue(PetToMegaNeonDropdown, saved_meganeon)
 
     if pets_to_give_potion and _G.pets_to_give_potion_should_be_updated then -- tut proverka na flag esce raz, vdrug za eto vremia chtoto pomenialos, i flag = nil
       GUI.DropdownUpdateOptionList(AutoGivePotionPetToGivePotionDropdown, pets_to_give_potion)
       GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, saved_pets_to_give_potion)
     end
 
-    GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, auto_give_potion_specific_pets)
-    GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, saved_auto_give_potion_specific_pets)
+    -- GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, auto_give_potion_specific_pets)
+    -- GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, saved_auto_give_potion_specific_pets)
     
-    GUI.DropdownUpdateOptionList(RecyclerPetPenBlacklistedSpecificPetsDropdown, recycler_specific_pets)
-    GUI.DropdownSetValue(RecyclerPetPenBlacklistedSpecificPetsDropdown, saved_recycler_specific_pets)
+    -- GUI.DropdownUpdateOptionList(RecyclerPetPenBlacklistedSpecificPetsDropdown, recycler_specific_pets)
+    -- GUI.DropdownSetValue(RecyclerPetPenBlacklistedSpecificPetsDropdown, saved_recycler_specific_pets)
     
     GUI.DropdownUpdateOptionList(TradeBlacklistSpecificPetsDropdown, trade_specified_pets)
     GUI.DropdownSetValue(TradeBlacklistSpecificPetsDropdown, saved_trade_specified_pets)
 
-    GUI.DropdownUpdateOptionList(PetPenBlacklistedSpecificPetsDropdown, pet_pen_specific_pets)
-    GUI.DropdownSetValue(PetPenBlacklistedSpecificPetsDropdown, saved_pet_pen_specific_pets)
+    -- GUI.DropdownUpdateOptionList(PetPenBlacklistedSpecificPetsDropdown, pet_pen_specific_pets)
+    -- GUI.DropdownSetValue(PetPenBlacklistedSpecificPetsDropdown, saved_pet_pen_specific_pets)
 
     Cooldown.Other.Deadline10sUpdates = 10
   end,
