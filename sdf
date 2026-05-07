@@ -1591,11 +1591,11 @@ end
   local PetAutoFarmToggleButton = GUI.InitToggleButton(AutofarmTab, "Pet Auto Farm", false, "petautofarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.TogglePetAutoFarm(v) end)
   local PetAutoFarmFarmTypeDropdown = GUI.InitDropdown(AutofarmTab, "Farm Type", {"automated", "manual"}, {"automated"}, false, "petautofarmfarmtypedropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmType(v) end)
   GUI.InitDivider(AutofarmTab)
-  local PetAutoFarmFarmPriorityDropdown = GUI.InitDropdown(AutofarmTab, "Farm Priority", {"pets", "eggs"}, {"pets"}, false, "petautofarmfarmprioritydropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmPriority(v) end)
+  local PetAutoFarmFarmPriorityDropdown = GUI.InitDropdown(AutofarmTab, "Farm Priority", {"any", "pets", "eggs"}, {"any"}, false, "petautofarmfarmprioritydropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmPriority(v) end)
   local PetAutoFarmPotionFarmToggleButton = GUI.InitToggleButton(AutofarmTab, "Potion Farm", false, "petautofarmpotionfarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.TogglePotionFarm(v) end)
   local PetAutoFarmOpoositeFarmToggleButton = GUI.InitToggleButton(AutofarmTab, "Opposite Farm", false, "petautofarmoppositefarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.ToggleOppositeFarm(v) end)
   local PetAutoFarmDetect2DKittyToggleButton = GUI.InitToggleButton(AutofarmTab, "Detect 2D-Kitty", false, "petautofarmdetect2dkittytogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.ToggleDetect2DKitty(v) end)
-  local PetAutoFarmPetsToExcludeDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Exclude", {}, {"set <Farm Priority>"}, true, "petautofarmpetstoexcludedropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetsToExclude(v) end)
+  local PetAutoFarmPetsToExcludeDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Exclude", {}, {}, true, "petautofarmpetstoexcludedropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetsToExclude(v) end)
   GUI.InitDivider(AutofarmTab)
   local PetAutoFarmPetToFarmDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Farm (manual farm type)", {}, {"set <Farm Type> to manual"}, false, "petautofarmpettofarmdropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetToFarm(v) end)
   
@@ -5599,6 +5599,8 @@ end
         if not (v.name:lower()):match("egg") then
           table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
         end
+      elseif table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "any" then
+        table.insert(pet_farm_to_exclude, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       else
         if (v.name:lower()):match("egg") then
           table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
