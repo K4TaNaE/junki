@@ -3120,7 +3120,7 @@ end
         end)
       else 
         if not _G.InternalConfig.PetFarmDLib.PetToFarm then
-          GUI.ToggleButtonSetValue(PetAutoFarmPotionFarmToggleButton, false)
+          GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
           GUI.Notify("Warning", "Set <Pet To Farm> first.")
           return
         end
@@ -5710,7 +5710,7 @@ end
     GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, saved_pet_farm_exclude_pets)
     if saved_pet_to_manual_farm and _G.pet_farm_update then
       GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, pet_farm_exclude_pets) -- tut ok pet_farm_to_exclude
-      GUI.SetValue(PetAutoFarmPetToFarmDropdown, saved_pet_farm_exclude_pets)
+      GUI.DropdownSetValue(PetAutoFarmPetToFarmDropdown, saved_pet_to_manual_farm)
     end
     GUI.DropdownUpdateOptionList(PetToNeonDropdown, neon)
     GUI.DropdownSetValue(PetToNeonDropdown, saved_neon)
