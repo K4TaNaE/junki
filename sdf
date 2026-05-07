@@ -5566,6 +5566,10 @@ end
     local auto_give_potion_specific_pets = {}
     local pet_pen_specific_pets = {}
     local pet_farm_exclude_pets = {}
+    local pet_to_manual_farm = nil
+    if _G.pet_farm_update then
+      pet_to_manual_farm = {}
+    end
 
     local saved_trade_specified_pets = TradeBlacklistSpecificPetsDropdown.CurrentOption
     local saved_recycler_specific_pets = RecyclerPetPenBlacklistedSpecificPetsDropdown.CurrentOption
@@ -5595,6 +5599,9 @@ end
       table.insert(recycler_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(pet_pen_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      if pet_to_manual_farm then
+        table.insert(pet_to_manual_farm, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      end
       if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then
         if not (v.name:lower()):match("egg") then
           table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
@@ -5607,12 +5614,12 @@ end
         end
       end
 
-      if v.age == 6 then
-        __neon_temp[v.remote] = (__neon_temp[v.remote] or 0) + 1
-      end
-      if v.neon and v.age == 6 then
-        __meganeon_temp[v.remote] = (__meganeon_temp[v.remote] or 0) + 1
-      end
+      -- if v.age == 6 then
+      --   __neon_temp[v.remote] = (__neon_temp[v.remote] or 0) + 1
+      -- end
+      -- if v.neon and v.age == 6 then
+      --   __meganeon_temp[v.remote] = (__meganeon_temp[v.remote] or 0) + 1
+      -- end
       -- if v.age < 6 then 
       --   if pets_to_give_potion then
       --     table.insert(pets_to_give_potion, v.name .. " | age: " .. v.age .. " | unique: " .. k)
@@ -5711,7 +5718,7 @@ end
     GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, pet_farm_exclude_pets)
     GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, saved_pet_farm_exclude_pets)
     if saved_pet_to_manual_farm and _G.pet_farm_update then
-      GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, pet_farm_exclude_pets) -- tut ok pet_farm_to_exclude
+      GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, pet_to_manual_farm)
       GUI.DropdownSetValue(PetAutoFarmPetToFarmDropdown, saved_pet_to_manual_farm)
     end
     -- GUI.DropdownUpdateOptionList(PetToNeonDropdown, neon)
