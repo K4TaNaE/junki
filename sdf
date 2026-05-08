@@ -3397,7 +3397,9 @@ end
         end)
         while not _task.completed do
           task.wait(1)
+          print("waiting until task complete")
         end
+        print("TASKI COMPELTED")
         Cooldown.AutoFarm.BabyAutoFarm = 15
       end,
       function()
