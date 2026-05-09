@@ -2691,13 +2691,17 @@ end
     GUI.LabelUpdate(PlayersLabel, string.format("%d : Players", pl), "user", Color3.fromRGB(203, 92, 255), false)
   end
 
-  local function __init_automated_pet_farm()   
+  local function __init_automated_pet_farm()  
+    Cooldown.AutoFarm.PetAutoFarm = nil
+    WriteConsoleLog("[Registry]: {automated_pet_auto_farm_handler} runned", nil, "DEBUG")
+    WriteFileLog("[Registry]: {automated_pet_auto_farm_handler} runned", "DEBUG")
     Cooldown.AutoFarm.PetAutoFarm = nil
     if count(ClientData.get("inventory").pets) < 1 then
       Cooldown.AutoFarm.PetAutoFarm = 50 
       return
     end
     local _task = TaskQueue.Enqueue(function()
+      print('task runned')
       local flag = false
       local kitty_unique
       if _G.InternalConfig.PetFarmDLib.Detect2DKitty then
@@ -2794,11 +2798,11 @@ end
                   for k,v in pairs(owned_pets) do
                     if v.remote ~= "practice_dog" and not _G.InternalConfig.PetFarmDLib.PetsToExclude[k] and (v.name:lower()):match("egg") and v.rarity == r then
                       SafeInvoke("ToolAPI/Equip",
-                          k,
-                          {
-                            use_sound_delay = true,
-                            equip_as_last = false
-                          }
+                        k,
+                        {
+                          use_sound_delay = true,
+                          equip_as_last = false
+                        }
                       )
                       flag = true
                       _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = true
@@ -2936,6 +2940,7 @@ end
           return
         end
       end
+      print('pet auto farm ended')
       Cooldown.AutoFarm.PetAutoFarm = 15
     end)
     while not _task.completed do
@@ -2944,6 +2949,9 @@ end
   end
 
   local function __init_manual_pet_farm()
+    Cooldown.AutoFarm.PetAutoFarm = nil
+    WriteConsoleLog("[Registry]: {manual_pet_auto_farm_handler} runned", nil, "DEBUG")
+    WriteFileLog("[Registry]: {manual_pet_auto_farm_handler} runned", "DEBUG")
     local _task = TaskQueue.Enqueue(function()
       if (actual_pet.unique and not Equiped()) or (actual_pet.unique and actual_pet.unique ~= CurUnique()) then
         SafeInvoke("ToolAPI/Equip",
