@@ -824,7 +824,6 @@ local _script = coroutine.create(function()
           end)()
 
           _task.resume = coroutine.running()
-          coroutine.yield()
       end
 
       TaskQueue._running = false
@@ -4315,12 +4314,12 @@ end
       if Registry.Exists("pet_pen_progression_collection_handler") then
         GUI.ToggleButtonSetValue(PetPenJustAutoCollectProgressionToggleButton, false)
       end
-      Registry.RegisterTask("pet_pen_progression_collection_handler", function()
+      Registry.RegisterTask("pet_pen_progression_collection_handler_2", function()
         -- ==============
         Cooldown.AutoFarm.AutoCollectProgression = nil
         WriteConsoleLog("[Registry]: {pet_pen_handler} runned", nil, "DEBUG")
         WriteFileLog("[Registry]: {pet_pen_handler} runned", "DEBUG")
-        SafeInvoke("IdleProgressionAPI/CommitAllProgression", true)
+        SafeFire("IdleProgressionAPI/CommitAllProgression", true)
         Cooldown.AutoFarm.AutoCollectProgression = 300
         -- ==============
       end,
@@ -4419,7 +4418,7 @@ end
       WriteConsoleLog("Pet Pen disabled", nil, "DEBUG")
       WriteFileLog("Pet Pen disabled", "DEBUG")
       Registry.UnregisterTask("pet_pen_handler")
-      Registry.UnregisterTask("pet_pen_progression_collection_handler")
+      Registry.UnregisterTask("pet_pen_progression_collection_handler_2")
       Cooldown.AutoFarm.PetPenCheckAfter = nil
       Cooldown.Autofarm.AutoCollectProgression = nil
     end
@@ -4460,7 +4459,7 @@ end
         Cooldown.AutoFarm.AutoCollectProgression = nil
         WriteConsoleLog("[Registry]: {pet_pen_progression_collection_handler} runned", nil, "DEBUG")
         WriteFileLog("[Registry]: {pet_pen_progression_collection_handler} runned", "DEBUG")
-        SafeInvoke("IdleProgressionAPI/CommitAllProgression", true)
+        SafeFire("IdleProgressionAPI/CommitAllProgression", true)
         Cooldown.AutoFarm.AutoCollectProgression = 300
         -- ==============
       end,
