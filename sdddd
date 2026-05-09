@@ -2881,7 +2881,7 @@ end
           end
         end
         if not flag then
-          if _G.InternalConfig.PetFarmDLib.PetsToExclude[k] then
+          if _G.InternalConfig.PetFarmDLib.OppositeFarm then
             if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
               local practice_dog = InvGetCategoryUnique("pets", "practice_dog")
               if practice_dog then
@@ -2920,6 +2920,7 @@ end
         end
       end
       local eqailments = GetEquipedPetAilments()
+      print("before cycle")
       print(string.format("🔎 Detecting tasks for %s..", actual_pet.remote))
       for k,_ in pairs(eqailments) do 
         if pet_ailments[k] then
@@ -2935,7 +2936,6 @@ end
           pcall(pet_ailments[k])
           if CONNECTIONS.WalkLock then CONNECTIONS.WalkLock:Disconnect(); CONNECTIONS.WalkLock = nil end
           if CONNECTIONS.RideLock then CONNECTIONS.RideLock:Disconnect(); CONNECTIONS.RideLock = nil end
-          Cooldown.AutoFarm.PetAutoFarm = 0
           return
         end
       end
