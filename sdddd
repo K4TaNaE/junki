@@ -777,30 +777,30 @@ local _script = coroutine.create(function()
     }
   end
 
+
   function LocationQueue._process()
-    if LocationQueue._running then return end
-    LocationQueue._running = true
-    while #LocationQueue._queue > 0 do
-      local _task = table.remove(LocationQueue._queue, 1)
-      _task.callback()
-      _task.resume = coroutine.running()
-      coroutine.yield()
-      _task.completed = true
-      if _task.resume then
-        coroutine.resume(_task.resume)
+      if LocationQueue._running then return end
+      LocationQueue._running = true
+
+      while #LocationQueue._queue > 0 do
+          local _task = table.remove(LocationQueue._queue, 1)
+
+          coroutine.wrap(function()
+              _task.callback()
+              _task.completed = true
+          end)()
+
+          _task.resume = coroutine.running()
       end
-    end
-    LocationQueue._running = false
+
+      LocationQueue._running = false
   end
 
-  function LocationQueue.Enqueue(callback :Callback)
-    local _task = LocationQueue.CreateTask(callback)
-    table.insert(LocationQueue._queue, _task)
-    _task.resume = nil
-    coroutine.wrap(LocationQueue._process)()
-    WriteConsoleLog(string.format("[Location Change Queue]: Task entered queue. function: {%s}", (debug.info(callback, "n") or tostring(callback))), nil, "DEBUG")
-    WriteFileLog(string.format("[Location Change Queue]: Task entered queue. function: {%s}", (debug.info(callback, "n") or tostring(callback))), "DEBUG")
-    return _task
+  function LocationQueue.Enqueue(callback)
+      local _task = LocationQueue.CreateTask(callback)
+      table.insert(LocationQueue._queue, _task)
+      coroutine.wrap(LocationQueue._process)()
+      return _task
   end
 
   function TaskQueue.CreateTask(callback :Callback)
@@ -2307,6 +2307,7 @@ end
 
   local baby_ailments = {
     ["camping"] = function() 
+      print("camping started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("camping")
       local age, friendship
@@ -2331,8 +2332,10 @@ end
       while not _task.completed do
         task.wait(1)
       end
+      print("camping ended")
     end,
     ["hungry"] = function() 
+      print("hungry started")
       local money = ClientData.get("money")
       if CountOfProduct("food", "apple") < 3 then
         if money == 0 then  
@@ -2372,8 +2375,10 @@ end
       end	
       print("🟩 Task hungry for baby - done!")
       EnstatBaby(money, "hungry")  
+      print("hungry started")
     end,
     ["thirsty"] = function() 
+      print("thirsty started")
       local money = ClientData.get("money")
       if CountOfProduct("food", "water") == 0 then
         if money == 0 then 
@@ -2403,8 +2408,8 @@ end
       repeat			
         SafeFire("ToolAPI/ServerUseTool",
           InvGetCategoryUnique("food", "water"),
-        "END"
-        )
+          "END"
+          )
         task.wait(.5)
       until not HasAilmentBaby("thirsty") or os.clock() > deadline  
       if os.clock() > deadline then 
@@ -2413,8 +2418,10 @@ end
       end		
       print("🟩 Task thirsty for baby - done!")
       EnstatBaby(money, "thirsty")  
+      print("thirsty ended")
     end,
     ["sick"] = function() 
+      print("sick started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("sick")
       local age, friendship
@@ -2437,8 +2444,10 @@ end
       while not _task.completed do
         task.wait(1)
       end
+      print("sick ended")
     end,
     ["bored"] = function() 
+      print("bored started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("bored")
       local age, friendship
@@ -2463,8 +2472,10 @@ end
       while not _task.completed do
         task.wait(1)
       end 
+      print("boded ended")
     end,
     ["salon"] = function() 
+      print("salon started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("salon")
       local age, friendship
@@ -2488,8 +2499,10 @@ end
       while not _task.completed do
         task.wait(1)
       end
+      print("salon ended")
     end,
     ["beach_party"] = function() 
+      print("beach_party started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("beach_party")
       local age, friendship
@@ -2514,8 +2527,10 @@ end
       while not _task.completed do
         task.wait(1)
       end
+      print("beach_party ended")
     end,
     ["dirty"] = function() 
+      print("dirty started")
       local money = ClientData.get("money")
       task.spawn(function() 
         SafeInvoke('HousingAPI/ActivateFurniture',
@@ -2539,8 +2554,10 @@ end
       end		
       print("🟩 Task dirty for baby - done!")
       EnstatBaby(money, "dirty")  
+      print("dirty ended")
     end,
     ["school"] = function() 
+      print("school started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("school")
       local age, friendship
@@ -2564,8 +2581,10 @@ end
       while not _task.completed do
         task.wait(1)
       end        
+      print("school ended")
     end,
     ["sleepy"] = function() 
+      print("sleepy started")
       local money = ClientData.get("money")
       task.spawn(function() 
         SafeInvoke('HousingAPI/ActivateFurniture',
@@ -2589,8 +2608,10 @@ end
       end		
       print("🟩 Task sleepy for baby - done!")
       EnstatBaby(money, "sleepy")  
+      print("sleepy ended")
     end,
     ["pizza_party"] = function() 
+      print("pizza_party started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("pizza_party")
       local age, friendship
@@ -2614,6 +2635,7 @@ end
       while not _task.completed do
         task.wait(1)
       end
+      print("pizza_party ended")
     end,
   }
 
