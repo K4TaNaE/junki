@@ -2703,13 +2703,12 @@ end
     local _task = TaskQueue.Enqueue(function()
       print('task runned')
       local flag = false
-      local kitty_unique
+      local kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")
       if _G.InternalConfig.PetFarmDLib.Detect2DKitty then
         if kitty_unique == actual_pet.unique and kitty_unique == ClientData.get("pet_char_wrappers")[1].pet_unique then
           flag = true
         else
-          kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")
-          if kitty_unique and kitty_unique ~= actual_pet.unique then
+          if kitty_unique then
             SafeInvoke("ToolAPI/Equip",
               kitty_unique,
               {
@@ -2740,7 +2739,7 @@ end
               equip_as_last = false
             }
           )
-          WriteConsoleLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), string.format("🐶 Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEUBG")
+          WriteConsoleLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), string.format("🐶 Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEBUG")
           WriteFileLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEBUG")
           GUI.Notify("Warning", string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "WARNING", "triangle-alert")
           flag = true
@@ -2940,12 +2939,12 @@ end
           return
         end
       end
-      print('pet auto farm ended')
-      Cooldown.AutoFarm.PetAutoFarm = 15
     end)
     while not _task.completed do
       task.wait(1)
     end
+    print('pet auto farm ended')
+    Cooldown.AutoFarm.PetAutoFarm = 15
   end
 
   local function __init_manual_pet_farm()
@@ -2961,7 +2960,7 @@ end
             equip_as_last = false
           }
         )	 
-        WriteConsoleLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), string.format("🐶 Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEUBG")
+        WriteConsoleLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), string.format("🐶 Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEBUG")
         WriteFileLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEBUG")
         GUI.Notify("Warning", string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "WARNING", "triangle-alert")
         task.wait(.5)
