@@ -786,8 +786,8 @@ local _script = coroutine.create(function()
           local _task = table.remove(LocationQueue._queue, 1)
 
           coroutine.wrap(function()
-              _task.callback()
-              _task.completed = true
+            _task.callback()
+            _task.completed = true
           end)()
 
           _task.resume = coroutine.running()
@@ -797,10 +797,10 @@ local _script = coroutine.create(function()
   end
 
   function LocationQueue.Enqueue(callback)
-      local _task = LocationQueue.CreateTask(callback)
-      table.insert(LocationQueue._queue, _task)
-      coroutine.wrap(LocationQueue._process)()
-      return _task
+    local _task = LocationQueue.CreateTask(callback)
+    table.insert(LocationQueue._queue, _task)
+    coroutine.wrap(LocationQueue._process)()
+    return _task
   end
 
   function TaskQueue.CreateTask(callback :Callback)
@@ -818,10 +818,8 @@ local _script = coroutine.create(function()
       while #TaskQueue._queue > 0 do
           local _task = table.remove(TaskQueue._queue, 1)
 
-          coroutine.wrap(function()
-              _task.callback()
-              _task.completed = true
-          end)()
+          _task.callback()
+          _task.completed = true
 
           _task.resume = coroutine.running()
       end
@@ -3057,13 +3055,13 @@ end
                 if CONNECTIONS.RideLock then CONNECTIONS.RideLock:Disconnect(); CONNECTIONS.RideLock = nil end
               end
             end
+            print('pet auto farm ended')
+            Cooldown.AutoFarm.PetAutoFarm = 15
           end)
           while not _task.completed do
             print("while task completred..")
             task.wait(1)
           end
-          print('pet auto farm ended')
-          Cooldown.AutoFarm.PetAutoFarm = 15
         end,
         function()
           return Cooldown.AutoFarm.PetAutoFarm == 0
