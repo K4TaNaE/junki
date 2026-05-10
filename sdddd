@@ -3008,7 +3008,9 @@ end
                   end
                 end
               end
+              task.wait(1)
               if flag and not Equiped() then
+                print("flag and not equiped")
                 Cooldown.AutoFarm.PetAutoFarm = 5
                 return
               end
