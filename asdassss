@@ -1578,7 +1578,7 @@ end
   local PetAutoFarmToggleButton = GUI.InitToggleButton(AutofarmTab, "Pet Auto Farm", false, "petautofarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.TogglePetAutoFarm(v) end)
   local PetAutoFarmFarmTypeDropdown = GUI.InitDropdown(AutofarmTab, "Farm Type", {"automated", "manual"}, {"automated"}, false, "petautofarmfarmtypedropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmType(v) end)
   GUI.InitDivider(AutofarmTab)
-  local PetAutoFarmFarmPriorityDropdown = GUI.InitDropdown(AutofarmTab, "Farm Priority", {"any", "pets", "eggs"}, {"any"}, false, "petautofarmfarmprioritydropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmPriority(v) end)
+  local PetAutoFarmFarmPriorityDropdown = GUI.InitDropdown(AutofarmTab, "Farm Priority", {"pets", "eggs"}, {"pets"}, false, "petautofarmfarmprioritydropdown", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmPriority(v) end)
   local PetAutoFarmPotionFarmToggleButton = GUI.InitToggleButton(AutofarmTab, "Potion Farm", false, "petautofarmpotionfarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.TogglePotionFarm(v) end)
   local PetAutoFarmOpoositeFarmToggleButton = GUI.InitToggleButton(AutofarmTab, "Opposite Farm", false, "petautofarmoppositefarmtogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.ToggleOppositeFarm(v) end)
   local PetAutoFarmDetect2DKittyToggleButton = GUI.InitToggleButton(AutofarmTab, "Detect 2D-Kitty", false, "petautofarmdetect2dkittytogglebutton", function(v) GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.ToggleDetect2DKitty(v) end)
@@ -2810,51 +2810,49 @@ end
           local _task = TaskQueue.Enqueue(function()
             print('task runned')
             local flag = false
-            -- local kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")
-            -- if _G.InternalConfig.PetFarmDLib.Detect2DKitty then
-            --   if kitty_unique == actual_pet.unique and kitty_unique == ClientData.get("pet_char_wrappers")[1].pet_unique then
-            --     flag = true
-            --   else
-            --     if kitty_unique then
-            --       SafeInvoke("ToolAPI/Equip",
-            --         kitty_unique,
-            --         {
-            --           use_sound_delay = true,
-            --           equip_as_last = false
-            --         }
-            --       )
-            --       print("🐱 Found and equiped 2D-kitty.")
-            --       WriteConsoleLog("2D-kitty detected and equiped", "🐱 2D-kitty detected and equiped.", "DEBUG")
-            --       WriteFileLog("2D-kitty detected and equiped", "DEBUG")
-            --       flag = true
-            --       _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
-            --       _G.InternalConfig.PetFarmDLib.KittyInUse = true
-            --       task.wait(1)
-            --       PetUpdate() 
-            --     end
-            --   end
-            -- else
-            --   _G.InternalConfig.PetFarmDLib.KittyInUse = false
-            -- end
-            -- if not _G.InternalConfig.PetFarmDLib.KittyInUse then
-            --   if (actual_pet.unique and not Equiped()) or (actual_pet.unique and actual_pet.unique ~= CurUnique()) then
-            --     SafeInvoke("ToolAPI/Equip",
-            --       actual_pet.unique, 
-            --       {
-            --         use_sound_delay = true,
-            --         equip_as_last = false
-            --       }
-            --     )
-            --     WriteConsoleLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), string.format("🐶 Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEBUG")
-            --     WriteFileLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEBUG")
-            --     GUI.Notify("Warning", string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "WARNING", "triangle-alert")
-            --     flag = true
-            --     task.wait(.5)
-            --   end
-            -- end
-            print("before pet validation cycle")
+            local kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")
+            if _G.InternalConfig.PetFarmDLib.Detect2DKitty then
+              if kitty_unique == actual_pet.unique and kitty_unique == ClientData.get("pet_char_wrappers")[1].pet_unique then
+                flag = true
+              else
+                if kitty_unique then
+                  SafeInvoke("ToolAPI/Equip",
+                    kitty_unique,
+                    {
+                      use_sound_delay = true,
+                      equip_as_last = false
+                    }
+                  )
+                  print("🐱 Found and equiped 2D-kitty.")
+                  WriteConsoleLog("2D-kitty detected and equiped", "🐱 2D-kitty detected and equiped.", "DEBUG")
+                  WriteFileLog("2D-kitty detected and equiped", "DEBUG")
+                  flag = true
+                  _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
+                  _G.InternalConfig.PetFarmDLib.KittyInUse = true
+                  task.wait(1)
+                  PetUpdate() 
+                end
+              end
+            else
+              _G.InternalConfig.PetFarmDLib.KittyInUse = false
+            end
+            if not _G.InternalConfig.PetFarmDLib.KittyInUse then
+              if (actual_pet.unique and not Equiped()) or (actual_pet.unique and actual_pet.unique ~= CurUnique()) then
+                SafeInvoke("ToolAPI/Equip",
+                  actual_pet.unique, 
+                  {
+                    use_sound_delay = true,
+                    equip_as_last = false
+                  }
+                )
+                WriteConsoleLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), string.format("🐶 Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEBUG")
+                WriteFileLog(string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "DEBUG")
+                GUI.Notify("Warning", string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "WARNING", "triangle-alert")
+                flag = true
+                task.wait(.5)
+              end
+            end
             if not actual_pet.unique or _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
-            print("after pet validation cycle")
               local owned_pets = GetOwnedPets()
               if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then	
                 print("in 1")
