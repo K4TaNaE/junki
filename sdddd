@@ -816,12 +816,15 @@ local _script = coroutine.create(function()
       TaskQueue._running = true
 
       while #TaskQueue._queue > 0 do
-          local _task = table.remove(TaskQueue._queue, 1)
+        local _task = table.remove(TaskQueue._queue, 1)
 
-          _task.callback()
-          _task.completed = true
-
-          _task.resume = coroutine.running()
+        if not ok then
+          -- Логирование ошибки если нужно
+          WriteConsoleLog(string.format("[TaskQueue]: Task failed: %s", err), nil, "DEBUG")
+        end
+        _task.completed = true
+        
+        _task.resume = coroutine.running()
       end
 
       TaskQueue._running = false
@@ -2829,7 +2832,6 @@ end
                   _G.InternalConfig.PetFarmDLib.KittyInUse = true
                   task.wait(1)
                   PetUpdate() 
-                  task.wait(.2)
                 end
               end
             else
@@ -2856,8 +2858,8 @@ end
             print("after pet validation cycle")
               local owned_pets = GetOwnedPets()
               if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then	
+                print("in 1")
                 if _G.InternalConfig.PetFarmDLib.PotionFarm then
-                  print("in 1")
                   for _, r in ipairs(Rarities) do
                     for k,v in pairs(owned_pets) do
                       if v.remote ~= "practice_dog" and not _G.InternalConfig.PetFarmDLib.PetsToExclude[k] and not (v.name:lower()):match("egg") and v.age == 6 and v.rarity == r then
@@ -2877,8 +2879,8 @@ end
                   print("found 1")
                   end
                 end
+                print("in 2")
                 if not flag then
-                  print("in 2")
                   for _,r in ipairs(Rarities) do
                     for k,v in pairs(owned_pets) do
                       if v.remote ~= "practice_dog" and not _G.InternalConfig.PetFarmDLib.PetsToExclude[k] and not (v.name:lower()):match("egg") and v.age < 6 and v.rarity == r then
@@ -2898,8 +2900,8 @@ end
                     print("found 2")
                   end
                 end 
+                print("in 3")
                 if not flag then 
-                  print("in 3")
                   if _G.InternalConfig.PetFarmDLib.OppositeFarm then
                     if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
                       WriteConsoleLog("No pets to farm depending on filter. Running opposite farm filter", "⚙️ No pets to farm depending on filter. Running opposite farm filter.", "DEBUG")
@@ -3062,6 +3064,9 @@ end
             print("while task completred..")
             task.wait(1)
           end
+          if not Cooldown.AutoFarm.PetAutoFarm then
+            error("", 0)
+          end
         end,
         function()
           return Cooldown.AutoFarm.PetAutoFarm == 0
@@ -3142,6 +3147,9 @@ end
           end)
           while not _task.completed do
             task.wait(1)
+          end
+          if not Cooldown.AutoFarm.PetAutoFarm then
+            error("", 0)
           end
         end,
         function()
@@ -3434,13 +3442,16 @@ end
               pcall(baby_ailments[k])
             end
           end
+          print("TASKI COMPELTED")
+          Cooldown.AutoFarm.BabyAutoFarm = 15
         end)
         while not _task.completed do
           task.wait(1)
           print("waiting until task complete")
         end
-        print("TASKI COMPELTED")
-        Cooldown.AutoFarm.BabyAutoFarm = 15
+        if not Cooldown.AutoFarm.BabyAutoFarm then
+          error("", 0)
+        end
       end,
       function()
         return Cooldown.AutoFarm.BabyAutoFarm == 0
@@ -4074,6 +4085,7 @@ end
                 GUI.LabelUpdate(AutoGivePotionPetsFullgrownedLabel, str, "coffee", Color3.fromRGB(203, 92, 255), false)
               end
             end 
+            Cooldown.AutoFarm.TryUsePotionAfter = 180
           end)
           while not _task.completed do
             task.wait(1)
@@ -4085,7 +4097,9 @@ end
               equip_as_last = false
             }
           )
-          Cooldown.AutoFarm.TryUsePotionAfter = 180
+          if not Cooldown.AutoFarm.TryUsePotionAfter then
+            error("", 0)
+          end
         end,
         function()
           return Cooldown.AutoFarm.TryUsePotionAfter == 0
