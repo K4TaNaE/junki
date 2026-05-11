@@ -2656,10 +2656,10 @@ end
     local meganeon = {}
     for k,v in pairs(GetOwnedPets()) do
       if v.age == 6 then
-        __neon_temp[v.id] = (__neon_temp[v.id] or 0) + 1
+        __neon_temp[v.remote] = (__neon_temp[v.remote] or 0) + 1
       end
       if v.neon and v.age == 6 then
-        __meganeon_temp[v.id] = (__meganeon_temp[v.id] or 0) + 1
+        __meganeon_temp[v.remote] = (__meganeon_temp[v.remote] or 0) + 1
       end
     end
     for k,v in pairs(__neon_temp) do
