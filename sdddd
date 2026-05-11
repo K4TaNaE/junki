@@ -2151,6 +2151,7 @@ end
       local friendship = cdata.properties.friendship_level
       local money = ClientData.get("money")
       local age = pet.pet_progression.age
+      print("[DIRTY]\n", furn.bath.unique, furn.bath.userpart, actual_pet.model)
       SafeInvoke('HousingAPI/ActivateFurniture',
         LocalPlayer,
         furn.bath.unique,
@@ -2231,6 +2232,7 @@ end
       local friendship = cdata.properties.friendship_level
       local money = ClientData.get("money")
       local age = pet.pet_progression.age
+      print("[DIRTY]\n", furn.bed.unique, furn.bed.userpart, actual_pet.model)
       SafeInvoke('HousingAPI/ActivateFurniture',
         LocalPlayer,
         furn.bed.unique,
@@ -5630,8 +5632,6 @@ end
         if not (v.name:lower()):match("egg") then
           table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
         end
-      elseif table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "any" then
-        table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       else
         if (v.name:lower()):match("egg") then
           table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
