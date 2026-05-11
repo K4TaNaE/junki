@@ -275,11 +275,11 @@ local _script = coroutine.create(function()
     ["pizza_party"] = "🍕 Task [pizza-party] detected for baby!",
   }
   local Rarities = {
-    [1] = "common",
-    [2] = "uncommon",
+    [1] = "legendary",
+    [2] = "ultra_rare",
     [3] = "rare",
-    [4] = "ultra_rare",
-    [5] = "legendary",
+    [4] = "uncommon",
+    [5] = "common",
   }
   local PetRarities = {
     ["common"] = "common",
@@ -2806,7 +2806,6 @@ end
             return
           end
           local _task = TaskQueue.Enqueue(function()
-            print('task runned')
             local flag = false
             local kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")
             if _G.InternalConfig.PetFarmDLib.Detect2DKitty then
@@ -2854,7 +2853,6 @@ end
               local owned_pets = GetOwnedPets()
               if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then	
                 if _G.InternalConfig.PetFarmDLib.PotionFarm then
-                  print("in 1")
                   for _, r in ipairs(Rarities) do
                     for k,v in pairs(owned_pets) do
                       if v.remote ~= "practice_dog" and not _G.InternalConfig.PetFarmDLib.PetsToExclude[k] and not (v.name:lower()):match("egg") and v.age == 6 and v.rarity == r then
@@ -2870,12 +2868,10 @@ end
                         break
                       end
                     end
-                    print("found 1")
                     if flag then break end
                   end
                 end
                 if not flag then
-                  print("in 2")
                   for _,r in ipairs(Rarities) do
                     for k,v in pairs(owned_pets) do
                       if v.remote ~= "practice_dog" and not (_G.InternalConfig.PetFarmDLib.PetsToExclude and _G.InternalConfig.PetFarmDLib.PetsToExclude[k]) and not (v.name:lower()):match("egg") and v.age < 6 and v.rarity == r then
@@ -2887,18 +2883,15 @@ end
                             equip_as_last = false
                           }
                         )
-                        print("ended cycle")
                         flag = true
                         _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
                         break
                       end
                     end
-                    print("found 2")
                     if flag then break end
                   end
                 end 
                 if not flag then 
-                  print("in 3")
                   if _G.InternalConfig.PetFarmDLib.OppositeFarm then
                     if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
                       WriteConsoleLog("No pets to farm depending on filter. Running opposite farm filter", "⚙️ No pets to farm depending on filter. Running opposite farm filter.", "DEBUG")
@@ -2921,10 +2914,8 @@ end
                           end
                         end
                         if flag then break end
-                  print("found 3")
                       end
                       if not flag then
-                  print("in 4")
                         for _, r in ipairs(Rarities) do
                           for k,v in pairs(owned_pets) do
                             if v.remote ~= "practice_dog" and not (_G.InternalConfig.PetFarmDLib.PetsToExclude and _G.InternalConfig.PetFarmDLib.PetsToExclude[k]) and v.rarity == r then
@@ -2942,7 +2933,6 @@ end
                             end
                           end
                           if flag then break end
-                  print("found 4")
                         end
                       end
                     end
@@ -3015,7 +3005,6 @@ end
               end
               task.wait(1)
               if flag and not Equiped() then
-                print("flag and not equiped")
                 Cooldown.AutoFarm.PetAutoFarm = 5
                 return
               end
@@ -3036,7 +3025,6 @@ end
               end
             end
             local eqailments = GetEquipedPetAilments()
-            print("before cycle")
             print(string.format("🔎 Detecting tasks for %s..", actual_pet.remote))
             for k,_ in pairs(eqailments) do 
               if pet_ailments[k] then
@@ -3054,11 +3042,9 @@ end
                 if CONNECTIONS.RideLock then CONNECTIONS.RideLock:Disconnect(); CONNECTIONS.RideLock = nil end
               end
             end
-            print('pet auto farm ended')
             Cooldown.AutoFarm.PetAutoFarm = 15
           end)
           while not _task.completed do
-            print("while task completred..")
             task.wait(1)
           end
           if not Cooldown.AutoFarm.PetAutoFarm then
