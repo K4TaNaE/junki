@@ -4142,8 +4142,6 @@ end
           Cooldown.AutoFarm.TryUsePotionAfter = 5
         end)
       else
-        --kuni
-
         if not _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion then
           GUI.ToggleButtonSetValue(AutoGivePotionToggleButton, false)
           GUI.Notify("Warning", "Set <Pet To Give Potion> at first.", "WARNING", "triangle-alert")
@@ -4315,14 +4313,14 @@ end
   end
 
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToGivePotion = function(v)
-    WriteConsoleLog("Set higher priority triggered", nil, "DEBUG")
-    WriteFileLog("Set higher priority triggered", "DEBUG")
+    WriteConsoleLog("Pet to give potion triggered", nil, "DEBUG")
+    WriteFileLog("Pet to give potion triggered", "DEBUG")
     if #v == 0 or v[1]:match("set <Mode> to manual") then
       _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion = nil
       return
     end
     _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion = {}
-    for k,v in ipairs(v) do
+    for _,v in ipairs(v) do
       table.insert(_G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion, v:split("unique: ")[2])
     end    
   end
@@ -5042,8 +5040,8 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon = function(v) 
     WriteConsoleLog("Pet to neon triggered", nil, "DEBUG")
     WriteFileLog("Pet to neon triggered", "DEBUG")
-    if #v == 1 and tostring(v[1]):match("^%s*$") then
-      _G.InternalConfig.PetsToNeon = false
+    if #v == 0 then
+      _G.InternalConfig.PetsToNeon = nil
       return
     end
     _G.InternalConfig.PetsToNeon = {}
@@ -5090,8 +5088,8 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon = function(v)
     WriteConsoleLog("Pet to mega neon triggered", nil, "DEBUG")
     WriteFileLog("Pet to mega neon triggered", "DEBUG")
-    if #v == 1 and tostring(v[1]):match("^%s*$") then
-      _G.InternalConfig.PetsToMegaNeon = false
+    if #v == 0 then
+      _G.InternalConfig.PetsToMegaNeon = nil
       return
     end
     _G.InternalConfig.PetsToMegaNeon = {}
