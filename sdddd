@@ -715,7 +715,8 @@ local _script = coroutine.create(function()
           WriteConsoleLog(string.format("[Registry]: Task condition reached. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), nil, "DEBUG")
           WriteFileLog(string.format("[Registry]: Task condition reached. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), "DEBUG")
           task.spawn(function() 
-            local ok, _ = pcall(v._callback)
+            -- local ok, _ = pcall(v._callback)
+            v._callback()
             if not ok then
               WriteConsoleLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), nil, "DEBUG")
               WriteFileLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), "DEBUG")
@@ -1337,8 +1338,8 @@ end
   end
 
   local function GetPetPenSlots() 
-    local maxTotalPets = CloudValues:getValue("idle_progression", "maxTotalPets") or 0
-    local extraSlotGamepassIds = CloudValues:getValue("idle_progression", "extraSlotGamepassIds") or {}
+    local maxTotalPets = CloudValues:getValue("idle_progression", "maxTotalPets") --or 0
+    local extraSlotGamepassIds = CloudValues:getValue("idle_progression", "extraSlotGamepassIds") --or {}
     local purchasedExtraSlots = 0
     for _, gamepassId in ipairs(extraSlotGamepassIds) do
       if ClientGamepassHelper.owns_gamepass(gamepassId) then
@@ -2091,15 +2092,17 @@ end
       local friendship = cdata.properties.friendship_level
       local money = ClientData.get("money")
       local age = pet.pet_progression.age
-      SafeInvoke('HousingAPI/ActivateFurniture',
-        LocalPlayer,
-        furn.toilet.unique,
-        furn.toilet.usepart,
-        {
-          cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
-        },
-        actual_pet.model
-      )
+      task.spawn(function() 
+        SafeInvoke('HousingAPI/ActivateFurniture',
+          LocalPlayer,
+          furn.toilet.unique,
+          furn.toilet.usepart,
+          {
+            cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
+          },
+          actual_pet.model
+        )
+      end)
       local deadline = os.clock() + 15
       repeat 
         task.wait(1)
@@ -2179,15 +2182,17 @@ end
       local friendship = cdata.properties.friendship_level
       local money = ClientData.get("money")
       local age = pet.pet_progression.age
-      SafeInvoke('HousingAPI/ActivateFurniture',
-        LocalPlayer,
-        furn.bath.unique,
-        furn.bath.usepart,
-        {
-          cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
-        },
-        actual_pet.model
-      )
+      task.spawn(function() 
+        SafeInvoke('HousingAPI/ActivateFurniture',
+          LocalPlayer,
+          furn.bath.unique,
+          furn.bath.usepart,
+          {
+            cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
+          },
+          actual_pet.model
+        )
+      end)
       local deadline = os.clock() + 20
       repeat 
         task.wait(1)
@@ -2265,15 +2270,17 @@ end
       local friendship = cdata.properties.friendship_level
       local money = ClientData.get("money")
       local age = pet.pet_progression.age
-      SafeInvoke('HousingAPI/ActivateFurniture',
-        LocalPlayer,
-        furn.bed.unique,
-        furn.bed.usepart,
-        {
-          cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
-        },
-        actual_pet.model
-      )
+      task.spawn(function() 
+        SafeInvoke('HousingAPI/ActivateFurniture',
+          LocalPlayer,
+          furn.bed.unique,
+          furn.bed.usepart,
+          {
+            cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
+          },
+          actual_pet.model
+        )
+      end)
       local deadline = os.clock() + 20
       repeat 
         task.wait(1)
@@ -2360,6 +2367,7 @@ end
         repeat 
           task.wait(1)
         until not HasAilmentBaby("camping") or os.clock() > deadline
+        Gotopart("main")
         if os.clock() > deadline then 
           WriteConsoleLog("Task camping for baby - Out of limits", "🟥 Task camping for baby - Out of limits!", "DEBUG")
           WriteFileLog("Task camping for baby - Out of limits", "DEBUG")
@@ -4444,7 +4452,7 @@ end
           local _temp = {} 
           local _used = {}
           for _,v in ipairs(_G.InternalConfig.PetPenDLib.PrioritizedRarities) do
-            for a,b in ipairs(pets_to_place) do
+            for _,b in ipairs(pets_to_place) do
               if b[2] == v then
                 table.insert(_temp, b[1])
                 _used[b[1]] = true
@@ -5039,6 +5047,7 @@ end
       _G.InternalConfig.PetsToNeon = false
       return
     end
+    _G.InternalConfig.PetsToNeon = {}
     for k,_ in pairs(v) do 
       table.insert(_G.InternalConfig.PetsToNeon, InvGetCategoryUniquesByName("pets", k))
     end
@@ -5086,7 +5095,8 @@ end
       _G.InternalConfig.PetsToMegaNeon = false
       return
     end
-    for k,v in pairs(v) do 
+    _G.InternalConfig.PetsToMegaNeon = {}
+    for k,_ in pairs(v) do 
       table.insert(_G.InternalConfig.PetsToMegaNeon, InvGetCategoryUniquesByName("pets", k))
     end
   end
