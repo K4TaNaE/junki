@@ -715,8 +715,7 @@ local _script = coroutine.create(function()
           WriteConsoleLog(string.format("[Registry]: Task condition reached. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), nil, "DEBUG")
           WriteFileLog(string.format("[Registry]: Task condition reached. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), "DEBUG")
           task.spawn(function() 
-            -- local ok, _ = pcall(v._callback)
-            v._callback()
+            local ok, _ = pcall(v._callback)
             if not ok then
               WriteConsoleLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), nil, "DEBUG")
               WriteFileLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), "DEBUG")
@@ -1183,7 +1182,7 @@ local _script = coroutine.create(function()
   end
 
   local function GetNameFromRemote(category, remote)
-    return InventoryDB.pets[v.id].name or ""
+    return InventoryDB[category][remote].name or ""
   end
 
   local function count(t)
