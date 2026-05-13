@@ -681,9 +681,9 @@ local _script = coroutine.create(function()
     local _callback =  callback
     local _condition = condition
     local _fallback = fallback
-    Registry.Tasks[_flag] = {['_flag'] = _flag, ["_callback"] = _callback, ["_condition"] = _condition, ["_fallback"] = _fallback, _active = true}
     WriteConsoleLog(string.format("[Registry]: Task registered. _flag: {%s} : {%s}", _flag, (debug.info(_callback, "n") or tostring(_callback))), nil, "DEBUG")
     WriteFileLog(string.format("[Registry]: Task registered. _flag: {%s} : {%s}", _flag, (debug.info(_callback, "n") or tostring(_callback))), "DEBUG")
+    Registry.Tasks[_flag] = {['_flag'] = _flag, ["_callback"] = _callback, ["_condition"] = _condition, ["_fallback"] = _fallback, _active = true}
   end
 
   function Registry.RunTask(flag :string, callback :Callback)
@@ -691,6 +691,8 @@ local _script = coroutine.create(function()
     if Registry.Tasks[_flag] then
       return
     end
+    WriteConsoleLog(string.format("[Registry]: Disposbale task registered. _flag: {%s}", _flag), nil, "DEBUG")
+    WriteFileLog(string.format("[Registry]: Disposable task registered. _flag: {%s}", _flag), "DEBUG")
     Registry.DisposableTasks[_flag] = {["_flag"] = _flag, ["_callback"] = callback}
     task.spawn(function() 
       local ok, _ = pcall(callback)
@@ -700,8 +702,6 @@ local _script = coroutine.create(function()
       end
       Registry.DisposableTasks[_flag] = nil
     end)
-    WriteConsoleLog(string.format("[Registry]: Disposbale task registered. _flag: {%s}", _flag), nil, "DEBUG")
-    WriteFileLog(string.format("[Registry]: Disposable task registered. _flag: {%s}", _flag), "DEBUG")
   end
 
   function Registry.Exists(flag :string) 
@@ -1174,10 +1174,10 @@ local _script = coroutine.create(function()
     for unique, v in pairs(cat) do
       local remote = inv_db[v.id] or {['name'] = "_pizda"}
       if remote.name == name then
-        data[unique] = true
+        table.insert(data, unique)
       end
     end
-    if count(data) == 0 then return {} else return data end
+    return data 
   end
 
   local function ClearPetFarmCache()
@@ -1614,9 +1614,9 @@ end
   local AutoGivePotionSetHigherPriorityForDropdown = GUI.InitDropdown(AutofarmTab, "Set Higher Priority For (optional)", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionsethigherpriorityfordropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionHigherPriority(v) end)
   local AutoGivePotionPetToGivePotionDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Give Potion", {}, {"set <Mode> to manual"}, true, "autogivepotionpettogivepotiondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToGivePotion(v) end)
   GUI.InitDivider(AutofarmTab)
-  local AutoGivePotionBlacklistedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedRarities(v) end)
-  local AutoGivePotionBlacklistedAgeDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {}, true, "autogivepotionblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedAges(v) end)
-  local AutoGivePotionBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedProperties(v) end)
+  GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedRarities(v) end)
+  GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {}, true, "autogivepotionblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedAges(v) end)
+  GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedProperties(v) end)
   local AutoGivePotionBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {}, true, "autogivepotionblacklistedspecificpetsdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedSpecificPets(v) end)
   GUI.InitDivider(AutofarmTab)
 
@@ -3121,7 +3121,7 @@ end
               GUI.Notify("Warning", string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "WARNING", "triangle-alert")
               task.wait(.5)
             end
-            if not actual_pet.unique then
+            if not actual_pet.unique or actual_pet.unique ~= _G.InternalConfig.PetFarmDLib.ManualPetsToFarm then
               if _G.InternalConfig.PetFarmDLib.ManualPetsToFarm then
                 SafeInvoke("ToolAPI/Equip",
                   _G.InternalConfig.PetFarmDLib.ManualPetsToFarm,
@@ -3138,7 +3138,8 @@ end
                   WriteFileLog(string.format("New pet equiped: %s", actual_pet.remote), "DEBUG")
                   _G.InternalConfig.PetFarmDLib.PotionFarm = true -- chtoby posle age == 6 ne zbrosilo peta
                 else
-                  Cooldown.AutoFarm.PetAutoFarm = 2
+                  GUI.Notify("Warning", "Internal validation could not find specified pet. Try to specify <Pet To Farm> again.", "WARNING", "triangle-alert")
+                  GUI.ToggleButtonSetValue(TogglePetAutoFarm, false)
                   return
                 end
               end
@@ -3290,7 +3291,6 @@ end
       return
     end
     _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = v[1]:split("unique: ")[2]
-    actual_pet.unique = nil
   end
   
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetsToExclude = function(v) 
@@ -3486,7 +3486,6 @@ end
       Cooldown.AutoFarm.BabyAutoFarm = nil
     end
   end
--- snachala cooldown = nil, zatem log (v registered task)
 
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleGiftAutoOpen = function(v) 
     WriteConsoleLog("Gift auto open triggered", nil, "DEBUG")
@@ -5031,8 +5030,8 @@ end
       return
     end
     _G.InternalConfig.PetsToNeon = {}
-    for k,_ in pairs(v) do 
-      table.insert(_G.InternalConfig.PetsToNeon, InvGetCategoryUniquesByName("pets", k))
+    for _,v in pairs(v) do 
+      table.insert(_G.InternalConfig.PetsToNeon, InvGetCategoryUniquesByName("pets", v))
     end
   end
 
@@ -5068,7 +5067,6 @@ end
         _G.InternalConfig.PetsToMegaNeon = nil
         NeonAndMegaNeonInstantListUpdate()
     end)
-
   end
 
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon = function(v)
@@ -5079,8 +5077,8 @@ end
       return
     end
     _G.InternalConfig.PetsToMegaNeon = {}
-    for k,_ in pairs(v) do 
-      table.insert(_G.InternalConfig.PetsToMegaNeon, InvGetCategoryUniquesByName("pets", k))
+    for _,v in pairs(v) do 
+      table.insert(_G.InternalConfig.PetsToMegaNeon, InvGetCategoryUniquesByName("pets", v))
     end
   end
 
@@ -5627,10 +5625,6 @@ end
     local auto_give_potion_specific_pets = {}
     local pet_pen_specific_pets = {}
     local pet_farm_exclude_pets = {}
-    local pet_to_manual_farm = nil
-    if _G.pet_farm_update then
-      pet_to_manual_farm = {}
-    end
 
     local saved_trade_specified_pets = TradeBlacklistSpecificPetsDropdown.CurrentOption
     local saved_recycler_specific_pets = RecyclerPetPenBlacklistedSpecificPetsDropdown.CurrentOption
@@ -5645,9 +5639,11 @@ end
       saved_pets_to_give_potion = AutoGivePotionPetToGivePotionDropdown.CurrentOption
       pets_to_give_potion = {}
     end
+    local pet_to_manual_farm = nil
     local saved_pet_to_manual_farm = nil
     if _G.pet_farm_update then
-      saved_pet_to_manual_farm = {}
+      saved_pet_to_manual_farm = PetAutoFarmPetToFarmDropdown.CurrentOption 
+      pet_to_manual_farm = {} 
     end
 
     local __neon_temp = {}
@@ -5777,10 +5773,12 @@ end
 
     GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, pet_farm_exclude_pets)
     GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, saved_pet_farm_exclude_pets)
+
     if saved_pet_to_manual_farm and _G.pet_farm_update then
       GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, pet_to_manual_farm)
       GUI.DropdownSetValue(PetAutoFarmPetToFarmDropdown, saved_pet_to_manual_farm)
     end
+    
     GUI.DropdownUpdateOptionList(PetToNeonDropdown, neon)
     GUI.DropdownSetValue(PetToNeonDropdown, saved_neon)
     
