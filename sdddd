@@ -5011,18 +5011,20 @@ end
         end
         local _task = LocationQueue.Enqueue(function()
           EmulateLocation("Cave")
-          for k,v in _G.InternalConfig.PetsToNeon do
-            local ok, _ = SafeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
-            if ok then 
-              WriteConsoleLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), string.format("[🧿]:[✅] Pet %s is Neon now!", k), "DEBUG")
-              WriteFileLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), "DEBUG") 
-              GUI.Notify("Success", string.format("Pet %s is Neon now!", k), "SUCCESS", "circle-check")
-            else
-              WriteConsoleLog(string.format("[AutoNeon]: Failed to make pet {%s} neon", k), string.format("[🧿]:[❌] Failed to make pet %s neon", k), "DEBUG")
-              WriteFileLog(string.format("[AutoNeon]: Failed to make {%s} neon", k), "DEBUG") 
-              GUI.Notify("Error", string.format("Failed to make pet %s neon", k), "ERROR", "circle-x")
+          for k,v in pairs(_G.InternalConfig.PetsToNeon) do
+            if #v >= 4 then
+              local ok, _ = SafeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
+              if ok then 
+                WriteConsoleLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), string.format("[🧿]:[✅] Pet %s is Neon now!", k), "DEBUG")
+                WriteFileLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), "DEBUG") 
+                GUI.Notify("Success", string.format("Pet %s is Neon now!", k), "SUCCESS", "circle-check")
+              else
+                WriteConsoleLog(string.format("[AutoNeon]: Failed to make pet {%s} neon", k), string.format("[🧿]:[❌] Failed to make pet %s neon", k), "DEBUG")
+                WriteFileLog(string.format("[AutoNeon]: Failed to make {%s} neon", k), "DEBUG") 
+                GUI.Notify("Error", string.format("Failed to make pet %s neon", k), "ERROR", "circle-x")
+              end
+              task.wait(1.5)
             end
-            task.wait(1.5)
           end
         end)
         while not _task.completed do
@@ -5040,8 +5042,8 @@ end
       _G.InternalConfig.PetsToNeon = false
       return
     end
-    for k,v in pairs(v) do 
-      table.insert(_G.InternalConfig.PetsToNeon, InvGetCategoryUniques("pets", k))
+    for k,_ in pairs(v) do 
+      table.insert(_G.InternalConfig.PetsToNeon, InvGetCategoryUniquesByName("pets", k))
     end
   end
 
@@ -5088,7 +5090,7 @@ end
       return
     end
     for k,v in pairs(v) do 
-      table.insert(_G.InternalConfig.PetsToMegaNeon, InvGetCategoryUniques("pets", k))
+      table.insert(_G.InternalConfig.PetsToMegaNeon, InvGetCategoryUniquesByName("pets", k))
     end
   end
 
