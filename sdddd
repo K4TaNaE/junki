@@ -1146,19 +1146,6 @@ local _script = coroutine.create(function()
     local remote = ClientData.get("inventory")[category][unique].id or "jajki gabriela minakowskiego"
     return InventoryDB[category][remote].name or "Name not found"
   end
-  local function InvGetCategoryUniquesByName(category, name)
-    local inv = ClientData.get("inventory")
-    local inv_db = InventoryDB[category]
-    local cat = inv and inv[category]
-    local data = {}
-    for unique, v in pairs(cat) do
-      local remote = inv_db[v.id] or {['name'] = "_pizda"}
-      if remote.name == name then
-        data[unique] = true
-      end
-    end
-    if count(data) == 0 then return {} else return data end
-  end
   local function CheckPetOwned(remote)
     local inv = ClientData.get("inventory")
     local pets = inv and inv.pets
@@ -1191,6 +1178,20 @@ local _script = coroutine.create(function()
       n +=1 
     end
     return n
+  end
+
+  local function InvGetCategoryUniquesByName(category, name)
+    local inv = ClientData.get("inventory")
+    local inv_db = InventoryDB[category]
+    local cat = inv and inv[category]
+    local data = {}
+    for unique, v in pairs(cat) do
+      local remote = inv_db[v.id] or {['name'] = "_pizda"}
+      if remote.name == name then
+        data[unique] = true
+      end
+    end
+    if count(data) == 0 then return {} else return data end
   end
 
   local function ClearPetFarmCache()
@@ -1790,7 +1791,7 @@ end
       UpdateGui("fullgrown", farmed.pets_fullgrown)
       GUI.LabelUpdate(RuntimeStatsPetsFullgrownLabel, string.format("Pets full-grown : %d", farmed.pets_fullgrown), "move-up-right", Color3.fromRGB(203, 92, 255), false)
       StateDB.total_fullgrowned[actual_pet.unique] = true
-      if not _G.InternalConfig.PetFarmDLib.PotionFarm or table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) == "automated" then
+      if not _G.InternalConfig.PetFarmDLib.PotionFarm then
         if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
           actual_pet.unique = false
         end
@@ -3148,10 +3149,6 @@ end
                   return
                 end
               end
-            else
-              GUI.Notify("Warning", "Internal validation cannot find pet. Try to specify <Pet To Farm> again.", "WARNING", "triangle-alert")
-              GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
-              return
             end
             local eqailments = GetEquipedPetAilments()
             WriteConsoleLog(string.format("Detecting tasks for %s", actual_pet.remote), string.format("🔎 Detecting tasks for %s..", actual_pet.remote), "DEBUG")
@@ -3174,7 +3171,7 @@ end
                 if CONNECTIONS.RideLock then CONNECTIONS.RideLock:Disconnect(); CONNECTIONS.RideLock = nil end
               end
             end
-            Cooldown.AutoFarm.PetAutoFarm = 15
+            Cooldown.AutoFarm.PetAutoFarm = 25
           end)
           while not _task.completed do
             task.wait(1)
