@@ -1565,12 +1565,12 @@ end
   GUI.InitToggleButton(MainTab, "Anti AFK", false, "antiafktogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.TriggerAntiAfk(v) end)
   GUI.InitToggleButton(MainTab, "Auto Reconnect", false, "autoreconnecttogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.TriggerNetworkHook(v) end)
   GUI.InitDivider(MainTab)
-  GUI.InitButton(MainTab, "Join Discord", GUI.Tabs.Main.Sections.Utilities.Callbacks.CopyDiscordUrl)
+  GUI.InitButton(MainTab, "Join Discord", function() GUI.Tabs.Main.Sections.Utilities.Callbacks.CopyDiscordUrl() end)
   GUI.InitToggleButton(MainTab, "Write Console Logs (Debug)", false, "consolelogstogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.ToggleConsoleDebug(v) end)
   GUI.InitToggleButton(MainTab, "Write File Logs (Debug) (Workspace/Arcanic/logs.txt)", false, "filelogstogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.ToggleFileDebug(v) end)
 
   GUI.InitSection(MainTab, "- Configuration -")
-  GUI.InitButton(MainTab, "Load Configuration", GUI.Tabs.Main.Sections.Configuration.Callbacks.LoadConfiguration)
+  GUI.InitButton(MainTab, "Load Configuration", function() GUI.Tabs.Main.Sections.Configuration.Callbacks.LoadConfiguration() end)
 
   -- AutoFarm Tab
   GUI.InitSection(AutofarmTab, "- Pet AutoFarm -")
@@ -1614,10 +1614,10 @@ end
 
   --done
   GUI.InitSection(AutofarmTab, "- Auto Neon -")
-  GUI.InitButton(AutofarmTab, "Make Pets Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetNeon)
+  GUI.InitButton(AutofarmTab, "Make Pets Neon", function() GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetNeon() end)
   local PetToNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Neon", {}, {}, true, "pettoneondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon(v) end)
   GUI.InitSection(AutofarmTab, "- Auto Mega Neon -")
-  GUI.InitButton(AutofarmTab, "Make Pets Mega Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon)
+  GUI.InitButton(AutofarmTab, "Make Pets Mega Neon", function() GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon() end)
   local PetToMegaNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Mega Neon", {}, {}, true, "pettomeganeondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon(v) end)
   
   GUI.InitSection(AutofarmTab, "- Auto Give Potion -") -- done
@@ -1719,13 +1719,13 @@ end
   local DiscordWebhooksToggleButton = GUI.InitToggleButton(WebhooksTab, "Discord Webhooks", false, "discordwebhookstogglebutton", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.ToggleDiscordWebhook(v) end)
   local DiscordWebhookUrlTextField = GUI.InitTextField(WebhooksTab, "Webhook URL", "", "                                                                 ", false, "discordwebhookurltextfield", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.HandleWebhookUrl(v) end)
   local DiscordWebhookSendDelayTextField = GUI.InitTextField(WebhooksTab, "Send delay (secconds)", "3600", "    ", false, "discordwebhooksenddelaytextfield", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.HandleSendDelay(v) end)
-  GUI.InitButton(WebhooksTab, "Send now manually", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.SendManually(v) end)
+  GUI.InitButton(WebhooksTab, "Send now manually", function() GUI.Tabs.Webhooks.Sections.Discord.Callbacks.SendManually() end)
   GUI.InitDivider(WebhooksTab)
   local DiscordWebhookSendCountdownLabel = GUI.InitLabel(WebhooksTab, "3600 : Send Countdown", "clock", Color3.fromRGB(203, 92, 255), false)
   GUI.InitSection(WebhooksTab, "- Telegram -")
   local TelegramWebhooksToggleButton = GUI.InitToggleButton(WebhooksTab, "Telegram Webhooks", false, "telegramwebhookstogglebutton", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.ToggleTelegramWebhooks(v) end)
   local TelegramWebhookSendDelayTextField = GUI.InitTextField(WebhooksTab, "Send delay (secconds)", "3600", "", false, "telegramwebhooksenddelaytextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramSendDelay(v) end)
-  GUI.InitButton(WebhooksTab, "Send now manually", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually(v) end)
+  GUI.InitButton(WebhooksTab, "Send now manually", function() GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually() end)
   GUI.InitDivider(WebhooksTab)
   local TelegramBotApiKeyTextField = GUI.InitTextField(WebhooksTab, "Bot API Key", "", "                          ", false, "telegrambotapikeytextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramBotApiKey(v) end)
   local TelegramChatIdTextField = GUI.InitTextField(WebhooksTab, "Chat Id", "", "                   ", false, "telegramchatidtextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramChatId(v) end)
