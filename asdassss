@@ -775,23 +775,16 @@ local _script = coroutine.create(function()
     }
   end
 
-
   function LocationQueue._process()
-      if LocationQueue._running then return end
-      LocationQueue._running = true
-
-      while #LocationQueue._queue > 0 do
-          local _task = table.remove(LocationQueue._queue, 1)
-
-          coroutine.wrap(function()
-            _task.callback()
-            _task.completed = true
-          end)()
-
-          _task.resume = coroutine.running()
-      end
-
-      LocationQueue._running = false
+    if LocationQueue._running then return end
+    LocationQueue._running = true
+    while #LocationQueue._queue > 0 do
+      local _task = table.remove(LocationQueue._queue, 1)
+      local _, _ = pcall(_task.callback)
+      _task.completed = true
+      _task.resume = coroutine.running()
+    end
+    LocationQueue._running = false
   end
 
   function LocationQueue.Enqueue(callback)
@@ -810,29 +803,22 @@ local _script = coroutine.create(function()
   end
 
   function TaskQueue._process()
-      if TaskQueue._running then return end
-      TaskQueue._running = true
-
-      while #TaskQueue._queue > 0 do
-        local _task = table.remove(TaskQueue._queue, 1)
-        local ok, _ = pcall(_task.callback)
-        if not ok then
-          -- Логирование ошибки если нужно
-          -- WriteConsoleLog(string.format("[TaskQueue]: Task failed: %s", err), nil, "DEBUG")
-        end
-        _task.completed = true
-        
-        _task.resume = coroutine.running()
-      end
-
-      TaskQueue._running = false
+    if TaskQueue._running then return end
+    TaskQueue._running = true
+    while #TaskQueue._queue > 0 do
+      local _task = table.remove(TaskQueue._queue, 1)
+      local _, _ = pcall(_task.callback)
+      _task.completed = true
+      _task.resume = coroutine.running()
+    end
+    TaskQueue._running = false
   end
 
   function TaskQueue.Enqueue(callback)
-      local _task = TaskQueue.CreateTask(callback)
-      table.insert(TaskQueue._queue, _task)
-      coroutine.wrap(TaskQueue._process)()
-      return _task
+    local _task = TaskQueue.CreateTask(callback)
+    table.insert(TaskQueue._queue, _task)
+    coroutine.wrap(TaskQueue._process)()
+    return _task
   end
 
   local function InitPart(name, xyz) 
