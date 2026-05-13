@@ -275,11 +275,11 @@ local _script = coroutine.create(function()
     ["pizza_party"] = "🍕 Task [pizza-party] detected for baby!",
   }
   local Rarities = {
-    [1] = "common",
-    [2] = "uncommon",
+    [1] = "legendary",
+    [2] = "ultra_rare",
     [3] = "rare",
-    [4] = "ultra_rare",
-    [5] = "legendary",
+    [4] = "uncommon",
+    [5] = "common",
   }
   local PetRarities = {
     ["common"] = "common",
@@ -1146,19 +1146,6 @@ local _script = coroutine.create(function()
     local remote = ClientData.get("inventory")[category][unique].id or "jajki gabriela minakowskiego"
     return InventoryDB[category][remote].name or "Name not found"
   end
-  local function InvGetCategoryUniquesByName(category, name)
-    local inv = ClientData.get("inventory")
-    local inv_db = InventoryDB[category]
-    local cat = inv and inv[category]
-    local data = {}
-    for unique, v in pairs(cat) do
-      local remote = inv_db[v.id] or {['name'] = "_pizda"}
-      if remote.name == name then
-        data[unique] = true
-      end
-    end
-    if count(data) == 0 then return {} else return data end
-  end
   local function CheckPetOwned(remote)
     local inv = ClientData.get("inventory")
     local pets = inv and inv.pets
@@ -1182,7 +1169,7 @@ local _script = coroutine.create(function()
   end
 
   local function GetNameFromRemote(category, remote)
-    return InventoryDB.pets[v.id].name or ""
+    return InventoryDB[category][remote].name or ""
   end
 
   local function count(t)
@@ -1191,6 +1178,20 @@ local _script = coroutine.create(function()
       n +=1 
     end
     return n
+  end
+
+  local function InvGetCategoryUniquesByName(category, name)
+    local inv = ClientData.get("inventory")
+    local inv_db = InventoryDB[category]
+    local cat = inv and inv[category]
+    local data = {}
+    for unique, v in pairs(cat) do
+      local remote = inv_db[v.id] or {['name'] = "_pizda"}
+      if remote.name == name then
+        data[unique] = true
+      end
+    end
+    if count(data) == 0 then return {} else return data end
   end
 
   local function ClearPetFarmCache()
@@ -1213,7 +1214,6 @@ local _script = coroutine.create(function()
       for _,v in pairs(ClientData.get("trade_license_quiz_manager").quiz) do
         SafeFire("TradeAPI/AnswerQuizQuestion", v.answer)
       end
-      print("[📜]:[✅] License received")
       WriteConsoleLog("Trade license received", "[📜]:[✅] Trade license received", "DEBUG")
       WriteFileLog("Trade license received", "DEBUG")
       GUI.Notify("Success", "Trade license received.", "SUCCESS", "circle-check")
@@ -1253,7 +1253,8 @@ local function telegram_webhook(msg) -- logs and prints (for change)
 	})
   end)
   if not ok then
-    print("❌ Unsuccessed to send telegram webhook.")
+    WriteConsoleLog("❌ Unsuccessed to send telegram webhook", "❌ Unsuccessed to send telegram webhook.", "DEBUG")
+    WriteFileLog("❌ Unsuccessed to send telegram webhook", "DEBUG")
     Cooldown.Webhooks.TelegramWebhookSendDelay = 60
   end
   local data
@@ -1261,9 +1262,11 @@ local function telegram_webhook(msg) -- logs and prints (for change)
 	data = HttpService:JSONDecode(res.Body)
   end)
   if data and data.ok then
-	  print("☑️ Telegram webhook sent.")
+    WriteConsoleLog("Telegram webhook sent", "☑️ Telegram webhook sent.", "DEBUG")
+    WriteFileLog("Telegram webhook sent", "DEBUG")
   else
-	  print("❌ Telegram error while trying to send webhook:", data and data.description or "Unknown error")
+    WriteConsoleLog(string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), "DEBUG")
+    WriteFileLog("❌ Unsuccessed to send telegram webhook", "DEBUG")
   end
 end
   local function Webhook(title, description)
@@ -1334,8 +1337,8 @@ end
   end
 
   local function GetPetPenSlots() 
-    local maxTotalPets = CloudValues:getValue("idle_progression", "maxTotalPets") or 0
-    local extraSlotGamepassIds = CloudValues:getValue("idle_progression", "extraSlotGamepassIds") or {}
+    local maxTotalPets = CloudValues:getValue("idle_progression", "maxTotalPets") --or 0
+    local extraSlotGamepassIds = CloudValues:getValue("idle_progression", "extraSlotGamepassIds") --or {}
     local purchasedExtraSlots = 0
     for _, gamepassId in ipairs(extraSlotGamepassIds) do
       if ClientGamepassHelper.owns_gamepass(gamepassId) then
@@ -1464,7 +1467,6 @@ end
       task.wait(.2)
     end
     if deadline < os.clock() then
-      print("⚙️ Could not find pet model")
       return 
     end
     local unique = wrapper.pet_unique
@@ -1564,12 +1566,12 @@ end
   GUI.InitToggleButton(MainTab, "Anti AFK", false, "antiafktogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.TriggerAntiAfk(v) end)
   GUI.InitToggleButton(MainTab, "Auto Reconnect", false, "autoreconnecttogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.TriggerNetworkHook(v) end)
   GUI.InitDivider(MainTab)
-  GUI.InitButton(MainTab, "Join Discord", GUI.Tabs.Main.Sections.Utilities.Callbacks.CopyDiscordUrl)
+  GUI.InitButton(MainTab, "Join Discord", function() GUI.Tabs.Main.Sections.Utilities.Callbacks.CopyDiscordUrl() end)
   GUI.InitToggleButton(MainTab, "Write Console Logs (Debug)", false, "consolelogstogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.ToggleConsoleDebug(v) end)
   GUI.InitToggleButton(MainTab, "Write File Logs (Debug) (Workspace/Arcanic/logs.txt)", false, "filelogstogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.ToggleFileDebug(v) end)
 
   GUI.InitSection(MainTab, "- Configuration -")
-  GUI.InitButton(MainTab, "Load Configuration", GUI.Tabs.Main.Sections.Configuration.Callbacks.LoadConfiguration)
+  GUI.InitButton(MainTab, "Load Configuration", function() GUI.Tabs.Main.Sections.Configuration.Callbacks.LoadConfiguration() end)
 
   -- AutoFarm Tab
   GUI.InitSection(AutofarmTab, "- Pet AutoFarm -")
@@ -1613,10 +1615,10 @@ end
 
   --done
   GUI.InitSection(AutofarmTab, "- Auto Neon -")
-  GUI.InitButton(AutofarmTab, "Make Pets Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetNeon)
+  GUI.InitButton(AutofarmTab, "Make Pets Neon", function() GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetNeon() end)
   local PetToNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Neon", {}, {}, true, "pettoneondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon(v) end)
   GUI.InitSection(AutofarmTab, "- Auto Mega Neon -")
-  GUI.InitButton(AutofarmTab, "Make Pets Mega Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon)
+  GUI.InitButton(AutofarmTab, "Make Pets Mega Neon", function() GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon() end)
   local PetToMegaNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Mega Neon", {}, {}, true, "pettomeganeondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon(v) end)
   
   GUI.InitSection(AutofarmTab, "- Auto Give Potion -") -- done
@@ -1718,13 +1720,13 @@ end
   local DiscordWebhooksToggleButton = GUI.InitToggleButton(WebhooksTab, "Discord Webhooks", false, "discordwebhookstogglebutton", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.ToggleDiscordWebhook(v) end)
   local DiscordWebhookUrlTextField = GUI.InitTextField(WebhooksTab, "Webhook URL", "", "                                                                 ", false, "discordwebhookurltextfield", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.HandleWebhookUrl(v) end)
   local DiscordWebhookSendDelayTextField = GUI.InitTextField(WebhooksTab, "Send delay (secconds)", "3600", "    ", false, "discordwebhooksenddelaytextfield", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.HandleSendDelay(v) end)
-  GUI.InitButton(WebhooksTab, "Send now manually", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.SendManually(v) end)
+  GUI.InitButton(WebhooksTab, "Send now manually", function() GUI.Tabs.Webhooks.Sections.Discord.Callbacks.SendManually() end)
   GUI.InitDivider(WebhooksTab)
   local DiscordWebhookSendCountdownLabel = GUI.InitLabel(WebhooksTab, "3600 : Send Countdown", "clock", Color3.fromRGB(203, 92, 255), false)
   GUI.InitSection(WebhooksTab, "- Telegram -")
   local TelegramWebhooksToggleButton = GUI.InitToggleButton(WebhooksTab, "Telegram Webhooks", false, "telegramwebhookstogglebutton", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.ToggleTelegramWebhooks(v) end)
   local TelegramWebhookSendDelayTextField = GUI.InitTextField(WebhooksTab, "Send delay (secconds)", "3600", "", false, "telegramwebhooksenddelaytextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramSendDelay(v) end)
-  GUI.InitButton(WebhooksTab, "Send now manually", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually(v) end)
+  GUI.InitButton(WebhooksTab, "Send now manually", function() GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually() end)
   GUI.InitDivider(WebhooksTab)
   local TelegramBotApiKeyTextField = GUI.InitTextField(WebhooksTab, "Bot API Key", "", "                          ", false, "telegrambotapikeytextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramBotApiKey(v) end)
   local TelegramChatIdTextField = GUI.InitTextField(WebhooksTab, "Chat Id", "", "                   ", false, "telegramchatidtextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramChatId(v) end)
@@ -1754,7 +1756,8 @@ end
       task.wait(.5)
     end
     if deadline < os.clock() then
-      print("Went beyond the deadline")
+      WriteConsoleLog("Went beyond the deadline", "Went beyond the deadline", "DEBUG")
+      WriteFileLog("Went beyond the deadline", "DEBUG")
       return
     end
     if baby_has_ailment and ClientData.get("team") == "Babies" and not HasAilmentBaby(ailment) then
@@ -1788,7 +1791,7 @@ end
       UpdateGui("fullgrown", farmed.pets_fullgrown)
       GUI.LabelUpdate(RuntimeStatsPetsFullgrownLabel, string.format("Pets full-grown : %d", farmed.pets_fullgrown), "move-up-right", Color3.fromRGB(203, 92, 255), false)
       StateDB.total_fullgrowned[actual_pet.unique] = true
-      if not _G.InternalConfig.PetFarmDLib.PotionFarm or table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) == "automated" then
+      if not _G.InternalConfig.PetFarmDLib.PotionFarm then
         if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
           actual_pet.unique = false
         end
@@ -1821,7 +1824,8 @@ end
       task.wait(.1)
     end
     if deadline < os.clock() then
-      print("Went beyond the deadline")
+      WriteConsoleLog("Went beyond the deadline", "Went beyond the deadline", "DEBUG")
+      WriteFileLog("Went beyond the deadline", "DEBUG")
       return
     end
     farmed.baby_ailments += 1
@@ -1834,13 +1838,13 @@ end
   end
   local function HouseCheck() 
     if GetCurrentLocation() ~= "housing" then
-      print("🏠 Not in house, redirecting..")
+      WriteConsoleLog("Not in house, redirecting..", "🏠 Not in house, redirecting..", "DEBUG")
+      WriteFileLog("Not in house, redirecting..", "DENIG")
       InteriorsM.enter("housing", "MainDoor", { house_owner = LocalPlayer })
       task.wait(.6)
       Gotopart("main")
       return
     end
-    print(string.format("🏠 House: %s", HouseClient.get_current_house_type() or "Type not detected, but in house."))
   end
   local pet_ailments = { 
     ["camping"] = function()
@@ -1857,11 +1861,14 @@ end
         repeat 
           task.wait(1)
         until not HasAilment("camping") or os.clock() > deadline  
+        Gotopart("main")
         if os.clock() > deadline then 
-          print(string.format("🟥 Task camping for %s - Out of limits!", actual_pet.remote)) 
+          WriteConsoleLog(string.format("Task camping for %s - Out of limits", actual_pet.remote), string.format("🟥 Task camping for %s - Out of limits!", actual_pet.remote), "DEBUG")
+          WriteFileLog(string.format("Task camping for %s - Out of limits", actual_pet.remote), "DEBUG")
           return
         end        
-        print(string.format("🟩 Task camping for %s - done!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task camping for %s - Done", actual_pet.remote), string.format("🟩 Task camping for %s - Done!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task camping for %s - Done", actual_pet.remote), "DEBUG")
         Enstat(age, friendship, money, "camping", baby_has_ailment)
       end)
       while not _task.completed do
@@ -1876,7 +1883,8 @@ end
       local age = pet.pet_progression.age
       if CountOfProduct("food", "apple") == 0 then
         if money == 0 then 
-          print("⚠️ No money to buy food!") 
+          WriteConsoleLog("No money to buy food", "⚠️ No money to buy food!", "DEBUG") 
+          WriteFileLog("No money to buy food", "DEBUG") 
           return
         end
         if money > 20 then
@@ -1911,10 +1919,12 @@ end
         task.wait(1)
       until not HasAilment("hungry") or os.clock() > deadline
       if os.clock() > deadline then 
-        print(string.format("🟥 Task hungry for %s - Out of limits!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task hungry for %s - Out of limits", actual_pet.remote), string.format("🟥 Task hungry for %s - Out of limits!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task hungry for %s - Out of limits", actual_pet.remote), "DEBUG")
         return		
       end        
-      print(string.format("🟩 Task hungry for %s - done!", actual_pet.remote)) 
+      WriteConsoleLog(string.format("Task hungry for %s - Done", actual_pet.remote), string.format("🟩 Task hungry for %s - Done!", actual_pet.remote), "DEBUG")
+      WriteFileLog(string.format("Task hungry for %s - Done", actual_pet.remote), "DEBUG")
       Enstat(age, friendship, money, "hungry")  
     end,
     ["thirsty"] = function() 
@@ -1925,7 +1935,8 @@ end
       local age = pet.pet_progression.age
       if CountOfProduct("food", "water") == 0 then
         if money == 0 then 
-          print("⚠️ No money to buy food.") 
+          WriteConsoleLog("No money to buy food", "⚠️ No money to buy food!", "DEBUG") 
+          WriteFileLog("No money to buy food", "DEBUG") 
           return
         end
         if money > 20 then
@@ -1960,10 +1971,12 @@ end
         task.wait(1)
       until not HasAilment("thirsty") or os.clock() > deadline
       if os.clock() > deadline then 
-        print(string.format("🟥 Task thirsty for %s - Out of limits!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task thirsty for %s - Out of limits", actual_pet.remote), string.format("🟥 Task thirsty for %s - Out of limits!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task thirsty for %s - Out of limits", actual_pet.remote), "DEBUG")
         return		
       end            	
-      print(string.format("🟩 Task thirsty for %s - done!", actual_pet.remote)) 
+      WriteConsoleLog(string.format("Task thirsty for %s - Done", actual_pet.remote), string.format("🟩 Task thirsty for %s - Done!", actual_pet.remote), "DEBUG")
+      WriteFileLog(string.format("Task thirsty for %s - Done", actual_pet.remote), "DEBUG")
       Enstat(age, friendship, money, "thirsty")  
     end,
     ["sick"] = function() 
@@ -1981,8 +1994,9 @@ end
           "Yes",
           LocalPlayer.Character
         )
-        task.wait(.6)
-        print(string.format("🟩 Task sick for %s - done!", actual_pet.remote)) 
+        task.wait(.8)
+        WriteConsoleLog(string.format("Task sick for %s - Done", actual_pet.remote), string.format("🟩 Task sick for %s - Done!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task sick for %s - Done", actual_pet.remote), "DEBUG")
         Enstat(age, friendship, money, "sick", baby_has_ailment)
       end)
       while not _task.completed do
@@ -2003,11 +2017,14 @@ end
         repeat 
           task.wait(1)
         until not HasAilment("bored") or os.clock() > deadline
+        Gotopart("main")
         if os.clock() > deadline then 
-          print(string.format("🟥 Task bored for %s - Out of limits!", actual_pet.remote)) 
+          WriteConsoleLog(string.format("Task bored for %s - Out of limits", actual_pet.remote), string.format("🟥 Task bored for %s - Out of limits!", actual_pet.remote), "DEBUG")
+          WriteFileLog(string.format("Task bored for %s - Out of limits", actual_pet.remote), "DEBUG")
           return		
         end        
-        print(string.format("🟩 Task bored for %s - done!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task bored for %s - Done", actual_pet.remote), string.format("🟩 Task bored for %s - Done!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task bored for %s - Done", actual_pet.remote), "DEBUG")
         Enstat(age, friendship, money, "bored", baby_has_ailment)  
       end)
       while not _task.completed do
@@ -2028,10 +2045,12 @@ end
           task.wait(1)
         until not HasAilment("salon") or os.clock() > deadline
         if os.clock() > deadline then 
-          print(string.format("🟥 Task salon for %s - Out of limits!", actual_pet.remote)) 
+          WriteConsoleLog(string.format("Task salon for %s - Out of limits", actual_pet.remote), string.format("🟥 Task salon for %s - Out of limits!", actual_pet.remote), "DEBUG")
+          WriteFileLog(string.format("Task salon for %s - Out of limits", actual_pet.remote), "DEBUG")
           return		
         end        
-        print(string.format("🟩 Task salon for %s - done!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task salon for %s - Done", actual_pet.remote), string.format("🟩 Task salon for %s - Done!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task salon for %s - Done", actual_pet.remote), "DEBUG")
         Enstat(age, friendship, money, "salon", baby_has_ailment)
       end)
       while not _task.completed do
@@ -2058,10 +2077,12 @@ end
       until not HasAilment("play") or os.clock() > deadline
       SafeInvoke("ToolAPI/Unequip", InvGetCategoryUnique("toys", "squeaky_bone_default"), {})
       if os.clock() > deadline then 
-        print(string.format("🟥 Task play for %s - Out of limits!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task play for %s - Out of limits", actual_pet.remote), string.format("🟥 Task play for %s - Out of limits!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task play for %s - Out of limits", actual_pet.remote), "DEBUG")
         return		
       end        
-      print(string.format("🟩 Task play for %s - done!", actual_pet.remote)) 
+      WriteConsoleLog(string.format("Task play for %s - Done", actual_pet.remote), string.format("🟩 Task play for %s - Done!", actual_pet.remote), "DEBUG")
+      WriteFileLog(string.format("Task play for %s - Done", actual_pet.remote), "DEBUG")
       Enstat(age, friendship, money, "play") 
     end,
     ["toilet"] = function() 
@@ -2070,25 +2091,29 @@ end
       local friendship = cdata.properties.friendship_level
       local money = ClientData.get("money")
       local age = pet.pet_progression.age
-      SafeInvoke('HousingAPI/ActivateFurniture',
-        LocalPlayer,
-        furn.toilet.unique,
-        furn.toilet.usepart,
-        {
-          cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
-        },
-        actual_pet.model
-      )
+      task.spawn(function() 
+        SafeInvoke('HousingAPI/ActivateFurniture',
+          LocalPlayer,
+          furn.toilet.unique,
+          furn.toilet.usepart,
+          {
+            cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
+          },
+          actual_pet.model
+        )
+      end)
       local deadline = os.clock() + 15
       repeat 
         task.wait(1)
       until not HasAilment("toilet") or os.clock() > deadline
       if os.clock() > deadline then 
-        print(string.format("🟥 Task toilet for %s - Out of limits!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task toilet for %s - Out of limits", actual_pet.remote), string.format("🟥 Task toilet for %s - Out of limits!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task toilet for %s - Out of limits", actual_pet.remote), "DEBUG")
         actual_pet.model = GetEquipedModel()
         return		
       end        
-      print(string.format("🟩 Task toilet for %s - done!", actual_pet.remote)) 
+      WriteConsoleLog(string.format("Task toilet for %s - Done", actual_pet.remote), string.format("🟩 Task toilet for %s - Done!", actual_pet.remote), "DEBUG")
+      WriteFileLog(string.format("Task toilet for %s - Done", actual_pet.remote), "DEBUG")
       Enstat(age, friendship, money, "toilet")
     end,
     ["beach_party"] = function() 
@@ -2105,11 +2130,14 @@ end
         repeat 
           task.wait(1)
         until not HasAilment("beach_party") or os.clock() > deadline
+        Gotopart("main")
         if os.clock() > deadline then 
-          print(string.format("🟥 Task beach-party for %s - Out of limits!", actual_pet.remote)) 
+          WriteConsoleLog(string.format("Task beach-party for %s - Out of limits", actual_pet.remote), string.format("🟥 Task beach-party for %s - Out of limits!", actual_pet.remote), "DEBUG")
+          WriteFileLog(string.format("Task beach-party for %s - Out of limits", actual_pet.remote), "DEBUG") 
           return		
         end        
-        print(string.format("🟩 Task beach-party for %s - done!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task beach-party for %s - Done", actual_pet.remote), string.format("🟩 Task beach-party for %s - Done!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task beach-party for %s - Done", actual_pet.remote), "DEBUG")
         Enstat(age, friendship, money, "beach_party", baby_has_ailment)  
       end)
       while not _task.completed do
@@ -2139,10 +2167,12 @@ end
       _G.CONNECTIONS.RideLock = nil
       SafeInvoke("ToolAPI/Unequip", InvGetCategoryUnique("strollers", "stroller-default"), {})
       if os.clock() > deadline then 
-        print(string.format("🟥 Task ride for %s - Out of limits!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task ride for %s - Out of limits", actual_pet.remote), string.format("🟥 Task ride for %s - Out of limits!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task ride for %s - Out of limits", actual_pet.remote), "DEBUG") 
         return		
       end        
-      print(string.format("🟩 Task ride for %s - done!", actual_pet.remote)) 
+      WriteConsoleLog(string.format("Task ride for %s - Done", actual_pet.remote), string.format("🟩 Task ride for %s - Done!", actual_pet.remote), "DEBUG")
+      WriteFileLog(string.format("Task ride for %s - Done", actual_pet.remote), "DEBUG")
       Enstat(age, friendship, money, "ride") 
     end,
     ["dirty"] = function() 
@@ -2151,25 +2181,29 @@ end
       local friendship = cdata.properties.friendship_level
       local money = ClientData.get("money")
       local age = pet.pet_progression.age
-      SafeInvoke('HousingAPI/ActivateFurniture',
-        LocalPlayer,
-        furn.bath.unique,
-        furn.bath.usepart,
-        {
-          cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
-        },
-        actual_pet.model
-      )
+      task.spawn(function() 
+        SafeInvoke('HousingAPI/ActivateFurniture',
+          LocalPlayer,
+          furn.bath.unique,
+          furn.bath.usepart,
+          {
+            cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
+          },
+          actual_pet.model
+        )
+      end)
       local deadline = os.clock() + 20
       repeat 
         task.wait(1)
       until not HasAilment("dirty") or os.clock() > deadline
       if os.clock() > deadline then 
-        print(string.format("🟥 Task dirty for %s - Out of limits!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task dirty for %s - Out of limits", actual_pet.remote), string.format("🟥 Task dirty for %s - Out of limits!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task dirty for %s - Out of limits", actual_pet.remote), "DEBUG") 
         actual_pet.model = GetEquipedModel()
         return		
       end        
-      print(string.format("🟩 Task dirty for %s - done!", actual_pet.remote)) 
+      WriteConsoleLog(string.format("Task dirty for %s - Done", actual_pet.remote), string.format("🟩 Task dirty for %s - Done!", actual_pet.remote), "DEBUG")
+      WriteFileLog(string.format("Task dirty for %s - Done", actual_pet.remote), "DEBUG")
       Enstat(age, friendship, money, "dirty")  
     end,
     ["walk"] = function() 
@@ -2195,10 +2229,12 @@ end
       _G.CONNECTIONS.WalkLock = nil
       SafeFire("AdoptAPI/EjectBaby", actual_pet.model)
       if os.clock() > deadline then 
-        print(string.format("🟥 Task walk for %s - Out of limits!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task walk for %s - Out of limits", actual_pet.remote), string.format("🟥 Task walk for %s - Out of limits!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task walk for %s - Out of limits", actual_pet.remote), "DEBUG") 
         return		
       end      
-      print(string.format("🟩 Task walk for %s - done!", actual_pet.remote)) 
+      WriteConsoleLog(string.format("Task walk for %s - Done", actual_pet.remote), string.format("🟩 Task walk for %s - Done!", actual_pet.remote), "DEBUG")
+      WriteFileLog(string.format("Task walk for %s - Done", actual_pet.remote), "DEBUG")
       Enstat(age, friendship, money, "walk") 
     end,
     ["school"] = function() 
@@ -2215,10 +2251,12 @@ end
           task.wait(1)
         until not HasAilment("school") or os.clock() > deadline
         if os.clock() > deadline then 
-          print(string.format("🟥 Task school for %s - Out of limits!", actual_pet.remote)) 
+          WriteConsoleLog(string.format("Task school for %s - Out of limits", actual_pet.remote), string.format("🟥 Task school for %s - Out of limits!", actual_pet.remote), "DEBUG")
+          WriteFileLog(string.format("Task school for %s - Out of limits", actual_pet.remote), "DEBUG") 
           return		
         end        
-        print(string.format("🟩 Task school for %s - done!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task school for %s - Done", actual_pet.remote), string.format("🟩 Task school for %s - Done!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task school for %s - Done", actual_pet.remote), "DEBUG")
         Enstat(age, friendship, money, "school", baby_has_ailment)
       end)
       while not _task.completed do
@@ -2231,24 +2269,28 @@ end
       local friendship = cdata.properties.friendship_level
       local money = ClientData.get("money")
       local age = pet.pet_progression.age
-      SafeInvoke('HousingAPI/ActivateFurniture',
-        LocalPlayer,
-        furn.bed.unique,
-        furn.bed.usepart,
-        {
-          cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
-        },
-        actual_pet.model
-      )
+      task.spawn(function() 
+        SafeInvoke('HousingAPI/ActivateFurniture',
+          LocalPlayer,
+          furn.bed.unique,
+          furn.bed.usepart,
+          {
+            cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
+          },
+          actual_pet.model
+        )
+      end)
       local deadline = os.clock() + 20
       repeat 
         task.wait(1)
       until not HasAilment("sleepy") or os.clock() > deadline
       if os.clock() > deadline then 
-        print(string.format("🟥 Task sleepy for %s - Out of limits!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task sleepy for %s - Out of limits", actual_pet.remote), string.format("🟥 Task sleepy for %s - Out of limits!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task sleepy for %s - Out of limits", actual_pet.remote), "DEBUG") 
         return		
       end        
-      print(string.format("🟩 Task sleepy for %s - done!", actual_pet.remote)) 
+      WriteConsoleLog(string.format("Task sleepy for %s - Done", actual_pet.remote), string.format("🟩 Task sleepy for %s - Done!", actual_pet.remote), "DEBUG")
+      WriteFileLog(string.format("Task sleepy for %s - Done", actual_pet.remote), "DEBUG")
       Enstat(age, friendship, money, "sleepy")  	
     end,
     ["mystery"] = function() 
@@ -2264,7 +2306,8 @@ end
         end
       end
       _G.mystery = false
-      print(string.format("🟩 Task mystery for %s - done!", actual_pet.remote)) 
+      WriteConsoleLog(string.format("Task mystery for %s - Done", actual_pet.remote), string.format("🟩 Task mystery for %s - Done!", actual_pet.remote), "DEBUG")
+      WriteFileLog(string.format("Task mystery for %s - Done", actual_pet.remote), "DEBUG")
     end,
     ["pizza_party"] = function() 
       local pet = ClientData.get("pet_char_wrappers")[1]
@@ -2280,10 +2323,12 @@ end
           task.wait(1)
         until not HasAilment("pizza_party") or os.clock() > deadline
         if os.clock() > deadline then 
-          print(string.format("🟥 Task pizza-party for %s - Out of limits!", actual_pet.remote)) 
+          WriteConsoleLog(string.format("Task pizza-party for %s - Out of limits", actual_pet.remote), string.format("🟥 Task pizza-party for %s - Out of limits!", actual_pet.remote), "DEBUG")
+          WriteFileLog(string.format("Task pizza-party for %s - Out of limits", actual_pet.remote), "DEBUG") 
           return		
         end       
-        print(string.format("🟩 Task pizza-party for %s - done!", actual_pet.remote)) 
+        WriteConsoleLog(string.format("Task pizza-party for %s - Done", actual_pet.remote), string.format("🟩 Task pizza-party for %s - Done!", actual_pet.remote), "DEBUG")
+        WriteFileLog(string.format("Task pizza-party for %s - Done", actual_pet.remote), "DEBUG")
         Enstat(age, friendship, money, "pizza_party", baby_has_ailment)  
       end)
       while not _task.completed do
@@ -2299,14 +2344,14 @@ end
       SafeFire("PetAPI/ReplicateActivePerformances", actual_pet.model, { ["FocusPet"] = true })
       task.wait(.15)
       SafeFire("AilmentsAPI/ProgressPetMeAilment", actual_pet.unique)
-      print(string.format("🟩 Task pet-me for %s - done!", actual_pet.remote)) 
+      WriteConsoleLog(string.format("Task pet-me for %s - Done", actual_pet.remote), string.format("🟩 Task pet-me for %s - Done!", actual_pet.remote), "DEBUG")
+      WriteFileLog(string.format("Task pet-me for %s - Done", actual_pet.remote), "DEBUG")
       Enstat(age, friendship, money, "pet_me")  
     end,
   }
 
   local baby_ailments = {
     ["camping"] = function() 
-      print("camping started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("camping")
       local age, friendship
@@ -2321,24 +2366,26 @@ end
         repeat 
           task.wait(1)
         until not HasAilmentBaby("camping") or os.clock() > deadline
+        Gotopart("main")
         if os.clock() > deadline then 
-          print("🟥 Task camping for baby - Out of limits!")
+          WriteConsoleLog("Task camping for baby - Out of limits", "🟥 Task camping for baby - Out of limits!", "DEBUG")
+          WriteFileLog("Task camping for baby - Out of limits", "DEBUG")
           return		
         end		
-        print("🟩 Task camping for baby - done!")
+        WriteConsoleLog("Task camping for baby - Done", "🟩 Task camping for baby - Done!", "DEBUG")
+        WriteFileLog("Task camping for baby - Done", "DEBUG")
         EnstatBaby(money, "camping", pet_has_ailment, { age, friendship, })
       end)
       while not _task.completed do
         task.wait(1)
       end
-      print("camping ended")
     end,
     ["hungry"] = function() 
-      print("hungry started")
       local money = ClientData.get("money")
       if CountOfProduct("food", "apple") < 3 then
         if money == 0 then  
-          print("⚠️ No money to buy food!") 
+          WriteConsoleLog("No money to buy food", "⚠️ No money to buy food!", "DEBUG")
+          WriteFileLog("No money to buy food", "DEBUG")
           return
         end
         if money > 20 then
@@ -2369,19 +2416,20 @@ end
         task.wait(.5)
       until not HasAilmentBaby("hungry") or os.clock() > deadline
       if os.clock() > deadline then 
-        print("🟥 Task hungry for baby - Out of limits!")
+        WriteConsoleLog("Task hungry for baby - Out of limits", "🟥 Task hungry for baby - Out of limits!", "DEBUG")
+        WriteFileLog("Task hungry for baby - Out of limits", "DEBUG")
         return		
       end	
-      print("🟩 Task hungry for baby - done!")
+      WriteConsoleLog("Task hungry for baby - Done", "🟩 Task hungry for baby - Done!", "DEBUG")
+      WriteFileLog("Task hungry for baby - Done", "DEBUG")
       EnstatBaby(money, "hungry")  
-      print("hungry started")
     end,
     ["thirsty"] = function() 
-      print("thirsty started")
       local money = ClientData.get("money")
       if CountOfProduct("food", "water") == 0 then
         if money == 0 then 
-          print("⚠️ No money to buy food!") 
+          WriteConsoleLog("No money to buy food", "⚠️ No money to buy food!", "DEBUG")
+          WriteFileLog("No money to buy food", "DEBUG")
           return
         end			
         if money > 20 then
@@ -2412,15 +2460,15 @@ end
         task.wait(.5)
       until not HasAilmentBaby("thirsty") or os.clock() > deadline  
       if os.clock() > deadline then 
-        print("🟥 Task thirsty for baby - Out of limits!")
+        WriteConsoleLog("Task thirsty for baby - Out of limits", "🟥 Task thirsty for baby - Out of limits!", "DEBUG")
+        WriteFileLog("Task thirsty for baby - Out of limits", "DEBUG")
         return		
       end		
-      print("🟩 Task thirsty for baby - done!")
+      WriteConsoleLog("Task thirsty for baby - Done", "🟩 Task thirsty for baby - Done!", "DEBUG")
+      WriteFileLog("Task thirsty for baby - Done", "DEBUG")
       EnstatBaby(money, "thirsty")  
-      print("thirsty ended")
     end,
     ["sick"] = function() 
-      print("sick started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("sick")
       local age, friendship
@@ -2436,17 +2484,16 @@ end
           "Yes",
           LocalPlayer.Character
         )
-        task.wait(.6)
-        print("🟩 Task sick for baby - done!")
+        task.wait(.8)
+        WriteConsoleLog("Task sick for baby - Done", "🟩 Task sick for baby - Done!", "DEBUG")
+        WriteFileLog("Task sick for baby - Done", "DEBUG")
         EnstatBaby(money, "sick", pet_has_ailment, { age, friendship, }) 
       end)
       while not _task.completed do
         task.wait(1)
       end
-      print("sick ended")
     end,
     ["bored"] = function() 
-      print("bored started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("bored")
       local age, friendship
@@ -2461,20 +2508,21 @@ end
         repeat 
           task.wait(1)
         until not HasAilmentBaby("bored") or os.clock() > deadline
+        Gotopart("main")
         if os.clock() > deadline then 
-          print("🟥 Task bored for baby - Out of limits!")
+          WriteConsoleLog("Task bored for baby - Out of limits", "🟥 Task bored for baby - Out of limits!", "DEBUG")
+          WriteFileLog("Task bored for baby - Out of limits", "DEBUG")
           return		
         end		
-        print("🟩 Task bored for baby - done!")
+        WriteConsoleLog("Task bored for baby - Done", "🟩 Task bored for baby - Done!", "DEBUG")
+        WriteFileLog("Task bored for baby - Done", "DEBUG")
         EnstatBaby(money, "bored", pet_has_ailment, { age, friendship, }) 
       end)
       while not _task.completed do
         task.wait(1)
       end 
-      print("boded ended")
     end,
     ["salon"] = function() 
-      print("salon started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("salon")
       local age, friendship
@@ -2489,19 +2537,19 @@ end
           task.wait(1)
         until not HasAilmentBaby("salon") or os.clock() > deadline
         if os.clock() > deadline then 
-          print("🟥 Task salon for baby - Out of limits!")
+          WriteConsoleLog("Task salon for baby - Out of limits", "🟥 Task salon for baby - Out of limits!", "DEBUG")
+          WriteFileLog("Task salon for baby - Out of limits", "DEBUG")
           return		
         end		
-        print("🟩 Task salon for baby - done!")
+        WriteConsoleLog("Task salon for baby - Done", "🟩 Task salon for baby - Done!", "DEBUG")
+        WriteFileLog("Task salon for baby - Done", "DEBUG")
         EnstatBaby(money, "salon", pet_has_ailment, { age, friendship, }) 
       end)
       while not _task.completed do
         task.wait(1)
       end
-      print("salon ended")
     end,
     ["beach_party"] = function() 
-      print("beach_party started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("beach_party")
       local age, friendship
@@ -2516,20 +2564,21 @@ end
         repeat 
           task.wait(1)
         until not HasAilmentBaby("beach_party") or os.clock() > deadline
+        Gotopart("main")
         if os.clock() > deadline then 
-          print("🟥 Task beach-party for baby - Out of limits!")
+          WriteConsoleLog("Task beach-party for baby - Out of limits", "🟥 Task beach-party for baby - Out of limits!", "DEBUG")
+          WriteFileLog("Task beach-party for baby - Out of limits", "DEBUG")
           return		
         end		
-        print("🟩 Task beach-party for baby - done!")
+        WriteConsoleLog("Task beach-party for baby - Done", "🟩 Task beach-party for baby - Done!", "DEBUG")
+        WriteFileLog("Task beach-party for baby - Done", "DEBUG")
         EnstatBaby(money, "beach_party", pet_has_ailment, { age, friendship, })  
       end)
       while not _task.completed do
         task.wait(1)
       end
-      print("beach_party ended")
     end,
     ["dirty"] = function() 
-      print("dirty started")
       local money = ClientData.get("money")
       task.spawn(function() 
         SafeInvoke('HousingAPI/ActivateFurniture',
@@ -2546,17 +2595,17 @@ end
       repeat 
         task.wait(1)
       until not HasAilmentBaby("dirty") or os.clock() > deadline
-      StateManagerClient.exit_seat_states()
+      StateManagerClient.exit_seat_states() --kuni izmenit na api call
       if os.clock() > deadline then 
-        print("🟥 Task dirty for baby - Out of limits!")
+        WriteConsoleLog("Task dirty for baby - Out of limits", "🟥 Task dirty for baby - Out of limits!", "DEBUG")
+        WriteFileLog("Task dirty for baby - Out of limits", "DEBUG")
         return		
       end		
-      print("🟩 Task dirty for baby - done!")
+      WriteConsoleLog("Task dirty for baby - Done", "🟩 Task dirty for baby - Done!", "DEBUG")
+      WriteFileLog("Task dirty for baby - Done", "DEBUG")
       EnstatBaby(money, "dirty")  
-      print("dirty ended")
     end,
     ["school"] = function() 
-      print("school started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("school")
       local age, friendship
@@ -2571,19 +2620,19 @@ end
           task.wait(1)
         until not HasAilmentBaby("school") or os.clock() > deadline
         if os.clock() > deadline then 
-          print("🟥 Task school for baby - Out of limits!")
+          WriteConsoleLog("Task school for baby - Out of limits", "🟥 Task school for baby - Out of limits!", "DEBUG")
+          WriteFileLog("Task school for baby - Out of limits", "DEBUG")
           return		
         end		
-        print("🟩 Task school for baby - done!")
+        WriteConsoleLog("Task school for baby - Done", "🟩 Task school for baby - Done!", "DEBUG")
+        WriteFileLog("Task school for baby - Done", "DEBUG")
         EnstatBaby(money, "school", pet_has_ailment, { age, friendship, })  
       end)
       while not _task.completed do
         task.wait(1)
       end        
-      print("school ended")
     end,
     ["sleepy"] = function() 
-      print("sleepy started")
       local money = ClientData.get("money")
       task.spawn(function() 
         SafeInvoke('HousingAPI/ActivateFurniture',
@@ -2602,15 +2651,15 @@ end
       until not HasAilmentBaby("sleepy") or os.clock() > deadline
       StateManagerClient.exit_seat_states()
       if os.clock() > deadline then 
-        print("🟥 Task sleepy for baby - Out of limits!")
+        WriteConsoleLog("Task sleepy for baby - Out of limits", "🟥 Task sleepy for baby - Out of limits!", "DEBUG")
+        WriteFileLog("Task sleepy for baby - Out of limits", "DEBUG")
         return		
       end		
-      print("🟩 Task sleepy for baby - done!")
+      WriteConsoleLog("Task sleepy for baby - Done", "🟩 Task sleepy for baby - Done!", "DEBUG")
+      WriteFileLog("Task sleepy for baby - Done", "DEBUG")
       EnstatBaby(money, "sleepy")  
-      print("sleepy ended")
     end,
     ["pizza_party"] = function() 
-      print("pizza_party started")
       local money = ClientData.get("money")
       local pet_has_ailment = HasAilment("pizza_party")
       local age, friendship
@@ -2625,16 +2674,17 @@ end
           task.wait(1)
         until not HasAilmentBaby("pizza_party") or os.clock() > deadline
         if os.clock() > deadline then 
-          print("🟥 Task pizza-party for baby - Out of limits!")
+          WriteConsoleLog("Task pizza-party for baby - Out of limits", "🟥 Task pizza-party for baby - Out of limits!", "DEBUG")
+          WriteFileLog("Task pizza-party for baby - Out of limits", "DEBUG")
           return		
         end		
-        print("🟩 Task pizza-party for baby - done!")
+        WriteConsoleLog("Task pizza-party for baby - Done", "🟩 Task pizza-party for baby - Done!", "DEBUG")
+        WriteFileLog("Task pizza-party for baby - Done", "DEBUG")
         EnstatBaby(money, "pizza_party", pet_has_ailment, { age, friendship, })  
       end)
       while not _task.completed do
         task.wait(1)
       end
-      print("pizza_party ended")
     end,
   }
 
@@ -2656,24 +2706,26 @@ end
     local meganeon = {}
     for k,v in pairs(GetOwnedPets()) do
       if v.age == 6 then
-        __neon_temp[v.id] = (__neon_temp[v.id] or 0) + 1
+        __neon_temp[v.remote] = (__neon_temp[v.remote] or 0) + 1
       end
       if v.neon and v.age == 6 then
-        __meganeon_temp[v.id] = (__meganeon_temp[v.id] or 0) + 1
+        __meganeon_temp[v.remote] = (__meganeon_temp[v.remote] or 0) + 1
       end
     end
     for k,v in pairs(__neon_temp) do
       if v >= 4 then
-        table.insert(neon, GetNameFromRemote(k))
+        table.insert(neon, GetNameFromRemote("pets", k))
       end
     end
     for k,v in pairs(__meganeon_temp) do
       if v >= 4 then
-        table.insert(meganeon, GetNameFromRemote(k))
+        table.insert(meganeon, GetNameFromRemote("pets", k))
       end
     end
     GUI.DropdownUpdateOptionList(PetToMegaNeonDropdown, meganeon)
+    GUI.DropdownSetValue(PetToMegaNeonDropdown, {})
     GUI.DropdownUpdateOptionList(PetToNeonDropdown, neon)
+    GUI.DropdownSetValue(PetToNeonDropdown, {})
   end
 
   local function PetFarmPetToFarmInstantListUpdate()
@@ -2735,7 +2787,8 @@ end
       if not _G.CONNECTIONS.NetworkHook then 
         _G.CONNECTIONS.NetworkHook = NetworkClient.ChildRemoved:Connect(function()
           while not CheckInternet() do
-            print("No internet. Waiting..")
+            WriteConsoleLog("No internet. Waiting", "No internet. Waiting..", "DEBUG")
+            WriteFileLog("No internet. Waiting", "DEBUG")
             task.wait(5)
           end
           _G.EXEC = 0
@@ -2806,7 +2859,6 @@ end
             return
           end
           local _task = TaskQueue.Enqueue(function()
-            print('task runned')
             local flag = false
             local kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")
             if _G.InternalConfig.PetFarmDLib.Detect2DKitty then
@@ -2821,7 +2873,6 @@ end
                       equip_as_last = false
                     }
                   )
-                  print("🐱 Found and equiped 2D-kitty.")
                   WriteConsoleLog("2D-kitty detected and equiped", "🐱 2D-kitty detected and equiped.", "DEBUG")
                   WriteFileLog("2D-kitty detected and equiped", "DEBUG")
                   flag = true
@@ -2854,7 +2905,6 @@ end
               local owned_pets = GetOwnedPets()
               if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then	
                 if _G.InternalConfig.PetFarmDLib.PotionFarm then
-                  print("in 1")
                   for _, r in ipairs(Rarities) do
                     for k,v in pairs(owned_pets) do
                       if v.remote ~= "practice_dog" and not _G.InternalConfig.PetFarmDLib.PetsToExclude[k] and not (v.name:lower()):match("egg") and v.age == 6 and v.rarity == r then
@@ -2870,16 +2920,13 @@ end
                         break
                       end
                     end
-                    print("found 1")
                     if flag then break end
                   end
                 end
                 if not flag then
-                  print("in 2")
                   for _,r in ipairs(Rarities) do
                     for k,v in pairs(owned_pets) do
                       if v.remote ~= "practice_dog" and not (_G.InternalConfig.PetFarmDLib.PetsToExclude and _G.InternalConfig.PetFarmDLib.PetsToExclude[k]) and not (v.name:lower()):match("egg") and v.age < 6 and v.rarity == r then
-                        print("entered cycle")
                         SafeInvoke("ToolAPI/Equip",
                           k,
                           {
@@ -2887,18 +2934,15 @@ end
                             equip_as_last = false
                           }
                         )
-                        print("ended cycle")
                         flag = true
                         _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = false
                         break
                       end
                     end
-                    print("found 2")
                     if flag then break end
                   end
                 end 
                 if not flag then 
-                  print("in 3")
                   if _G.InternalConfig.PetFarmDLib.OppositeFarm then
                     if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
                       WriteConsoleLog("No pets to farm depending on filter. Running opposite farm filter", "⚙️ No pets to farm depending on filter. Running opposite farm filter.", "DEBUG")
@@ -2921,10 +2965,8 @@ end
                           end
                         end
                         if flag then break end
-                  print("found 3")
                       end
                       if not flag then
-                  print("in 4")
                         for _, r in ipairs(Rarities) do
                           for k,v in pairs(owned_pets) do
                             if v.remote ~= "practice_dog" and not (_G.InternalConfig.PetFarmDLib.PetsToExclude and _G.InternalConfig.PetFarmDLib.PetsToExclude[k]) and v.rarity == r then
@@ -2942,7 +2984,6 @@ end
                             end
                           end
                           if flag then break end
-                  print("found 4")
                         end
                       end
                     end
@@ -3015,7 +3056,6 @@ end
               end
               task.wait(1)
               if flag and not Equiped() then
-                print("flag and not equiped")
                 Cooldown.AutoFarm.PetAutoFarm = 5
                 return
               end
@@ -3036,29 +3076,29 @@ end
               end
             end
             local eqailments = GetEquipedPetAilments()
-            print("before cycle")
-            print(string.format("🔎 Detecting tasks for %s..", actual_pet.remote))
+            WriteConsoleLog(string.format("Detecting tasks for %s", actual_pet.remote), string.format("🔎 Detecting tasks for %s..", actual_pet.remote), "DEBUG")
+            WriteFileLog(string.format("Detecting tasks for %s", actual_pet.remote), "DEBUG")
             for k,_ in pairs(eqailments) do 
               if pet_ailments[k] then
                 HouseCheck()
                 if k == "mystery" then 
                   if not _G.mystery then
-                    print(formatted_pet["mystery"], actual_pet.remote)
+                    WriteConsoleLog(string.format("%s %s", formatted_pet[k], actual_pet.remote), string.format("%s %s", formatted_pet[k], actual_pet.remote), "DEBUG")
+                    WriteFileLog(string.format("%s %s", formatted_pet[k], actual_pet.remote), "DEBUG")
                     task.spawn(pet_ailments[k]) 
                   end
                   continue
                 end
-                print(formatted_pet[k], actual_pet.remote)
+                WriteConsoleLog(string.format("%s %s", formatted_pet[k], actual_pet.remote), string.format("%s %s", formatted_pet[k], actual_pet.remote), "DEBUG")
+                WriteFileLog(string.format("%s %s", formatted_pet[k], actual_pet.remote), "DEBUG")
                 pcall(pet_ailments[k])
                 if CONNECTIONS.WalkLock then CONNECTIONS.WalkLock:Disconnect(); CONNECTIONS.WalkLock = nil end
                 if CONNECTIONS.RideLock then CONNECTIONS.RideLock:Disconnect(); CONNECTIONS.RideLock = nil end
               end
             end
-            print('pet auto farm ended')
-            Cooldown.AutoFarm.PetAutoFarm = 15
+            Cooldown.AutoFarm.PetAutoFarm = 25
           end)
           while not _task.completed do
-            print("while task completred..")
             task.wait(1)
           end
           if not Cooldown.AutoFarm.PetAutoFarm then
@@ -3116,31 +3156,29 @@ end
                   return
                 end
               end
-            else
-              GUI.Notify("Warning", "Internal validation cannot find pet. Try to specify <Pet To Farm> again.", "WARNING", "triangle-alert")
-              GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
-              return
             end
-            print("equiped ailments")
             local eqailments = GetEquipedPetAilments()
-            print(string.format("🔎 Detecting tasks for %s..", actual_pet.remote))
+            WriteConsoleLog(string.format("Detecting tasks for %s", actual_pet.remote), string.format("🔎 Detecting tasks for %s..", actual_pet.remote), "DEBUG")
+            WriteConsoleLog(string.format("Detecting tasks for %s", actual_pet.remote), "DEBUG")
             for k,_ in pairs(eqailments) do 
               if pet_ailments[k] then
                 HouseCheck()
                 if k == "mystery" then 
                   if not _G.mystery then
-                    print(formatted_pet["mystery"], actual_pet.remote)
+                    WriteConsoleLog(string.format("%s %s", formatted_pet[k], actual_pet.remote), string.format("%s %s", formatted_pet[k], actual_pet.remote), "DEBUG")
+                    WriteFileLog(string.format("%s %s", formatted_pet[k], actual_pet.remote), "DEBUG")
                     task.spawn(pet_ailments[k]) 
                   end
                   continue
                 end
-                print(formatted_pet[k], actual_pet.remote)
+                WriteConsoleLog(string.format("%s %s", formatted_pet[k], actual_pet.remote), string.format("%s %s", formatted_pet[k], actual_pet.remote), "DEBUG")
+                WriteFileLog(string.format("%s %s", formatted_pet[k], actual_pet.remote), "DEBUG")
                 pcall(pet_ailments[k])
                 if CONNECTIONS.WalkLock then CONNECTIONS.WalkLock:Disconnect(); CONNECTIONS.WalkLock = nil end
                 if CONNECTIONS.RideLock then CONNECTIONS.RideLock:Disconnect(); CONNECTIONS.RideLock = nil end
               end
             end
-            Cooldown.AutoFarm.PetAutoFarm = 15
+            Cooldown.AutoFarm.PetAutoFarm = 25
           end)
           while not _task.completed do
             task.wait(1)
@@ -3435,16 +3473,15 @@ end
           for k,_ in pairs(active_ailments) do
             if baby_ailments[k] then
               HouseCheck()
-              print(formatted_baby[k])
+              WriteConsoleLog(string.format("%s %s", formatted_baby[k], actual_pet.remote), string.format("%s %s", formatted_baby[k], actual_pet.remote), "DEBUG")
+              WriteFileLog(string.format("%s %s", formatted_baby[k], actual_pet.remote), "DEBUG")
               pcall(baby_ailments[k])
             end
           end
-          print("TASKI COMPELTED")
-          Cooldown.AutoFarm.BabyAutoFarm = 15
+          Cooldown.AutoFarm.BabyAutoFarm = 25
         end)
         while not _task.completed do
           task.wait(1)
-          print("waiting until task complete")
         end
         if not Cooldown.AutoFarm.BabyAutoFarm then
           error("", 0)
@@ -4414,7 +4451,7 @@ end
           local _temp = {} 
           local _used = {}
           for _,v in ipairs(_G.InternalConfig.PetPenDLib.PrioritizedRarities) do
-            for a,b in ipairs(pets_to_place) do
+            for _,b in ipairs(pets_to_place) do
               if b[2] == v then
                 table.insert(_temp, b[1])
                 _used[b[1]] = true
@@ -4978,18 +5015,20 @@ end
         end
         local _task = LocationQueue.Enqueue(function()
           EmulateLocation("Cave")
-          for k,v in _G.InternalConfig.PetsToNeon do
-            local ok, _ = SafeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
-            if ok then 
-              WriteConsoleLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), string.format("[🧿]:[✅] Pet %s is Neon now!", k), "DEBUG")
-              WriteFileLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), "DEBUG") 
-              GUI.Notify("Success", string.format("Pet %s is Neon now!", k), "SUCCESS", "circle-check")
-            else
-              WriteConsoleLog(string.format("[AutoNeon]: Failed to make pet {%s} neon", k), string.format("[🧿]:[❌] Failed to make pet %s neon", k), "DEBUG")
-              WriteFileLog(string.format("[AutoNeon]: Failed to make {%s} neon", k), "DEBUG") 
-              GUI.Notify("Error", string.format("Failed to make pet %s neon", k), "ERROR", "circle-x")
+          for k,v in pairs(_G.InternalConfig.PetsToNeon) do
+            if #v >= 4 then
+              local ok, _ = SafeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
+              if ok then 
+                WriteConsoleLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), string.format("[🧿]:[✅] Pet %s is Neon now!", k), "DEBUG")
+                WriteFileLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), "DEBUG") 
+                GUI.Notify("Success", string.format("Pet %s is Neon now!", k), "SUCCESS", "circle-check")
+              else
+                WriteConsoleLog(string.format("[AutoNeon]: Failed to make pet {%s} neon", k), string.format("[🧿]:[❌] Failed to make pet %s neon", k), "DEBUG")
+                WriteFileLog(string.format("[AutoNeon]: Failed to make {%s} neon", k), "DEBUG") 
+                GUI.Notify("Error", string.format("Failed to make pet %s neon", k), "ERROR", "circle-x")
+              end
+              task.wait(1.5)
             end
-            task.wait(1.5)
           end
         end)
         while not _task.completed do
@@ -5007,8 +5046,9 @@ end
       _G.InternalConfig.PetsToNeon = false
       return
     end
-    for k,v in pairs(v) do 
-      table.insert(_G.InternalConfig.PetsToNeon, InvGetCategoryUniques("pets", k))
+    _G.InternalConfig.PetsToNeon = {}
+    for k,_ in pairs(v) do 
+      table.insert(_G.InternalConfig.PetsToNeon, InvGetCategoryUniquesByName("pets", k))
     end
   end
 
@@ -5054,8 +5094,9 @@ end
       _G.InternalConfig.PetsToMegaNeon = false
       return
     end
-    for k,v in pairs(v) do 
-      table.insert(_G.InternalConfig.PetsToMegaNeon, InvGetCategoryUniques("pets", k))
+    _G.InternalConfig.PetsToMegaNeon = {}
+    for k,_ in pairs(v) do 
+      table.insert(_G.InternalConfig.PetsToMegaNeon, InvGetCategoryUniquesByName("pets", k))
     end
   end
 
@@ -5642,8 +5683,6 @@ end
         if not (v.name:lower()):match("egg") then
           table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
         end
-      elseif table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "any" then
-        table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       else
         if (v.name:lower()):match("egg") then
           table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
