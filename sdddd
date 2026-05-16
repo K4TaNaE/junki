@@ -49,11 +49,11 @@ local _script = coroutine.create(function()
   setthreadidentity(7)
 
   makefolder("Arcanic")
-  if isfile("Arcanic/arcsrcplate.gif") then 
-    _G.asset = getcustomasset("Arcanic/arcsrcplate.gif")
+  if isfile("Arcanic/arcsrcplate.png") then 
+    _G.asset = getcustomasset("Arcanic/arcsrcplate.png")
   else
-    writefile("Arcanic/arcsrcplate.gif", game:HttpGet("https://i.imageupload.app/2e1082c92b4481988f26.gif"))
-    _G.asset = getcustomasset("Arcanic/arcsrcplate.gif")
+    writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/e901851cc995659ba1cb.png"))
+    _G.asset = getcustomasset("Arcanic/arcsrcplate.png")
   end
 
   local GUI = {
@@ -3264,7 +3264,7 @@ end
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmType = function(v) 
     WriteConsoleLog("Farm type triggered", nil, "DEBUG")
     WriteFileLog("Farm type triggered", "DEBUG")
-    if v[1]:match("^%s*$") then
+    if tostring(v[1]):match("^%s*$") then
       return
     end
     if table.unpack(v) == "manual" then
@@ -3289,7 +3289,7 @@ end
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetToFarm = function(v) 
     WriteConsoleLog("Pet to farm triggered", nil, "DEBUG")
     WriteFileLog("Pet to farm triggered", "DEBUG")  
-    if #v == 0 or v[1]:match("set <Farm Type> to manual") then
+    if #v == 0 or tostring(v[1]):match("set <Farm Type> to manual") then
       _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = nil
       return
     end
@@ -4290,7 +4290,7 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionHigherPriority = function(v)
     WriteConsoleLog("Set higher priority triggered", nil, "DEBUG")
     WriteFileLog("Set higher priority triggered", "DEBUG")
-    if #v == 0 or v[1]:match("set <Mode> to automated") then
+    if #v == 0 or tostring(v[1]):match("set <Mode> to automated") then
       _G.InternalConfig.AutoGivePotionDLib.HigherPriority = nil
       return
     end 
@@ -4303,7 +4303,7 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToGivePotion = function(v)
     WriteConsoleLog("Pet to give potion triggered", nil, "DEBUG")
     WriteFileLog("Pet to give potion triggered", "DEBUG")
-    if #v == 0 or v[1]:match("set <Mode> to manual") then
+    if #v == 0 or tostring(v[1]):match("set <Mode> to manual") then
       _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion = nil
       return
     end
@@ -5655,6 +5655,7 @@ end
     local meganeon = {}
     local owned = GetOwnedPets()
     for k,v in pairs(owned) do
+      if v.remote == "practice_dog" then continue end
       table.insert(trade_specified_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(recycler_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
