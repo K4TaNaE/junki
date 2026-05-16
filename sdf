@@ -17,6 +17,11 @@ local function __Notify(text)
   })
 end
 
+local debug = debug or {}
+local syn = syn or {}
+local http = http or {}
+local crypt = crypt or {}
+
 local function IntegrityCheck(func_set :table, on_fallback :Callback, replace :Callback, on_success)
   for _,v in ipairs(func_set) do
     if v then 
@@ -28,10 +33,6 @@ local function IntegrityCheck(func_set :table, on_fallback :Callback, replace :C
   return replace
 end
 print("[+] Starting sUNC integrity check..")
-local debug = debug or {}
-local syn = syn or {}
-local http = http or {}
-local crypt = crypt or {}
 
 local getupvalue = IntegrityCheck({getupvalue, debug.getupvalue, syn.getupvalue, get_upvalue, debug.get_upvalue, syn.get_upvalue}, function() __Notify("getupvalue function is not supported by executor. Script may work unstable.") print("[❌] [getupvalue] function failed integrity check.") end, function(...) return end, function() print("[✅] [getupvalue] function successfully completed integrity check.") end)
 local request = IntegrityCheck({request, syn.request, http_request, http.request}, function() __Notify("request function is not supported by executor. Options: {Auto Reconnect & Discord Webhook} won't work.") print("[❌] [request] function failed integrity check.") end, function(...) return end, function() print("[✅] [request] function successfully completed integrity check.") end)
