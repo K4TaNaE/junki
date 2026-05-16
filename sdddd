@@ -55,13 +55,13 @@ local _script = coroutine.create(function()
 
   pcall(function()
     makefolder("Arcanic")
-    local _h1 = hash(request({Url="https://i.imageupload.app/e901851cc995659ba1cb.png"}).Body, "sha256") 
+    local _h1 = hash(request({Url="https://i.imageupload.app/c9bee1997f3764331ed4.png"}).Body, "sha256") 
     local _h2
     if isfile("Arcanic/arcsrcplate.png") then 
       _h2 = hash(readfile("Arcanic/arcsrcplate.png"), "sha256")
     end
     if not _h1 == _h2 then
-      writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/e901851cc995659ba1cb.png"))
+      writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/c9bee1997f3764331ed4.png"))
     end
     _G.asset = getcustomasset("Arcanic/arcsrcplate.png")
   end)
