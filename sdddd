@@ -1238,37 +1238,38 @@ local _script = coroutine.create(function()
     end)
     _G.HeadCashed = decoded.data[1].imageUrl
   end
-local function telegram_webhook(msg) -- logs and prints (for change)
-  local body = HttpService:JSONEncode({
-    chat_id=_G.InternalConfig.TelegramChatId,
-    text = msg,
-    parse_mode = "HMTL"
-  })
-  local ok, res = pcall(function() 
-    return request({
-      Url = "https://api.telegram.org/bot" .. _G.InternalConfig.TelegramBotApi .. "/sendMessage",
-	  Method = "POST",
-	  Headers = { ["Content-Type"] = "application/json" },
-	  Body = body
-	})
-  end)
-  if not ok then
-    WriteConsoleLog("❌ Unsuccessed to send telegram webhook", "❌ Unsuccessed to send telegram webhook.", "DEBUG")
-    WriteFileLog("❌ Unsuccessed to send telegram webhook", "DEBUG")
-    Cooldown.Webhooks.TelegramWebhookSendDelay = 60
+  local function telegram_webhook(msg) -- logs and prints (for change)
+    print("in telegram webhook")
+    local body = HttpService:JSONEncode({
+      chat_id=_G.InternalConfig.TelegramChatId,
+      text = msg,
+      parse_mode = "HMTL"
+    })
+    local ok, res = pcall(function() 
+      return request({
+        Url = "https://api.telegram.org/bot" .. _G.InternalConfig.TelegramBotApi .. "/sendMessage",
+        Method = "POST",
+        Headers = { ["Content-Type"] = "application/json" },
+        Body = body
+      })
+    end)
+    if not ok then
+      WriteConsoleLog("❌ Unsuccessed to send telegram webhook", "❌ Unsuccessed to send telegram webhook.", "DEBUG")
+      WriteFileLog("❌ Unsuccessed to send telegram webhook", "DEBUG")
+      Cooldown.Webhooks.TelegramWebhookSendDelay = 60
+    end
+    local data
+    pcall(function() 
+      data = HttpService:JSONDecode(res.Body)
+    end)
+    if data and data.ok then
+      WriteConsoleLog("Telegram webhook sent", "☑️ Telegram webhook sent.", "DEBUG")
+      WriteFileLog("Telegram webhook sent", "DEBUG")
+    else
+      WriteConsoleLog(string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), "DEBUG")
+      WriteFileLog("❌ Unsuccessed to send telegram webhook", "DEBUG")
+    end
   end
-  local data
-  pcall(function() 
-	data = HttpService:JSONDecode(res.Body)
-  end)
-  if data and data.ok then
-    WriteConsoleLog("Telegram webhook sent", "☑️ Telegram webhook sent.", "DEBUG")
-    WriteFileLog("Telegram webhook sent", "DEBUG")
-  else
-    WriteConsoleLog(string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), "DEBUG")
-    WriteFileLog("❌ Unsuccessed to send telegram webhook", "DEBUG")
-  end
-end
   local function Webhook(title, description)
     local url = _G.InternalConfig.DiscordWebhookUrl
     if not _G.HeadCashed then
@@ -5190,6 +5191,7 @@ end
     if ok then      
       WriteConsoleLog(string.format("Discord webhook url value set: {%s}", url), nil, "DEBUG")
       WriteFileLog(string.format("Discord webhook url value set: {%s}", url), "DEBUG")
+      GUI.Notify("Info", "Discord webhook URL is valid.", "INFO", "mail-plus")
       _G.InternalConfig.DiscordWebhookUrl = url
     else
       GUI.TextFieldSetValue(DiscordWebhookUrlTextField, "")
@@ -5232,28 +5234,30 @@ end
       return
     end
     Registry.RunTask("discord_webhook_send_manually_handler", function() 
-    local desc = string.format([[
-      > 💸 Money Earned - [ **%d** ]
-      > 📈 Pets Full-grown - [ **%d** ]
-      > 🐶 Pet Needs Completed - [ **%d** ]
-      > 🧪 Potions Farmed - [ **%d** ]
-      > 🧸 Friendship Levels Farmed - [ **%d** ]
-      > 👶 Baby Needs Completed - [ **%d** ]
-      > 🥚 Eggs Hatched - [ **%d** ]
-      ---------------------------------------
-      > 💸 Total Bucks - [ **%d** ]
-      ---------------------------------------
-      > ⏰ Runtime - [ **%s** ]
-      ]],
-      farmed.money,
-      farmed.pets_fullgrown,
-      farmed.ailments,
-      farmed.potions,
-      farmed.friendship_levels,
-      farmed.baby_ailments,
-      farmed.eggs_hatched,
-      ClientData.get("money"),
-      FormatTime(farmed.time)
+      WriteConsoleLog("[Registry]: {discord_webhook_send_manually_handler} runned", nil, "DEBUG")
+      WriteFileLog("[Registry]: {discord_webhook_send_manually_handler} runned", "DEBUG")
+      local desc = string.format([[
+        > 💸 Money Earned - [ **%d** ]
+        > 📈 Pets Full-grown - [ **%d** ]
+        > 🐶 Pet Needs Completed - [ **%d** ]
+        > 🧪 Potions Farmed - [ **%d** ]
+        > 🧸 Friendship Levels Farmed - [ **%d** ]
+        > 👶 Baby Needs Completed - [ **%d** ]
+        > 🥚 Eggs Hatched - [ **%d** ]
+        ---------------------------------------
+        > 💸 Total Bucks - [ **%d** ]
+        ---------------------------------------
+        > ⏰ Runtime - [ **%s** ]
+        ]],
+        farmed.money,
+        farmed.pets_fullgrown,
+        farmed.ailments,
+        farmed.potions,
+        farmed.friendship_levels,
+        farmed.baby_ailments,
+        farmed.eggs_hatched,
+        ClientData.get("money"),
+        FormatTime(farmed.time)
       )
       local ok, _ = pcall(Webhook, "Farm-Log", desc)
       if ok then
@@ -5445,7 +5449,9 @@ end
         GUI.Notify("Warning", "Set <Chat Id> at first.", "WARNING", "triangle-alert")
         return
       end
-      Registry.RunTask("telegram_webhook_send_manually_handler", function(v)
+      Registry.RunTask("telegram_webhook_send_manually_handler", function()
+        WriteConsoleLog("[Registry]: {telegram_webhook_send_manually_handler} runned", nil, "DEBUG")
+        WriteFileLog("[Registry]: {telegram_webhook_send_manually_handler} runned", "DEBUG")
         local msg = string.format([[
         **Farm-Log**
         <code>%s</code>
@@ -5504,7 +5510,7 @@ end
 		if not ok then
       WriteConsoleLog("Telegram HTTP error while checking bot API", "[-] Telegram HTTP error while checking bot API.", "ERROR")
       WriteFileLog("Telegram HTTP error while checking bot API", "ERROR")
-      GUI.Notify("Warning", string.format("Telegram HTTP error while checking bot API. Setting value to {%s}", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
+      GUI.Notify("Warning", string.format("Telegram HTTP error while checking bot API. Setting value to %s", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
       GUI.TextFieldSetValue(TelegramBotApiKeyTextField, _G.InternalConfig.TelegramBotApi or "") 
       return
 		end
@@ -5520,7 +5526,7 @@ end
 		  end
       WriteConsoleLog("Invalid bot API key: " .. desc, "[-] Invalid bot API key: " .. desc .. ".", "ERROR")
       WriteFileLog("Invalid bot API key: " .. desc, "ERROR")
-      GUI.Notify("Warning", "Invalid bot API key: " .. desc .. string.format(". Setting value to {%s}", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
+      GUI.Notify("Warning", "Invalid bot API key: " .. desc .. string.format(". Setting value to %s", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
       GUI.TextFieldSetValue(TelegramBotApiKeyTextField, _G.InternalConfig.TelegramBotApi or "") 
 	  else
       _G.InternalConfig.TelegramBotApi = v
@@ -5559,7 +5565,7 @@ end
 		if not ok then
       WriteConsoleLog("Telegram HTTP error while trying to send message to chat", "[-] Telegram HTTP error while trying to send message to chat.", "DEBUG")
       WriteFileLog("Telegram HTTP error while trying to send message to chat", "DEBUG")
-      GUI.Notify("Warning", string.format("Telegram HTTP error while trying to send message to chat. Setting value to {%s}", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "mail-warning")
+      GUI.Notify("Warning", string.format("Telegram HTTP error while trying to send message to chat. Setting value to %s", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "mail-warning")
 			GUI.TextFieldSetValue(TelegramChatIdTextField, (_G.InternalConfig.TelegramChatid or ""))
       return
 		end
@@ -5577,7 +5583,7 @@ end
       WriteConsoleLog("Error while trying to send message to chat: " .. data.description or "Unknown Error", "[-] Error while trying to send message to chat: " .. data.description or "Unknown Error.", "ERROR")
       WriteFileLog("Error while trying to send message to chat: " .. data.description or "Unknown Error", "ERROR")
       GUI.TextFieldSetValue(TelegramChatIdTextField, (_G.InternalConfig.TelegramChatid or ""))
-      GUI.Notify("Warning", string.format("Error while trying to send message to chat: " .. data.description or "Unknown Error. " .. "Setting value to {%s}", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "triangle-alert")
+      GUI.Notify("Warning", string.format("Error while trying to send message to chat: " .. data.description or "Unknown Error. " .. "Setting value to %s", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "triangle-alert")
 		end
   end
 
