@@ -710,15 +710,14 @@ local _script = coroutine.create(function()
         if v._condition() then
           WriteConsoleLog(string.format("[Registry]: Task condition reached. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), nil, "DEBUG")
           WriteFileLog(string.format("[Registry]: Task condition reached. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "n") or tostring(v._callback))), "DEBUG")
-          -- task.spawn(function() 
-          --   local ok, _ = pcall(v._callback)
-          --   if not ok then
-          --     WriteConsoleLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), nil, "DEBUG")
-          --     WriteFileLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), "DEBUG")
-          --     pcall(v._fallback)
-          --   end
-          -- end)
-          v._callback()
+          task.spawn(function() 
+            local ok, _ = pcall(v._callback)
+            if not ok then
+              WriteConsoleLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), nil, "DEBUG")
+              WriteFileLog(string.format("[Registry]: Task crashed. _flag: {%s} : {%s}", v._flag, (debug.info(v._callback, "l") or tostring(v._callback))), "DEBUG")
+              pcall(v._fallback)
+            end
+          end)
         end
       end
     end
@@ -2675,6 +2674,7 @@ end
     local list = {}
     for k,v in pairs(GetOwnedPets()) do
       if v.age < 6 then
+        if v.remote == "practice_dog" then continue end
         table.insert(list, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       end
     end
@@ -2688,6 +2688,7 @@ end
     local neon = {}
     local meganeon = {}
     for k,v in pairs(GetOwnedPets()) do
+      if v.remote == "practice_dog" then continue end
       if v.age == 6 then
         __neon_temp[v.remote] = (__neon_temp[v.remote] or 0) + 1
       end
@@ -2714,6 +2715,7 @@ end
   local function PetFarmPetToFarmInstantListUpdate()
     local list = {}
     for k,v in pairs(GetOwnedPets()) do
+      if v.remote == "practice_dog" then continue end
       table.insert(list, v.name .. " | age: " .. v.age .. " | unique: " .. k)
     end
     GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, list)
@@ -3289,7 +3291,7 @@ end
       _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = nil
       return
     end
-    _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = v[1]:split("unique: ")[2]
+    _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = tostring(v[1]):split("unique: ")[2]
   end
   
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetsToExclude = function(v) 
