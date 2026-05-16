@@ -5437,59 +5437,57 @@ local _script = coroutine.create(function()
     WriteFileLog(string.format("Telegram webhook send delay value set: {%s}", v), "DEBUG")
   end
 
-  GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually = function(v) 
+  GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually = function() 
     WriteConsoleLog("Send manually triggered", nil, "DEBUG")
     WriteFileLog("Send manually triggered", "DEBUG") 
-    if v then
-      if not _G.InternalConfig.TelegramBotApi then
-        GUI.Notify("Warning", "Set <Bot API Key> at first.", "WARNING", "triangle-alert")
-        return
-      end
-      if not _G.InternalConfig.TelegramChatId then
-        GUI.Notify("Warning", "Set <Chat Id> at first.", "WARNING", "triangle-alert")
-        return
-      end
-      Registry.RunTask("telegram_webhook_send_manually_handler", function()
-        WriteConsoleLog("[Registry]: {telegram_webhook_send_manually_handler} runned", nil, "DEBUG")
-        WriteFileLog("[Registry]: {telegram_webhook_send_manually_handler} runned", "DEBUG")
-        local msg = string.format([[
-        **Farm-Log**
-        <code>%s</code>
-        <b>💸 Money Earned</b> – <code>%d</code>
-        <b>📈 Pets Full-grown</b> – <code>%d</code>
-        <b>🐶 Pet Needs Completed</b> – <code>%d</code>
-        <b>🧪 Potions Farmed</b> – <code>%d</code>
-        <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
-        <b>👶 Baby Needs Completed</b> – <code>%d</code>
-        <b>🥚 Eggs Hatched</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>💸 Total Bucks</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>⏰ Runtime</b> – <code>%s</code>
-        ]],
-        LocalPlayer.Name,
-        farmed.money,
-        farmed.pets_fullgrown,
-        farmed.ailments,
-        farmed.potions,
-        farmed.friendship_levels,
-        farmed.baby_ailments,
-        farmed.eggs_hatched,
-        ClientData.get("money"),
-        FormatTime(farmed.time)
-        )
-        local ok, _ = pcall(telegram_webhook, msg)
-        if ok then
-          GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
-          WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
-          WriteFileLog("Telegram webhook sent", "DEBUG")
-        else
-          WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
-          WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
-          GUI.Notify("Error", "Something went wrong while trying to send telegram webhook.", "ERROR", "mail-minus")
-        end
-      end)
+    if not _G.InternalConfig.TelegramBotApi then
+      GUI.Notify("Warning", "Set <Bot API Key> at first.", "WARNING", "triangle-alert")
+      return
     end
+    if not _G.InternalConfig.TelegramChatId then
+      GUI.Notify("Warning", "Set <Chat Id> at first.", "WARNING", "triangle-alert")
+      return
+    end
+    Registry.RunTask("telegram_webhook_send_manually_handler", function()
+      WriteConsoleLog("[Registry]: {telegram_webhook_send_manually_handler} runned", nil, "DEBUG")
+      WriteFileLog("[Registry]: {telegram_webhook_send_manually_handler} runned", "DEBUG")
+      local msg = string.format([[
+      **Farm-Log**
+      <code>%s</code>
+      <b>💸 Money Earned</b> – <code>%d</code>
+      <b>📈 Pets Full-grown</b> – <code>%d</code>
+      <b>🐶 Pet Needs Completed</b> – <code>%d</code>
+      <b>🧪 Potions Farmed</b> – <code>%d</code>
+      <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
+      <b>👶 Baby Needs Completed</b> – <code>%d</code>
+      <b>🥚 Eggs Hatched</b> – <code>%d</code>
+      -----------------------------------------------
+      <b>💸 Total Bucks</b> – <code>%d</code>
+      -----------------------------------------------
+      <b>⏰ Runtime</b> – <code>%s</code>
+      ]],
+      LocalPlayer.Name,
+      farmed.money,
+      farmed.pets_fullgrown,
+      farmed.ailments,
+      farmed.potions,
+      farmed.friendship_levels,
+      farmed.baby_ailments,
+      farmed.eggs_hatched,
+      ClientData.get("money"),
+      FormatTime(farmed.time)
+      )
+      local ok, _ = pcall(telegram_webhook, msg)
+      if ok then
+        GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
+        WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
+        WriteFileLog("Telegram webhook sent", "DEBUG")
+      else
+        WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
+        WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
+        GUI.Notify("Error", "Something went wrong while trying to send telegram webhook.", "ERROR", "mail-minus")
+      end
+    end)
   end
 
   GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramBotApiKey = function(v) 
