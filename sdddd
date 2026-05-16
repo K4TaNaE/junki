@@ -31,7 +31,16 @@ print("[+] Starting sUNC integrity check..")
 local debug = debug or {}
 local syn = syn or {}
 local http = http or {}
+print('pre')
+for k,v in crypt do
+  print(k,v)
+end
 local crypt = crypt or {}
+for k,v in crypt do
+print(k,v)
+end
+print('after')
+
 
 local getupvalue = IntegrityCheck({getupvalue, debug.getupvalue, syn.getupvalue, get_upvalue, debug.get_upvalue, syn.get_upvalue}, function() __Notify("getupvalue function is not supported by executor. Script may work unstable.") print("[❌] [getupvalue] function failed integrity check.") end, function(...) return end, function() print("[✅] [getupvalue] function successfully completed integrity check.") end)
 local request = IntegrityCheck({request, syn.request, http_request, http.request}, function() __Notify("request function is not supported by executor. Options: {Auto Reconnect & Discord Webhook} won't work.") print("[❌] [request] function failed integrity check.") end, function(...) return end, function() print("[✅] [request] function successfully completed integrity check.") end)
@@ -42,7 +51,7 @@ local appendfile = IntegrityCheck({appendfile, append_file, syn.appendfile, syn.
 local getcustomasset = IntegrityCheck({getcustomasset, syn.getcustomasset, get_custom_asset, syn.get_custom_asset}, function() __Notify("getcustomasset function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [getcustomasset] function failed integrity check.") end, function(...) return end, function() print("[✅] [getcustomasset] function successfully completed integrity check.") end)
 local gethui = IntegrityCheck({gethui, get_hui, syn.gethui, syn.get_hui}, function() __Notify("gethui function is not supported by executor. Doesn't impact on script proper work.") print("[⚠️] [gethui] function failed integrity check, but script has own implementation of function.") end, function(...) return game:GetService("Players").LocalPlayer.PlayerGui end, function() print("[✅] [gethui] function successfully completed integrity check.") end)
 local setfpscap = IntegrityCheck({setfpscap, set_fps_cap, syn.setfpscap, syn.set_fps_cap, set_fpscap, syn.set_fpscap}, function() __Notify("setfpscap function is not supported by executor. Options: {FPS Cap} won't work.") print("[❌] [setfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [setfpscap] function successfully completed integrity check.") end)
-local getfpscap = IntegrityCheck({getfpscap, get_fps_cap, syn.getfpscap, syn.get_fps_cap, get_fpscap, syn.get_fpscap}, function() __Notify("getfpscap function is not supported by executor. Options: {FPS Counter (label)} won't work.") print("[❌] [getfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [getfpscap] function successfully completed integrity check.") end)
+local getfpscap = IntegrityCheck({get_fps_cap, getfpscap, syn.getfpscap, syn.get_fps_cap, get_fpscap, syn.get_fpscap}, function() __Notify("getfpscap function is not supported by executor. Options: {FPS Counter (label)} won't work.") print("[❌] [getfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [getfpscap] function successfully completed integrity check.") end)
 local setthreadidentity = IntegrityCheck({setthreadidentity, set_thread_identity, setthreadcontext, set_thread_context, syn.setthreadidentity, syn.setthreadcontext}, function() __Notify("setthreadidentity function is not supported by executor. Script may or may not work depending on your executor.") print("[❌] [setthreadidentity] function failed integrity check.") end, function(...) return end, function() print("[✅] [setthreadidentity] function successfully completed integrity check.") end)
 local queue_on_teleport = IntegrityCheck({queue_on_teleport, queueonteleport, syn.queue_on_teleport, syn.queueonteleport}, function() __Notify("queue_on_teleport function is not supported by executor. Option: {Auto Reconnect} will not run script after rejoin, you will be just teleported.") print("[❌] [queue_on_teleport] function failed integrity check, but script has own implementation of function") end, nil, function() print("[✅] [queue_on_teleport] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
 local setclipboard = IntegrityCheck({setclipboard, set_clipboard, syn.setclipboard, copyclipboard, copy_clipboard, syn.copyclipboard, syn.set_clipboard, syn.copyclipboard}, function() __Notify("setclipboard function is not supported by executor. Options: {Join Discord} won't work.") print("[❌] [setclipboard] function failed integrity check.") end, function(...) end, function() print("[✅] [setclipboard] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
