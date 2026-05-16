@@ -46,7 +46,7 @@ local gethui = IntegrityCheck({gethui, get_hui, syn.gethui, syn.get_hui}, functi
 local setfpscap = IntegrityCheck({setfpscap, set_fps_cap, syn.setfpscap, syn.set_fps_cap, set_fpscap, syn.set_fpscap}, function() __Notify("setfpscap function is not supported by executor. Options: {FPS Cap} won't work.") print("[❌] [setfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [setfpscap] function successfully completed integrity check.") end)
 local getfpscap = IntegrityCheck({get_fps_cap, getfpscap, syn.getfpscap, syn.get_fps_cap, get_fpscap, syn.get_fpscap}, function() __Notify("getfpscap function is not supported by executor. Options: {FPS Counter (label)} won't work.") print("[❌] [getfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [getfpscap] function successfully completed integrity check.") end)
 local setthreadidentity = IntegrityCheck({setthreadidentity, set_thread_identity, setthreadcontext, set_thread_context, syn.setthreadidentity, syn.setthreadcontext}, function() __Notify("setthreadidentity function is not supported by executor. Script may or may not work depending on your executor.") print("[❌] [setthreadidentity] function failed integrity check.") end, function(...) return end, function() print("[✅] [setthreadidentity] function successfully completed integrity check.") end)
-local queue_on_teleport = IntegrityCheck({queue_on_teleport, queueonteleport, syn.queue_on_teleport, syn.queueonteleport}, function() __Notify("queue_on_teleport function is not supported by executor. Option: {Auto Reconnect} will not run script after rejoin, you will be just teleported.") print("[❌] [queue_on_teleport] function failed integrity check, but script has own implementation of function") end, nil, function() print("[✅] [queue_on_teleport] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
+local queue_on_teleport = IntegrityCheck({queue_onsetthreadidentity_teleport, queueonteleport, syn.queue_on_teleport, syn.queueonteleport}, function() __Notify("queue_on_teleport function is not supported by executor. Option: {Auto Reconnect} will not run script after rejoin, you will be just teleported.") print("[❌] [queue_on_teleport] function failed integrity check, but script has own implementation of function") end, nil, function() print("[✅] [queue_on_teleport] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
 local setclipboard = IntegrityCheck({setclipboard, set_clipboard, syn.setclipboard, copyclipboard, copy_clipboard, syn.copyclipboard, syn.set_clipboard, syn.copyclipboard}, function() __Notify("setclipboard function is not supported by executor. Options: {Join Discord} won't work.") print("[❌] [setclipboard] function failed integrity check.") end, function(...) end, function() print("[✅] [setclipboard] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
 local hash = IntegrityCheck({hash, crypt.hash, syn.hash}, function() __Notify("hash function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [hash] function failed integrity check.") end, function(...) return end, function() print("[✅] [hash] function successfully completed integrity check.") end)
 local readfile = IntegrityCheck({readfile, read_file, syn.readfile, syn.read_file}, function() print("readfile function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [readfile] function failed integrity check.") end, function(...) return end, function() print("[✅] [readfile] function successfully completed integrity check.") end)
@@ -59,11 +59,14 @@ local _script = coroutine.create(function()
     local _h2
     if isfile("Arcanic/arcsrcplate.png") then 
       _h2 = hash(readfile("Arcanic/arcsrcplate.png"), "sha256")
-    end
-    if not _h1 == _h2 then
+      if not _h1 ~= _h2 then
+        print("hash not")
+        writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/c9bee1997f3764331ed4.png"))
+      end
+    else
       writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/c9bee1997f3764331ed4.png"))
     end
-    _G.asset = getcustomasset("Arcanic/arcsrcplate.png")
+    _G.asset = getcustomasset("Arcanic/arcsrcplate.png") or ""
   end)
 
 
