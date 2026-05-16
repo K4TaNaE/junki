@@ -59,8 +59,7 @@ local _script = coroutine.create(function()
     local _h2
     if isfile("Arcanic/arcsrcplate.png") then 
       _h2 = hash(readfile("Arcanic/arcsrcplate.png"), "sha256")
-      if not _h1 ~= _h2 then
-        print("hash not")
+      if _h1 ~= _h2 then
         writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/c9bee1997f3764331ed4.png"))
       end
     else
@@ -1773,11 +1772,14 @@ local _script = coroutine.create(function()
         UpdateGui("pet_needs", farmed.ailments)
         GUI.LabelUpdate(RuntimeStatsEggsHatchedLabel, string.format("Eggs hatched : %d", farmed.eggs_hatched), "egg", Color3.fromRGB(203, 92, 255), false)
         GUI.LabelUpdate(RuntimeStatsPetNeedsCompletedLabel, string.format("Pet needs completed : %d", farmed.ailments), "cat", Color3.fromRGB(203, 92, 255), false)
-        if not _G.InternalConfig.PetFarmDLib.PotionFarm or table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) == "manual" then 
+        if not _G.InternalConfig.PetFarmDLib.PotionFarm then 
           actual_pet.unique = false 
           ClearPetFarmCache()
         else
-          task.wait(.3)
+          task.wait(.8)
+          local _pet = GetOwnedPets()[actual_pet.unique]
+          _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = _pet.unique
+          GUI.DropdownSetValue(PetAutoFarmPetToFarmDropdown, {_pet.name .. " | age: " .. _pet.age .. " | unique: " .. _pet.unique})
           PetUpdate()
         end
       else
