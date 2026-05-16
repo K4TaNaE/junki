@@ -31,30 +31,39 @@ print("[+] Starting sUNC integrity check..")
 local debug = debug or {}
 local syn = syn or {}
 local http = http or {}
+local crypt = crypt or {}
 
-local getupvalue = IntegrityCheck({getupvalue, debug.getupvalue, syn.getupvalue}, function() __Notify("getupvalue function is not supported by executor. Script may work unstable.") print("[❌] [getupvalue] function failed integrity check.") end, function(...) return end, function() print("[✅] [getupvalue] function successfully completed integrity check.") end)
+local getupvalue = IntegrityCheck({getupvalue, debug.getupvalue, syn.getupvalue, get_upvalue, debug.get_upvalue, syn.get_upvalue}, function() __Notify("getupvalue function is not supported by executor. Script may work unstable.") print("[❌] [getupvalue] function failed integrity check.") end, function(...) return end, function() print("[✅] [getupvalue] function successfully completed integrity check.") end)
 local request = IntegrityCheck({request, syn.request, http_request, http.request}, function() __Notify("request function is not supported by executor. Options: {Auto Reconnect & Discord Webhook} won't work.") print("[❌] [request] function failed integrity check.") end, function(...) return end, function() print("[✅] [request] function successfully completed integrity check.") end)
-local makefolder = IntegrityCheck({makefolder, syn.makefolder}, function() __Notify("makefolder function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [makefolder] function failed integrity check.") end, function(...) return end, function() print("[✅] [makefolder] function successfully completed integrity check.") end)
-local isfile = IntegrityCheck({isfile, syn.isfile, is_file}, function() __Notify("isfile function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [isfile] function failed integrity check.") end, function(...) return end, function() print("[✅] [isfile] function successfully completed integrity check.") end)
-local writefile = IntegrityCheck({writefile, syn.writefile, write_file}, function() __Notify("writefile function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [writefile] function failed integrity check.") end, function(...) return end, function() print("[✅] [writefile] function successfully completed integrity check.") end)
-local appendfile = IntegrityCheck({appendfile, append_file, syn.appendfile}, function() __Notify("appendfile function is not supported by executor. Options: {Write File Logs} won't work.") print("[❌] [appendfile] function failed integrity check.") end, function(...) return end, function() print("[✅] [appendfile] function successfully completed integrity check.") end)
-local getcustomasset = IntegrityCheck({getcustomasset, syn.getcustomasset, get_custom_asset}, function() __Notify("getcustomasset function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [getcustomasset] function failed integrity check.") end, function(...) return end, function() print("[✅] [getcustomasset] function successfully completed integrity check.") end)
-local gethui = IntegrityCheck({gethui, get_hui, syn.gethui}, function() __Notify("gethui function is not supported by executor. Doesn't impact on script proper work.") print("[⚠️] [gethui] function failed integrity check, but script has own implementation of function.") end, function(...) return game:GetService("Players").LocalPlayer.PlayerGui end, function() print("[✅] [gethui] function successfully completed integrity check.") end)
-local setfpscap = IntegrityCheck({setfpscap, set_fps_cap, syn.setfpscap}, function() __Notify("setfpscap function is not supported by executor. Options: {FPS Cap} won't work.") print("[❌] [setfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [setfpscap] function successfully completed integrity check.") end)
-local getfpscap = IntegrityCheck({getfpscap, get_fps_cap, syn.getfpscap}, function() __Notify("getfpscap function is not supported by executor. Options: {FPS Counter (label)} won't work.") print("[❌] [getfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [getfpscap] function successfully completed integrity check.") end)
+local makefolder = IntegrityCheck({makefolder, syn.makefolder, syn.make_folder, make_folder}, function() __Notify("makefolder function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [makefolder] function failed integrity check.") end, function(...) return end, function() print("[✅] [makefolder] function successfully completed integrity check.") end)
+local isfile = IntegrityCheck({isfile, syn.isfile, is_file, syn.is_file}, function() __Notify("isfile function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [isfile] function failed integrity check.") end, function(...) return end, function() print("[✅] [isfile] function successfully completed integrity check.") end)
+local writefile = IntegrityCheck({writefile, syn.writefile, syn.write_file, write_file}, function() __Notify("writefile function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [writefile] function failed integrity check.") end, function(...) return end, function() print("[✅] [writefile] function successfully completed integrity check.") end)
+local appendfile = IntegrityCheck({appendfile, append_file, syn.appendfile, syn.append_file}, function() __Notify("appendfile function is not supported by executor. Options: {Write File Logs} won't work.") print("[❌] [appendfile] function failed integrity check.") end, function(...) return end, function() print("[✅] [appendfile] function successfully completed integrity check.") end)
+local getcustomasset = IntegrityCheck({getcustomasset, syn.getcustomasset, get_custom_asset, syn.get_custom_asset}, function() __Notify("getcustomasset function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [getcustomasset] function failed integrity check.") end, function(...) return end, function() print("[✅] [getcustomasset] function successfully completed integrity check.") end)
+local gethui = IntegrityCheck({gethui, get_hui, syn.gethui, syn.get_hui}, function() __Notify("gethui function is not supported by executor. Doesn't impact on script proper work.") print("[⚠️] [gethui] function failed integrity check, but script has own implementation of function.") end, function(...) return game:GetService("Players").LocalPlayer.PlayerGui end, function() print("[✅] [gethui] function successfully completed integrity check.") end)
+local setfpscap = IntegrityCheck({setfpscap, set_fps_cap, syn.setfpscap, syn.set_fps_cap, set_fpscap, syn.set_fpscap}, function() __Notify("setfpscap function is not supported by executor. Options: {FPS Cap} won't work.") print("[❌] [setfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [setfpscap] function successfully completed integrity check.") end)
+local getfpscap = IntegrityCheck({get_fps_cap, getfpscap, syn.getfpscap, syn.get_fps_cap, get_fpscap, syn.get_fpscap}, function() __Notify("getfpscap function is not supported by executor. Options: {FPS Counter (label)} won't work.") print("[❌] [getfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [getfpscap] function successfully completed integrity check.") end)
 local setthreadidentity = IntegrityCheck({setthreadidentity, set_thread_identity, setthreadcontext, set_thread_context, syn.setthreadidentity, syn.setthreadcontext}, function() __Notify("setthreadidentity function is not supported by executor. Script may or may not work depending on your executor.") print("[❌] [setthreadidentity] function failed integrity check.") end, function(...) return end, function() print("[✅] [setthreadidentity] function successfully completed integrity check.") end)
-local queue_on_teleport = IntegrityCheck({queue_on_teleport, queueonteleport, syn.queue_on_teleport}, function() __Notify("queue_on_teleport function is not supported by executor. Option: {Auto Reconnect} will not run script after rejoin, you will be just teleported.") print("[❌] [queue_on_teleport] function failed integrity check, but script has own implementation of function") end, nil, function() print("[✅] [queue_on_teleport] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
-local setclipboard = IntegrityCheck({setclipboard, set_clipboard, syn.setclipboard, copyclipboard}, function() __Notify("setclipboard function is not supported by executor. Options: {Join Discord} won't work.") print("[❌] [setclipboard] function failed integrity check.") end, function(...) end, function() print("[✅] [setclipboard] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
+local queue_on_teleport = IntegrityCheck({queue_on_teleport, queueonteleport, syn.queue_on_teleport, syn.queueonteleport}, function() __Notify("queue_on_teleport function is not supported by executor. Option: {Auto Reconnect} will not run script after rejoin, you will be just teleported.") print("[❌] [queue_on_teleport] function failed integrity check, but script has own implementation of function") end, nil, function() print("[✅] [queue_on_teleport] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
+local setclipboard = IntegrityCheck({setclipboard, set_clipboard, syn.setclipboard, copyclipboard, copy_clipboard, syn.copyclipboard, syn.set_clipboard, syn.copyclipboard}, function() __Notify("setclipboard function is not supported by executor. Options: {Join Discord} won't work.") print("[❌] [setclipboard] function failed integrity check.") end, function(...) end, function() print("[✅] [setclipboard] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
+local hash = IntegrityCheck({hash, crypt.hash, syn.hash}, function() __Notify("hash function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [hash] function failed integrity check.") end, function(...) return end, function() print("[✅] [hash] function successfully completed integrity check.") end)
+local readfile = IntegrityCheck({readfile, read_file, syn.readfile, syn.read_file}, function() print("readfile function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [readfile] function failed integrity check.") end, function(...) return end, function() print("[✅] [readfile] function successfully completed integrity check.") end)
 local _script = coroutine.create(function() 
   setthreadidentity(7)
 
-  makefolder("Arcanic")
-  if isfile("Arcanic/arcsrcplate.png") then 
+  pcall(function()
+    makefolder("Arcanic")
+    local _h1 = hash(request({Url="https://i.imageupload.app/e901851cc995659ba1cb.png"}).Body, "sha256") 
+    local _h2
+    if isfile("Arcanic/arcsrcplate.png") then 
+      _h2 = hash(readfile("Arcanic/arcsrcplate.png"), "sha256")
+    end
+    if not _h1 == _h2 then
+      writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/e901851cc995659ba1cb.png"))
+    end
     _G.asset = getcustomasset("Arcanic/arcsrcplate.png")
-  else
-    writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/6e3c4149ad8bfdfb4eee.png"))
-    _G.asset = getcustomasset("Arcanic/arcsrcplate.png")
-  end
+  end)
+
 
   local GUI = {
     Tabs = {
@@ -681,9 +690,9 @@ local _script = coroutine.create(function()
     local _callback =  callback
     local _condition = condition
     local _fallback = fallback
-    Registry.Tasks[_flag] = {['_flag'] = _flag, ["_callback"] = _callback, ["_condition"] = _condition, ["_fallback"] = _fallback, _active = true}
     WriteConsoleLog(string.format("[Registry]: Task registered. _flag: {%s} : {%s}", _flag, (debug.info(_callback, "n") or tostring(_callback))), nil, "DEBUG")
     WriteFileLog(string.format("[Registry]: Task registered. _flag: {%s} : {%s}", _flag, (debug.info(_callback, "n") or tostring(_callback))), "DEBUG")
+    Registry.Tasks[_flag] = {['_flag'] = _flag, ["_callback"] = _callback, ["_condition"] = _condition, ["_fallback"] = _fallback, _active = true}
   end
 
   function Registry.RunTask(flag :string, callback :Callback)
@@ -691,6 +700,8 @@ local _script = coroutine.create(function()
     if Registry.Tasks[_flag] then
       return
     end
+    WriteConsoleLog(string.format("[Registry]: Disposbale task registered. _flag: {%s}", _flag), nil, "DEBUG")
+    WriteFileLog(string.format("[Registry]: Disposable task registered. _flag: {%s}", _flag), "DEBUG")
     Registry.DisposableTasks[_flag] = {["_flag"] = _flag, ["_callback"] = callback}
     task.spawn(function() 
       local ok, _ = pcall(callback)
@@ -700,8 +711,6 @@ local _script = coroutine.create(function()
       end
       Registry.DisposableTasks[_flag] = nil
     end)
-    WriteConsoleLog(string.format("[Registry]: Disposbale task registered. _flag: {%s}", _flag), nil, "DEBUG")
-    WriteFileLog(string.format("[Registry]: Disposable task registered. _flag: {%s}", _flag), "DEBUG")
   end
 
   function Registry.Exists(flag :string) 
@@ -775,23 +784,16 @@ local _script = coroutine.create(function()
     }
   end
 
-
   function LocationQueue._process()
-      if LocationQueue._running then return end
-      LocationQueue._running = true
-
-      while #LocationQueue._queue > 0 do
-          local _task = table.remove(LocationQueue._queue, 1)
-
-          coroutine.wrap(function()
-            _task.callback()
-            _task.completed = true
-          end)()
-
-          _task.resume = coroutine.running()
-      end
-
-      LocationQueue._running = false
+    if LocationQueue._running then return end
+    LocationQueue._running = true
+    while #LocationQueue._queue > 0 do
+      local _task = table.remove(LocationQueue._queue, 1)
+      local _, _ = pcall(_task.callback)
+      _task.completed = true
+      _task.resume = coroutine.running()
+    end
+    LocationQueue._running = false
   end
 
   function LocationQueue.Enqueue(callback)
@@ -810,29 +812,22 @@ local _script = coroutine.create(function()
   end
 
   function TaskQueue._process()
-      if TaskQueue._running then return end
-      TaskQueue._running = true
-
-      while #TaskQueue._queue > 0 do
-        local _task = table.remove(TaskQueue._queue, 1)
-        local ok, _ = pcall(_task.callback)
-        if not ok then
-          -- Логирование ошибки если нужно
-          -- WriteConsoleLog(string.format("[TaskQueue]: Task failed: %s", err), nil, "DEBUG")
-        end
-        _task.completed = true
-        
-        _task.resume = coroutine.running()
-      end
-
-      TaskQueue._running = false
+    if TaskQueue._running then return end
+    TaskQueue._running = true
+    while #TaskQueue._queue > 0 do
+      local _task = table.remove(TaskQueue._queue, 1)
+      local _, _ = pcall(_task.callback)
+      _task.completed = true
+      _task.resume = coroutine.running()
+    end
+    TaskQueue._running = false
   end
 
   function TaskQueue.Enqueue(callback)
-      local _task = TaskQueue.CreateTask(callback)
-      table.insert(TaskQueue._queue, _task)
-      coroutine.wrap(TaskQueue._process)()
-      return _task
+    local _task = TaskQueue.CreateTask(callback)
+    table.insert(TaskQueue._queue, _task)
+    coroutine.wrap(TaskQueue._process)()
+    return _task
   end
 
   local function InitPart(name, xyz) 
@@ -1146,19 +1141,6 @@ local _script = coroutine.create(function()
     local remote = ClientData.get("inventory")[category][unique].id or "jajki gabriela minakowskiego"
     return InventoryDB[category][remote].name or "Name not found"
   end
-  local function InvGetCategoryUniquesByName(category, name)
-    local inv = ClientData.get("inventory")
-    local inv_db = InventoryDB[category]
-    local cat = inv and inv[category]
-    local data = {}
-    for unique, v in pairs(cat) do
-      local remote = inv_db[v.id] or {['name'] = "_pizda"}
-      if remote.name == name then
-        data[unique] = true
-      end
-    end
-    if count(data) == 0 then return {} else return data end
-  end
   local function CheckPetOwned(remote)
     local inv = ClientData.get("inventory")
     local pets = inv and inv.pets
@@ -1191,6 +1173,20 @@ local _script = coroutine.create(function()
       n +=1 
     end
     return n
+  end
+
+  local function InvGetCategoryUniquesByName(category, name)
+    local inv = ClientData.get("inventory")
+    local inv_db = InventoryDB[category]
+    local cat = inv and inv[category]
+    local data = {}
+    for unique, v in pairs(cat) do
+      local remote = inv_db[v.id] or {['name'] = "_pizda"}
+      if remote.name == name then
+        table.insert(data, unique)
+      end
+    end
+    return data 
   end
 
   local function ClearPetFarmCache()
@@ -1336,8 +1332,8 @@ end
   end
 
   local function GetPetPenSlots() 
-    local maxTotalPets = CloudValues:getValue("idle_progression", "maxTotalPets") or 0
-    local extraSlotGamepassIds = CloudValues:getValue("idle_progression", "extraSlotGamepassIds") or {}
+    local maxTotalPets = CloudValues:getValue("idle_progression", "maxTotalPets") --or 0
+    local extraSlotGamepassIds = CloudValues:getValue("idle_progression", "extraSlotGamepassIds") --or {}
     local purchasedExtraSlots = 0
     for _, gamepassId in ipairs(extraSlotGamepassIds) do
       if ClientGamepassHelper.owns_gamepass(gamepassId) then
@@ -1565,12 +1561,12 @@ end
   GUI.InitToggleButton(MainTab, "Anti AFK", false, "antiafktogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.TriggerAntiAfk(v) end)
   GUI.InitToggleButton(MainTab, "Auto Reconnect", false, "autoreconnecttogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.TriggerNetworkHook(v) end)
   GUI.InitDivider(MainTab)
-  GUI.InitButton(MainTab, "Join Discord", GUI.Tabs.Main.Sections.Utilities.Callbacks.CopyDiscordUrl)
+  GUI.InitButton(MainTab, "Join Discord", function() GUI.Tabs.Main.Sections.Utilities.Callbacks.CopyDiscordUrl() end)
   GUI.InitToggleButton(MainTab, "Write Console Logs (Debug)", false, "consolelogstogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.ToggleConsoleDebug(v) end)
   GUI.InitToggleButton(MainTab, "Write File Logs (Debug) (Workspace/Arcanic/logs.txt)", false, "filelogstogglebutton", function(v) GUI.Tabs.Main.Sections.Utilities.Callbacks.ToggleFileDebug(v) end)
 
   GUI.InitSection(MainTab, "- Configuration -")
-  GUI.InitButton(MainTab, "Load Configuration", GUI.Tabs.Main.Sections.Configuration.Callbacks.LoadConfiguration)
+  GUI.InitButton(MainTab, "Load Configuration", function() GUI.Tabs.Main.Sections.Configuration.Callbacks.LoadConfiguration() end)
 
   -- AutoFarm Tab
   GUI.InitSection(AutofarmTab, "- Pet AutoFarm -")
@@ -1614,10 +1610,10 @@ end
 
   --done
   GUI.InitSection(AutofarmTab, "- Auto Neon -")
-  GUI.InitButton(AutofarmTab, "Make Pets Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetNeon)
+  GUI.InitButton(AutofarmTab, "Make Pets Neon", function() GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetNeon() end)
   local PetToNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Neon", {}, {}, true, "pettoneondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon(v) end)
   GUI.InitSection(AutofarmTab, "- Auto Mega Neon -")
-  GUI.InitButton(AutofarmTab, "Make Pets Mega Neon", GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon)
+  GUI.InitButton(AutofarmTab, "Make Pets Mega Neon", function() GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.MakePetMegaNeon() end)
   local PetToMegaNeonDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Mega Neon", {}, {}, true, "pettomeganeondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon(v) end)
   
   GUI.InitSection(AutofarmTab, "- Auto Give Potion -") -- done
@@ -1627,9 +1623,9 @@ end
   local AutoGivePotionSetHigherPriorityForDropdown = GUI.InitDropdown(AutofarmTab, "Set Higher Priority For (optional)", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionsethigherpriorityfordropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionHigherPriority(v) end)
   local AutoGivePotionPetToGivePotionDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Give Potion", {}, {"set <Mode> to manual"}, true, "autogivepotionpettogivepotiondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToGivePotion(v) end)
   GUI.InitDivider(AutofarmTab)
-  local AutoGivePotionBlacklistedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedRarities(v) end)
-  local AutoGivePotionBlacklistedAgeDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {}, true, "autogivepotionblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedAges(v) end)
-  local AutoGivePotionBlacklistedPropertyDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedProperties(v) end)
+  GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedRarities(v) end)
+  GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {}, true, "autogivepotionblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedAges(v) end)
+  GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedProperties(v) end)
   local AutoGivePotionBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {}, true, "autogivepotionblacklistedspecificpetsdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedSpecificPets(v) end)
   GUI.InitDivider(AutofarmTab)
 
@@ -1719,13 +1715,13 @@ end
   local DiscordWebhooksToggleButton = GUI.InitToggleButton(WebhooksTab, "Discord Webhooks", false, "discordwebhookstogglebutton", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.ToggleDiscordWebhook(v) end)
   local DiscordWebhookUrlTextField = GUI.InitTextField(WebhooksTab, "Webhook URL", "", "                                                                 ", false, "discordwebhookurltextfield", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.HandleWebhookUrl(v) end)
   local DiscordWebhookSendDelayTextField = GUI.InitTextField(WebhooksTab, "Send delay (secconds)", "3600", "    ", false, "discordwebhooksenddelaytextfield", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.HandleSendDelay(v) end)
-  GUI.InitButton(WebhooksTab, "Send now manually", function(v) GUI.Tabs.Webhooks.Sections.Discord.Callbacks.SendManually(v) end)
+  GUI.InitButton(WebhooksTab, "Send now manually", function() GUI.Tabs.Webhooks.Sections.Discord.Callbacks.SendManually() end)
   GUI.InitDivider(WebhooksTab)
   local DiscordWebhookSendCountdownLabel = GUI.InitLabel(WebhooksTab, "3600 : Send Countdown", "clock", Color3.fromRGB(203, 92, 255), false)
   GUI.InitSection(WebhooksTab, "- Telegram -")
   local TelegramWebhooksToggleButton = GUI.InitToggleButton(WebhooksTab, "Telegram Webhooks", false, "telegramwebhookstogglebutton", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.ToggleTelegramWebhooks(v) end)
   local TelegramWebhookSendDelayTextField = GUI.InitTextField(WebhooksTab, "Send delay (secconds)", "3600", "", false, "telegramwebhooksenddelaytextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramSendDelay(v) end)
-  GUI.InitButton(WebhooksTab, "Send now manually", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually(v) end)
+  GUI.InitButton(WebhooksTab, "Send now manually", function() GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually() end)
   GUI.InitDivider(WebhooksTab)
   local TelegramBotApiKeyTextField = GUI.InitTextField(WebhooksTab, "Bot API Key", "", "                          ", false, "telegrambotapikeytextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramBotApiKey(v) end)
   local TelegramChatIdTextField = GUI.InitTextField(WebhooksTab, "Chat Id", "", "                   ", false, "telegramchatidtextfield", function(v) GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramChatId(v) end)
@@ -1790,7 +1786,7 @@ end
       UpdateGui("fullgrown", farmed.pets_fullgrown)
       GUI.LabelUpdate(RuntimeStatsPetsFullgrownLabel, string.format("Pets full-grown : %d", farmed.pets_fullgrown), "move-up-right", Color3.fromRGB(203, 92, 255), false)
       StateDB.total_fullgrowned[actual_pet.unique] = true
-      if not _G.InternalConfig.PetFarmDLib.PotionFarm or table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) == "automated" then
+      if not _G.InternalConfig.PetFarmDLib.PotionFarm then
         if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
           actual_pet.unique = false
         end
@@ -2090,15 +2086,17 @@ end
       local friendship = cdata.properties.friendship_level
       local money = ClientData.get("money")
       local age = pet.pet_progression.age
-      SafeInvoke('HousingAPI/ActivateFurniture',
-        LocalPlayer,
-        furn.toilet.unique,
-        furn.toilet.usepart,
-        {
-          cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
-        },
-        actual_pet.model
-      )
+      task.spawn(function() 
+        SafeInvoke('HousingAPI/ActivateFurniture',
+          LocalPlayer,
+          furn.toilet.unique,
+          furn.toilet.usepart,
+          {
+            cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
+          },
+          actual_pet.model
+        )
+      end)
       local deadline = os.clock() + 15
       repeat 
         task.wait(1)
@@ -2178,15 +2176,17 @@ end
       local friendship = cdata.properties.friendship_level
       local money = ClientData.get("money")
       local age = pet.pet_progression.age
-      SafeInvoke('HousingAPI/ActivateFurniture',
-        LocalPlayer,
-        furn.bath.unique,
-        furn.bath.usepart,
-        {
-          cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
-        },
-        actual_pet.model
-      )
+      task.spawn(function() 
+        SafeInvoke('HousingAPI/ActivateFurniture',
+          LocalPlayer,
+          furn.bath.unique,
+          furn.bath.usepart,
+          {
+            cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
+          },
+          actual_pet.model
+        )
+      end)
       local deadline = os.clock() + 20
       repeat 
         task.wait(1)
@@ -2264,15 +2264,17 @@ end
       local friendship = cdata.properties.friendship_level
       local money = ClientData.get("money")
       local age = pet.pet_progression.age
-      SafeInvoke('HousingAPI/ActivateFurniture',
-        LocalPlayer,
-        furn.bed.unique,
-        furn.bed.usepart,
-        {
-          cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
-        },
-        actual_pet.model
-      )
+      task.spawn(function() 
+        SafeInvoke('HousingAPI/ActivateFurniture',
+          LocalPlayer,
+          furn.bed.unique,
+          furn.bed.usepart,
+          {
+            cframe = CFrame.new(LocalPlayer.Character.HumanoidRootPart.CFrame.Position)
+          },
+          actual_pet.model
+        )
+      end)
       local deadline = os.clock() + 20
       repeat 
         task.wait(1)
@@ -2359,6 +2361,7 @@ end
         repeat 
           task.wait(1)
         until not HasAilmentBaby("camping") or os.clock() > deadline
+        Gotopart("main")
         if os.clock() > deadline then 
           WriteConsoleLog("Task camping for baby - Out of limits", "🟥 Task camping for baby - Out of limits!", "DEBUG")
           WriteFileLog("Task camping for baby - Out of limits", "DEBUG")
@@ -2684,6 +2687,7 @@ end
     local list = {}
     for k,v in pairs(GetOwnedPets()) do
       if v.age < 6 then
+        if v.remote == "practice_dog" then continue end
         table.insert(list, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       end
     end
@@ -2697,6 +2701,7 @@ end
     local neon = {}
     local meganeon = {}
     for k,v in pairs(GetOwnedPets()) do
+      if v.remote == "practice_dog" then continue end
       if v.age == 6 then
         __neon_temp[v.remote] = (__neon_temp[v.remote] or 0) + 1
       end
@@ -2723,6 +2728,7 @@ end
   local function PetFarmPetToFarmInstantListUpdate()
     local list = {}
     for k,v in pairs(GetOwnedPets()) do
+      if v.remote == "practice_dog" then continue end
       table.insert(list, v.name .. " | age: " .. v.age .. " | unique: " .. k)
     end
     GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, list)
@@ -3068,8 +3074,8 @@ end
               end
             end
             local eqailments = GetEquipedPetAilments()
-            WriteConsoleLog(string.format("Detecting tasks for %s", actual_pet.remote), string.format("🔎 Detecting tasks for %s..", actual_pet.remote), "DEBUG")
-            WriteFileLog(string.format("Detecting tasks for %s", actual_pet.remote), "DEBUG")
+            WriteConsoleLog("Pet task detector runned", "⚙️ Pet task detector runned.", "DEBUG")
+            WriteFileLog("Pet task detector runned", "DEBUG")
             for k,_ in pairs(eqailments) do 
               if pet_ailments[k] then
                 HouseCheck()
@@ -3127,7 +3133,7 @@ end
               GUI.Notify("Warning", string.format("Pet has been changed. Switching back to: %s", actual_pet.remote or "no pet info"), "WARNING", "triangle-alert")
               task.wait(.5)
             end
-            if not actual_pet.unique then
+            if not actual_pet.unique or actual_pet.unique ~= _G.InternalConfig.PetFarmDLib.ManualPetsToFarm then
               if _G.InternalConfig.PetFarmDLib.ManualPetsToFarm then
                 SafeInvoke("ToolAPI/Equip",
                   _G.InternalConfig.PetFarmDLib.ManualPetsToFarm,
@@ -3144,18 +3150,15 @@ end
                   WriteFileLog(string.format("New pet equiped: %s", actual_pet.remote), "DEBUG")
                   _G.InternalConfig.PetFarmDLib.PotionFarm = true -- chtoby posle age == 6 ne zbrosilo peta
                 else
-                  Cooldown.AutoFarm.PetAutoFarm = 2
+                  GUI.Notify("Warning", "Internal validation could not find specified pet. Try to specify <Pet To Farm> again.", "WARNING", "triangle-alert")
+                  GUI.ToggleButtonSetValue(TogglePetAutoFarm, false)
                   return
                 end
               end
-            else
-              GUI.Notify("Warning", "Internal validation cannot find pet. Try to specify <Pet To Farm> again.", "WARNING", "triangle-alert")
-              GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
-              return
             end
             local eqailments = GetEquipedPetAilments()
-            WriteConsoleLog(string.format("Detecting tasks for %s", actual_pet.remote), string.format("🔎 Detecting tasks for %s..", actual_pet.remote), "DEBUG")
-            WriteConsoleLog(string.format("Detecting tasks for %s", actual_pet.remote), "DEBUG")
+            WriteConsoleLog("Pet task detector runned", "⚙️ Pet task detector runned.", "DEBUG")
+            WriteFileLog("Pet task detector runned", "DEBUG")
             for k,_ in pairs(eqailments) do 
               if pet_ailments[k] then
                 HouseCheck()
@@ -3174,7 +3177,7 @@ end
                 if CONNECTIONS.RideLock then CONNECTIONS.RideLock:Disconnect(); CONNECTIONS.RideLock = nil end
               end
             end
-            Cooldown.AutoFarm.PetAutoFarm = 15
+            Cooldown.AutoFarm.PetAutoFarm = 25
           end)
           while not _task.completed do
             task.wait(1)
@@ -3213,7 +3216,7 @@ end
         WriteConsoleLog("Detect 2d-kitty enabled", nil, "DEBUG")
         WriteFileLog("Detect 2d-kitty enabled", "DEBUG")
       else
-        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.', "WARNING", "triangle-alert")
+        GUI.Notify("Warning", 'Unavailable with "manual" <Farm Type>.', "WARNING", "triangle-alert")
         GUI.ToggleButtonSetValue(PetAutoFarmDetect2DKittyToggleButton, false)
       end
     else
@@ -3232,7 +3235,7 @@ end
         WriteConsoleLog("Opposite farm enabled", nil, "DEBUG")
         WriteFileLog("Opposite farm enabled", "DEBUG")
       else
-        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.', "WARNING", "triangle-alert")
+        GUI.Notify("Warning", 'Unavailable with "manual" <Farm Type>.', "WARNING", "triangle-alert")
         GUI.ToggleButtonSetValue(PetAutoFarmOpoositeFarmToggleButton, false)
       end
     else
@@ -3254,7 +3257,7 @@ end
         WriteConsoleLog("Potion farm enabled", nil, "DEBUG")
         WriteFileLog("Potion farm enabled", "DEBUG")
       else
-        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.', "WARNING", "triangle-alert")
+        GUI.Notify("Warning", 'Unavailable with "manual" <Farm Type>.', "WARNING", "triangle-alert")
         GUI.ToggleButtonSetValue(PetAutoFarmPotionFarmToggleButton, false)
       end
     else
@@ -3272,7 +3275,7 @@ end
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmType = function(v) 
     WriteConsoleLog("Farm type triggered", nil, "DEBUG")
     WriteFileLog("Farm type triggered", "DEBUG")
-    if v[1]:match("^%s*$") then
+    if tostring(v[1]):match("^%s*$") then
       return
     end
     if table.unpack(v) == "manual" then
@@ -3288,6 +3291,8 @@ end
       _G.pet_farm_update = false
       GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
       GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, {})
+      GUI.DropdownUpdateOptionList(PetAutoFarmFarmPriorityDropdown, {"pets", "eggs"})
+      GUI.DropdownSetValue(PetAutoFarmFarmPriorityDropdown, {"pets"})
       GUI.DropdownSetValue(PetAutoFarmPetToFarmDropdown, "set <Farm Type> to manual")
     end
   end
@@ -3295,12 +3300,11 @@ end
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetToFarm = function(v) 
     WriteConsoleLog("Pet to farm triggered", nil, "DEBUG")
     WriteFileLog("Pet to farm triggered", "DEBUG")  
-    if #v == 0 or v[1]:match("set <Farm Type> to manual") then
+    if #v == 0 or tostring(v[1]):match("set <Farm Type> to manual") then
       _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = nil
       return
     end
-    _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = v[1]:split("unique: ")[2]
-    actual_pet.unique = nil
+    _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = tostring(v[1]):split("unique: ")[2]
   end
   
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetsToExclude = function(v) 
@@ -3496,7 +3500,6 @@ end
       Cooldown.AutoFarm.BabyAutoFarm = nil
     end
   end
--- snachala cooldown = nil, zatem log (v registered task)
 
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.ToggleGiftAutoOpen = function(v) 
     WriteConsoleLog("Gift auto open triggered", nil, "DEBUG")
@@ -4138,8 +4141,6 @@ end
           Cooldown.AutoFarm.TryUsePotionAfter = 5
         end)
       else
-        --kuni
-
         if not _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion then
           GUI.ToggleButtonSetValue(AutoGivePotionToggleButton, false)
           GUI.Notify("Warning", "Set <Pet To Give Potion> at first.", "WARNING", "triangle-alert")
@@ -4300,7 +4301,7 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionHigherPriority = function(v)
     WriteConsoleLog("Set higher priority triggered", nil, "DEBUG")
     WriteFileLog("Set higher priority triggered", "DEBUG")
-    if #v == 0 or v[1]:match("set <Mode> to automated") then
+    if #v == 0 or tostring(v[1]):match("set <Mode> to automated") then
       _G.InternalConfig.AutoGivePotionDLib.HigherPriority = nil
       return
     end 
@@ -4311,14 +4312,14 @@ end
   end
 
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToGivePotion = function(v)
-    WriteConsoleLog("Set higher priority triggered", nil, "DEBUG")
-    WriteFileLog("Set higher priority triggered", "DEBUG")
-    if #v == 0 or v[1]:match("set <Mode> to manual") then
+    WriteConsoleLog("Pet to give potion triggered", nil, "DEBUG")
+    WriteFileLog("Pet to give potion triggered", "DEBUG")
+    if #v == 0 or tostring(v[1]):match("set <Mode> to manual") then
       _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion = nil
       return
     end
     _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion = {}
-    for k,v in ipairs(v) do
+    for _,v in ipairs(v) do
       table.insert(_G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion, v:split("unique: ")[2])
     end    
   end
@@ -4447,7 +4448,7 @@ end
           local _temp = {} 
           local _used = {}
           for _,v in ipairs(_G.InternalConfig.PetPenDLib.PrioritizedRarities) do
-            for a,b in ipairs(pets_to_place) do
+            for _,b in ipairs(pets_to_place) do
               if b[2] == v then
                 table.insert(_temp, b[1])
                 _used[b[1]] = true
@@ -5011,18 +5012,20 @@ end
         end
         local _task = LocationQueue.Enqueue(function()
           EmulateLocation("Cave")
-          for k,v in _G.InternalConfig.PetsToNeon do
-            local ok, _ = SafeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
-            if ok then 
-              WriteConsoleLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), string.format("[🧿]:[✅] Pet %s is Neon now!", k), "DEBUG")
-              WriteFileLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), "DEBUG") 
-              GUI.Notify("Success", string.format("Pet %s is Neon now!", k), "SUCCESS", "circle-check")
-            else
-              WriteConsoleLog(string.format("[AutoNeon]: Failed to make pet {%s} neon", k), string.format("[🧿]:[❌] Failed to make pet %s neon", k), "DEBUG")
-              WriteFileLog(string.format("[AutoNeon]: Failed to make {%s} neon", k), "DEBUG") 
-              GUI.Notify("Error", string.format("Failed to make pet %s neon", k), "ERROR", "circle-x")
+          for k,v in pairs(_G.InternalConfig.PetsToNeon) do
+            if #v >= 4 then
+              local ok, _ = SafeInvoke("PetAPI/DoNeonFusion", table.unpack(v)) 
+              if ok then 
+                WriteConsoleLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), string.format("[🧿]:[✅] Pet %s is Neon now!", k), "DEBUG")
+                WriteFileLog(string.format("[AutoNeon]: Pet {%s} is Neon now", k), "DEBUG") 
+                GUI.Notify("Success", string.format("Pet %s is Neon now!", k), "SUCCESS", "circle-check")
+              else
+                WriteConsoleLog(string.format("[AutoNeon]: Failed to make pet {%s} neon", k), string.format("[🧿]:[❌] Failed to make pet %s neon", k), "DEBUG")
+                WriteFileLog(string.format("[AutoNeon]: Failed to make {%s} neon", k), "DEBUG") 
+                GUI.Notify("Error", string.format("Failed to make pet %s neon", k), "ERROR", "circle-x")
+              end
+              task.wait(1.5)
             end
-            task.wait(1.5)
           end
         end)
         while not _task.completed do
@@ -5036,12 +5039,13 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToNeon = function(v) 
     WriteConsoleLog("Pet to neon triggered", nil, "DEBUG")
     WriteFileLog("Pet to neon triggered", "DEBUG")
-    if #v == 1 and tostring(v[1]):match("^%s*$") then
-      _G.InternalConfig.PetsToNeon = false
+    if #v == 0 then
+      _G.InternalConfig.PetsToNeon = nil
       return
     end
-    for k,v in pairs(v) do 
-      table.insert(_G.InternalConfig.PetsToNeon, InvGetCategoryUniques("pets", k))
+    _G.InternalConfig.PetsToNeon = {}
+    for _,v in pairs(v) do 
+      table.insert(_G.InternalConfig.PetsToNeon, InvGetCategoryUniquesByName("pets", v))
     end
   end
 
@@ -5077,18 +5081,18 @@ end
         _G.InternalConfig.PetsToMegaNeon = nil
         NeonAndMegaNeonInstantListUpdate()
     end)
-
   end
 
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToMegaNeon = function(v)
     WriteConsoleLog("Pet to mega neon triggered", nil, "DEBUG")
     WriteFileLog("Pet to mega neon triggered", "DEBUG")
-    if #v == 1 and tostring(v[1]):match("^%s*$") then
-      _G.InternalConfig.PetsToMegaNeon = false
+    if #v == 0 then
+      _G.InternalConfig.PetsToMegaNeon = nil
       return
     end
-    for k,v in pairs(v) do 
-      table.insert(_G.InternalConfig.PetsToMegaNeon, InvGetCategoryUniques("pets", k))
+    _G.InternalConfig.PetsToMegaNeon = {}
+    for _,v in pairs(v) do 
+      table.insert(_G.InternalConfig.PetsToMegaNeon, InvGetCategoryUniquesByName("pets", v))
     end
   end
 
@@ -5635,10 +5639,6 @@ end
     local auto_give_potion_specific_pets = {}
     local pet_pen_specific_pets = {}
     local pet_farm_exclude_pets = {}
-    local pet_to_manual_farm = nil
-    if _G.pet_farm_update then
-      pet_to_manual_farm = {}
-    end
 
     local saved_trade_specified_pets = TradeBlacklistSpecificPetsDropdown.CurrentOption
     local saved_recycler_specific_pets = RecyclerPetPenBlacklistedSpecificPetsDropdown.CurrentOption
@@ -5653,9 +5653,11 @@ end
       saved_pets_to_give_potion = AutoGivePotionPetToGivePotionDropdown.CurrentOption
       pets_to_give_potion = {}
     end
+    local pet_to_manual_farm = nil
     local saved_pet_to_manual_farm = nil
     if _G.pet_farm_update then
-      saved_pet_to_manual_farm = {}
+      saved_pet_to_manual_farm = PetAutoFarmPetToFarmDropdown.CurrentOption 
+      pet_to_manual_farm = {} 
     end
 
     local __neon_temp = {}
@@ -5664,6 +5666,7 @@ end
     local meganeon = {}
     local owned = GetOwnedPets()
     for k,v in pairs(owned) do
+      if v.remote == "practice_dog" then continue end
       table.insert(trade_specified_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(recycler_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
@@ -5706,9 +5709,11 @@ end
     if pets_to_give_potion then
       for k,v in ipairs(saved_pets_to_give_potion) do
         local unique = v:split("unique: ")[2]
-        if not owned[unique] then
-          GUI.Notify("Warning", string.format("[Manual AutoGivePotion] Pet %s is no longer available.", saved_pets_to_give_potion[k]), "WARNING", "triangle-alert")
-          saved_pets_to_give_potion[k] = nil
+        if unique then
+          if not owned[unique] then
+            GUI.Notify("Warning", string.format("[Manual AutoGivePotion] Pet %s is no longer available.", saved_pets_to_give_potion[k]), "WARNING", "triangle-alert")
+            saved_pets_to_give_potion[k] = nil
+          end
         end
       end
     end
@@ -5741,54 +5746,68 @@ end
     if saved_pet_to_manual_farm then
       for k,v in ipairs(saved_pet_to_manual_farm) do
         local unique = v:split("unique: ")[2]
-        if not owned[unique] then     
-          GUI.Notify("Warning", string.format("[Manual PetAutoFarm] Pet %s is no longer available.", saved_pet_to_manual_farm[k]), "WARNING", "triangle-alert")
-          saved_pet_to_manual_farm[k] = nil
+        if unique then
+          if not owned[unique] then     
+            GUI.Notify("Warning", string.format("[Manual PetAutoFarm] Pet %s is no longer available.", saved_pet_to_manual_farm[k]), "WARNING", "triangle-alert")
+            saved_pet_to_manual_farm[k] = nil
+          end
         end
       end
     end
     for k,v in ipairs(saved_pet_farm_exclude_pets) do
       local unique = v:split("unique: ")[2]
-      if not owned[unique] then
-        GUI.Notify("Warning", string.format("[PetAutoFarm Blacklist] Pet %s is no longer available.", saved_pet_farm_exclude_pets[k]), "WARNING", "triangle-alert")
-        saved_pet_farm_exclude_pets[k] = nil
+      if unique then
+        if not owned[unique] then
+          GUI.Notify("Warning", string.format("[PetAutoFarm Blacklist] Pet %s is no longer available.", saved_pet_farm_exclude_pets[k]), "WARNING", "triangle-alert")
+          saved_pet_farm_exclude_pets[k] = nil
+        end
       end
     end
     for k,v in ipairs(saved_trade_specified_pets) do
       local unique = v:split("unique: ")[2]
-      if not owned[unique] then 
-        GUI.Notify("Warning", string.format("[AutoTrade Blacklist] Pet %s is no longer available.", saved_trade_specified_pets[k]), "WARNING", "triangle-alert")
-        saved_trade_specified_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+      if unique then
+        if not owned[unique] then 
+          GUI.Notify("Warning", string.format("[AutoTrade Blacklist] Pet %s is no longer available.", saved_trade_specified_pets[k]), "WARNING", "triangle-alert")
+          saved_trade_specified_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+        end
       end
     end
     for k,v in ipairs(saved_recycler_specific_pets) do
       local unique = v:split("unique: ")[2]
-      if not owned[unique] then 
-        GUI.Notify("Warning", string.format("[Pet Recycler Blacklist] Pet %s is no longer available.", saved_recycler_specific_pets[k]), "WARNING", "triangle-alert")
-        saved_recycler_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+      if unique then
+        if not owned[unique] then 
+          GUI.Notify("Warning", string.format("[Pet Recycler Blacklist] Pet %s is no longer available.", saved_recycler_specific_pets[k]), "WARNING", "triangle-alert")
+          saved_recycler_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+        end
       end
     end
     for k,v in ipairs(saved_auto_give_potion_specific_pets) do
       local unique = v:split("unique: ")[2]
-      if not owned[unique] then 
-        GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
-        saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+      if unique then
+        if not owned[unique] then 
+          GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
+          saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+        end
       end
     end
     for k,v in ipairs(saved_pet_pen_specific_pets) do
       local unique = v:split("unique: ")[2]
-      if not owned[unique] then
-        GUI.Notify("Warning", string.format("[PetPen Blacklist] Pet %s is no longer available.", saved_pet_pen_specific_pets[k]), "WARNING", "triangle-alert")
-        saved_pet_pen_specific_pets[k] = nil
+      if unique then
+        if not owned[unique] then
+          GUI.Notify("Warning", string.format("[PetPen Blacklist] Pet %s is no longer available.", saved_pet_pen_specific_pets[k]), "WARNING", "triangle-alert")
+          saved_pet_pen_specific_pets[k] = nil
+        end
       end
     end
 
     GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, pet_farm_exclude_pets)
     GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, saved_pet_farm_exclude_pets)
+
     if saved_pet_to_manual_farm and _G.pet_farm_update then
       GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, pet_to_manual_farm)
       GUI.DropdownSetValue(PetAutoFarmPetToFarmDropdown, saved_pet_to_manual_farm)
     end
+    
     GUI.DropdownUpdateOptionList(PetToNeonDropdown, neon)
     GUI.DropdownSetValue(PetToNeonDropdown, saved_neon)
     
