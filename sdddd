@@ -49,12 +49,8 @@ local _script = coroutine.create(function()
   setthreadidentity(7)
 
   makefolder("Arcanic")
-  if isfile("Arcanic/arcsrcplate.png") then 
-    _G.asset = getcustomasset("Arcanic/arcsrcplate.png")
-  else
-    writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/e901851cc995659ba1cb.png"))
-    _G.asset = getcustomasset("Arcanic/arcsrcplate.png")
-  end
+  writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/e901851cc995659ba1cb.png"))
+  _G.asset = getcustomasset("Arcanic/arcsrcplate.png")
 
   local GUI = {
     Tabs = {
@@ -3205,7 +3201,7 @@ end
         WriteConsoleLog("Detect 2d-kitty enabled", nil, "DEBUG")
         WriteFileLog("Detect 2d-kitty enabled", "DEBUG")
       else
-        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.', "WARNING", "triangle-alert")
+        GUI.Notify("Warning", 'Unavailable with "manual" <Farm Type>.', "WARNING", "triangle-alert")
         GUI.ToggleButtonSetValue(PetAutoFarmDetect2DKittyToggleButton, false)
       end
     else
@@ -3224,7 +3220,7 @@ end
         WriteConsoleLog("Opposite farm enabled", nil, "DEBUG")
         WriteFileLog("Opposite farm enabled", "DEBUG")
       else
-        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.', "WARNING", "triangle-alert")
+        GUI.Notify("Warning", 'Unavailable with "manual" <Farm Type>.', "WARNING", "triangle-alert")
         GUI.ToggleButtonSetValue(PetAutoFarmOpoositeFarmToggleButton, false)
       end
     else
@@ -3246,7 +3242,7 @@ end
         WriteConsoleLog("Potion farm enabled", nil, "DEBUG")
         WriteFileLog("Potion farm enabled", "DEBUG")
       else
-        GUI.Notify("Warning", 'Unavailable with "manual" Farm Type.', "WARNING", "triangle-alert")
+        GUI.Notify("Warning", 'Unavailable with "manual" <Farm Type>.', "WARNING", "triangle-alert")
         GUI.ToggleButtonSetValue(PetAutoFarmPotionFarmToggleButton, false)
       end
     else
