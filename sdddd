@@ -1239,11 +1239,10 @@ local _script = coroutine.create(function()
     _G.HeadCashed = decoded.data[1].imageUrl
   end
   local function telegram_webhook(msg) -- logs and prints (for change)
-    print("in telegram webhook")
     local body = HttpService:JSONEncode({
       chat_id=_G.InternalConfig.TelegramChatId,
       text = msg,
-      parse_mode = "HMTL"
+      parse_mode = "HTML"
     })
     local ok, res = pcall(function() 
       return request({
@@ -1254,8 +1253,8 @@ local _script = coroutine.create(function()
       })
     end)
     if not ok then
-      WriteConsoleLog("❌ Unsuccessed to send telegram webhook", "❌ Unsuccessed to send telegram webhook.", "DEBUG")
-      WriteFileLog("❌ Unsuccessed to send telegram webhook", "DEBUG")
+      WriteConsoleLog("Unsuccessed to send telegram webhook", "❌ Unsuccessed to send telegram webhook.", "DEBUG")
+      WriteFileLog("Unsuccessed to send telegram webhook", "DEBUG")
       Cooldown.Webhooks.TelegramWebhookSendDelay = 60
     end
     local data
@@ -1266,9 +1265,10 @@ local _script = coroutine.create(function()
       WriteConsoleLog("Telegram webhook sent", "☑️ Telegram webhook sent.", "DEBUG")
       WriteFileLog("Telegram webhook sent", "DEBUG")
     else
-      WriteConsoleLog(string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), "DEBUG")
-      WriteFileLog("❌ Unsuccessed to send telegram webhook", "DEBUG")
+      WriteConsoleLog(string.format("Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), "DEBUG")
+      WriteFileLog("Unsuccessed to send telegram webhook", "DEBUG")
     end
+    return data and data.ok
   end
   local function Webhook(title, description)
     local url = _G.InternalConfig.DiscordWebhookUrl
@@ -5362,34 +5362,43 @@ local _script = coroutine.create(function()
         WriteConsoleLog("[Registry]: {telegram_webhook_send_handler} runned", nil, "DEBUG")
         WriteFileLog("[Registry]: {telegram_webhook_send_handler} runned", "DEBUG")
         local msg = string.format([[
-        **Farm-Log**
-        <code>%s</code>
-        <b>💸 Money Earned</b> – <code>%d</code>
-        <b>📈 Pets Full-grown</b> – <code>%d</code>
-        <b>🐶 Pet Needs Completed</b> – <code>%d</code>
-        <b>🧪 Potions Farmed</b> – <code>%d</code>
-        <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
-        <b>👶 Baby Needs Completed</b> – <code>%d</code>
-        <b>🥚 Eggs Hatched</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>💸 Total Bucks</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>⏰ Runtime</b> – <code>%s</code>
-        ]],
-        LocalPlayer.Name,
-        farmed.money,
-        farmed.pets_fullgrown,
-        farmed.ailments,
-        farmed.potions,
-        farmed.friendship_levels,
-        farmed.baby_ailments,
-        farmed.eggs_hatched,
-        ClientData.get("money"),
-        FormatTime(farmed.time)
+          **Farm-Log**
+          <code>%s</code>
+          <b>💸 Money Earned</b> – <code>%d</code>
+          <b>📈 Pets Full-grown</b> – <code>%d</code>
+          <b>🐶 Pet Needs Completed</b> – <code>%d</code>
+          <b>🧪 Potions Farmed</b> – <code>%d</code>
+          <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
+          <b>👶 Baby Needs Completed</b> – <code>%d</code>
+          <b>🥚 Eggs Hatched</b> – <code>%d</code>
+          -----------------------------------------------
+          <b>💸 Total Bucks</b> – <code>%d</code>
+          -----------------------------------------------
+          <b>⏰ Runtime</b> – <code>%s</code>
+          ]],
+          LocalPlayer.Name,
+          farmed.money,
+          farmed.pets_fullgrown,
+          farmed.ailments,
+          farmed.potions,
+          farmed.friendship_levels,
+          farmed.baby_ailments,
+          farmed.eggs_hatched,
+          ClientData.get("money"),
+          FormatTime(farmed.time)
         )
-        telegram_webhook(msg)
-        GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
-        Cooldown.Webhooks.TelegramWebhookSendDelay = tonumber(TelegramWebhookSendDelayTextField.CurrentValue)
+        local ok = telegram_webhook(msg)
+        if ok then
+          GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
+          WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
+          WriteFileLog("Telegram webhook sent", "DEBUG")
+          Cooldown.Webhooks.TelegramWebhookSendDelay = tonumber(TelegramWebhookSendDelayTextField.CurrentValue)
+        else
+          WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
+          WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
+          GUI.Notify("Error", "Something went wrong while trying to send telegram webhook.", "ERROR", "mail-minus")
+          error("", 0)
+        end
       end,
       function()
         return _G.InternalConfig.TelegramWebhookSendDelay == 0
@@ -5477,7 +5486,7 @@ local _script = coroutine.create(function()
       ClientData.get("money"),
       FormatTime(farmed.time)
       )
-      local ok, _ = pcall(telegram_webhook, msg)
+      local ok = telegram_webhook(msg)
       if ok then
         GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
         WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
