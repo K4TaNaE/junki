@@ -5698,9 +5698,11 @@ end
     if pets_to_give_potion then
       for k,v in ipairs(saved_pets_to_give_potion) do
         local unique = v:split("unique: ")[2]
-        if not owned[unique] then
-          GUI.Notify("Warning", string.format("[Manual AutoGivePotion] Pet %s is no longer available.", saved_pets_to_give_potion[k]), "WARNING", "triangle-alert")
-          saved_pets_to_give_potion[k] = nil
+        if unique then
+          if not owned[unique] then
+            GUI.Notify("Warning", string.format("[Manual AutoGivePotion] Pet %s is no longer available.", saved_pets_to_give_potion[k]), "WARNING", "triangle-alert")
+            saved_pets_to_give_potion[k] = nil
+          end
         end
       end
     end
@@ -5733,45 +5735,57 @@ end
     if saved_pet_to_manual_farm then
       for k,v in ipairs(saved_pet_to_manual_farm) do
         local unique = v:split("unique: ")[2]
-        if not owned[unique] then     
-          GUI.Notify("Warning", string.format("[Manual PetAutoFarm] Pet %s is no longer available.", saved_pet_to_manual_farm[k]), "WARNING", "triangle-alert")
-          saved_pet_to_manual_farm[k] = nil
+        if unique then
+          if not owned[unique] then     
+            GUI.Notify("Warning", string.format("[Manual PetAutoFarm] Pet %s is no longer available.", saved_pet_to_manual_farm[k]), "WARNING", "triangle-alert")
+            saved_pet_to_manual_farm[k] = nil
+          end
         end
       end
     end
     for k,v in ipairs(saved_pet_farm_exclude_pets) do
       local unique = v:split("unique: ")[2]
-      if not owned[unique] then
-        GUI.Notify("Warning", string.format("[PetAutoFarm Blacklist] Pet %s is no longer available.", saved_pet_farm_exclude_pets[k]), "WARNING", "triangle-alert")
-        saved_pet_farm_exclude_pets[k] = nil
+      if unique then
+        if not owned[unique] then
+          GUI.Notify("Warning", string.format("[PetAutoFarm Blacklist] Pet %s is no longer available.", saved_pet_farm_exclude_pets[k]), "WARNING", "triangle-alert")
+          saved_pet_farm_exclude_pets[k] = nil
+        end
       end
     end
     for k,v in ipairs(saved_trade_specified_pets) do
       local unique = v:split("unique: ")[2]
-      if not owned[unique] then 
-        GUI.Notify("Warning", string.format("[AutoTrade Blacklist] Pet %s is no longer available.", saved_trade_specified_pets[k]), "WARNING", "triangle-alert")
-        saved_trade_specified_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+      if unique then
+        if not owned[unique] then 
+          GUI.Notify("Warning", string.format("[AutoTrade Blacklist] Pet %s is no longer available.", saved_trade_specified_pets[k]), "WARNING", "triangle-alert")
+          saved_trade_specified_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+        end
       end
     end
     for k,v in ipairs(saved_recycler_specific_pets) do
       local unique = v:split("unique: ")[2]
-      if not owned[unique] then 
-        GUI.Notify("Warning", string.format("[Pet Recycler Blacklist] Pet %s is no longer available.", saved_recycler_specific_pets[k]), "WARNING", "triangle-alert")
-        saved_recycler_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+      if unique then
+        if not owned[unique] then 
+          GUI.Notify("Warning", string.format("[Pet Recycler Blacklist] Pet %s is no longer available.", saved_recycler_specific_pets[k]), "WARNING", "triangle-alert")
+          saved_recycler_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+        end
       end
     end
     for k,v in ipairs(saved_auto_give_potion_specific_pets) do
       local unique = v:split("unique: ")[2]
-      if not owned[unique] then 
-        GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
-        saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+      if unique then
+        if not owned[unique] then 
+          GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
+          saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+        end
       end
     end
     for k,v in ipairs(saved_pet_pen_specific_pets) do
       local unique = v:split("unique: ")[2]
-      if not owned[unique] then
-        GUI.Notify("Warning", string.format("[PetPen Blacklist] Pet %s is no longer available.", saved_pet_pen_specific_pets[k]), "WARNING", "triangle-alert")
-        saved_pet_pen_specific_pets[k] = nil
+      if unique then
+        if not owned[unique] then
+          GUI.Notify("Warning", string.format("[PetPen Blacklist] Pet %s is no longer available.", saved_pet_pen_specific_pets[k]), "WARNING", "triangle-alert")
+          saved_pet_pen_specific_pets[k] = nil
+        end
       end
     end
 
