@@ -1440,7 +1440,6 @@ local _script = coroutine.create(function()
         end
       end
     end
-    print(_age, _tiny)
     return { _age, _tiny }
   end
   local function send_trade_request(user)  
@@ -4036,6 +4035,9 @@ local _script = coroutine.create(function()
           local owned_pets = GetOwnedPets()
 
           for k,v in pairs(owned_pets) do
+            if v.age == 6 then continue end
+            if v.remote == "practice_dog" then continue end
+            if (v.name:lower()):match("egg") then continue end
             if _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities and _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities[v.rarity] then continue end
             if _G.InternalConfig.AutoGivePotionDLib.BlacklistedAges and _G.InternalConfig.AutoGivePotionDLib.BlacklistedAges[v.age] then continue end
             if _G.InternalConfig.AutoGivePotionDLib.BlacklistedProperties then 
@@ -4088,8 +4090,8 @@ local _script = coroutine.create(function()
               local owned = GetOwnedPets()
               local potions_to_give = calculate_optimal_potions_by_rarity(v[2], v[3], potions)
 
-              WriteConsoleLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), string.format("⚙️ Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions].", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
-              WriteFileLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
+              WriteConsoleLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], count(potions_to_give[1]), count(potions_to_give[2])), string.format("⚙️ Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions].", v[4], count(potions_to_give[1]), count(potions_to_give[2])), "DEBUG")
+              WriteFileLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], count(#potions_to_give[1]), count(potions_to_give[2])), "DEBUG")
               print("1")
               SafeInvoke("ToolAPI/Equip",
                 v[1],
