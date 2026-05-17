@@ -1440,6 +1440,7 @@ local _script = coroutine.create(function()
         end
       end
     end
+    print(_age, _tiny)
     return { _age, _tiny }
   end
   local function send_trade_request(user)  
@@ -4085,23 +4086,11 @@ local _script = coroutine.create(function()
                 return
               end	
               local owned = GetOwnedPets()
-              print(v[2], v[3], potions)
               local potions_to_give = calculate_optimal_potions_by_rarity(v[2], v[3], potions)
 
--- local ok, result = xpcall(function()
---     return calculate_optimal_potions_by_rarity(v[2], v[3], potions)
--- end, debug.traceback)
-
--- if not ok then
---     print("Ошибка в calculate_optimal_potions_by_rarity:")
---     print(result) -- здесь будет строка, номер строки, стек вызовов
--- else
---     potions_to_give = result
--- end
-
-              
               WriteConsoleLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), string.format("⚙️ Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions].", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
               WriteFileLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
+              print("1")
               SafeInvoke("ToolAPI/Equip",
                 v[1],
                 {
