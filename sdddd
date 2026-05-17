@@ -1944,10 +1944,10 @@ local _script = coroutine.create(function()
         end
         if money > 20 then
           SafeInvoke("ShopAPI/BuyItem",
-              "food",
+            "food",
             "water",
             {
-            buy_count = 20
+              buy_count = 20
             }
           )
         else 
@@ -1955,7 +1955,7 @@ local _script = coroutine.create(function()
             "food",
             "water",
             {
-            buy_count = money / 2
+              buy_count = money / 2
             }
           )
         end
@@ -2412,7 +2412,7 @@ local _script = coroutine.create(function()
       local money = ClientData.get("money")
       local deadline = os.clock() + 5
       repeat 
-        SafeFire("ToolAPI/ServerUseTool",
+        SafeInvoke("ToolAPI/ServerUseTool",
         InvGetCategoryUnique("food", "apple"),
           "END"
         )
@@ -2440,7 +2440,7 @@ local _script = coroutine.create(function()
             "food",
             "water",
             {
-            buy_count = 20
+              buy_count = 20
             }
           )
         else 
@@ -2456,7 +2456,7 @@ local _script = coroutine.create(function()
       local money = ClientData.get("money")
       local deadline = os.clock() + 5
       repeat			
-        SafeFire("ToolAPI/ServerUseTool",
+        SafeInvoke("ToolAPI/ServerUseTool",
           InvGetCategoryUnique("food", "water"),
           "END"
           )
@@ -2703,6 +2703,23 @@ local _script = coroutine.create(function()
     GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, {})
   end
 
+  local function PetsToExcludeInstantUpdate() 
+    local list = {}
+    for k,v in pairs(GetOwnedPets()) do
+      if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then
+        if not (v.name:lower()):match("egg") then
+          table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+        end
+      else
+        if (v.name:lower()):match("egg") then
+          table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+        end
+      end
+    end
+    GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, list)
+    GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, {})
+  end
+
   local function NeonAndMegaNeonInstantListUpdate()
     local __neon_temp = {}
     local __meganeon_temp = {}
@@ -2866,7 +2883,8 @@ local _script = coroutine.create(function()
           end
           local _task = TaskQueue.Enqueue(function()
             local flag = false
-            local kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")
+            local kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")                    
+            print("before 1 flag_if_not_one_to_farm:", _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm)
             if _G.InternalConfig.PetFarmDLib.Detect2DKitty then
               if kitty_unique == actual_pet.unique and kitty_unique == ClientData.get("pet_char_wrappers")[1].pet_unique then
                 flag = true
@@ -2907,6 +2925,7 @@ local _script = coroutine.create(function()
                 task.wait(.5)
               end
             end
+            
             if not actual_pet.unique or _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
               local owned_pets = GetOwnedPets()
               if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then	
@@ -2950,6 +2969,7 @@ local _script = coroutine.create(function()
                 end 
                 if not flag then 
                   if _G.InternalConfig.PetFarmDLib.OppositeFarm then
+                    print("before 2 flag_if_not_one_to_farm:", _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm)
                     if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
                       WriteConsoleLog("No pets to farm depending on filter. Running opposite farm filter", "⚙️ No pets to farm depending on filter. Running opposite farm filter.", "DEBUG")
                       WriteFileLog("No pets to farm depending on filter. Running opposite farm filter", "DEBUG")
@@ -2967,6 +2987,7 @@ local _script = coroutine.create(function()
                             flag = true
                             _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = true
                             _G.InternalConfig.PetFarmDLib.random_farm = true
+                            print("detected where expected")
                             break             
                           end
                         end
@@ -3079,6 +3100,10 @@ local _script = coroutine.create(function()
                   WriteFileLog(string.format("New pet to farm detected: %s", actual_pet.remote), "DEBUG")
                   GUI.Notify("Info", string.format("New pet to farm detected: %s", actual_pet.remote), "INFO", "info")
                 end
+              end
+              if not flag then 
+                Cooldown.AutoFarm.PetAutoFarm = 25
+                return
               end
             end
             local eqailments = GetEquipedPetAilments()
@@ -3278,6 +3303,10 @@ local _script = coroutine.create(function()
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmPriority = function(v) 
     WriteConsoleLog("Farm priority triggered", nil, "DEBUG")
     WriteFileLog("Farm priority triggered", "DEBUG")
+    if tostring(v[1]):match("set <Farm Type> to automated") then
+      return
+    end
+    PetsToExcludeInstantUpdate()
   end
 
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmType = function(v) 
@@ -3293,10 +3322,15 @@ local _script = coroutine.create(function()
       GUI.ToggleButtonSetValue(PetAutoFarmDetect2DKittyToggleButton, false)
       GUI.ToggleButtonSetValue(PetAutoFarmOpoositeFarmToggleButton, false)
       GUI.DropdownUpdateOptionList(PetAutoFarmFarmPriorityDropdown, {})
-      GUI.DropdownSetValue(PetAutoFarmFarmPriorityDropdown, {""})
+      GUI.DropdownSetValue(PetAutoFarmFarmPriorityDropdown, {"set <Farm Type> to automated"})
+      GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, {})
+      GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, {"set <Farm Type> to automated"})
       PetFarmPetToFarmInstantListUpdate()
+      _G.InternalConfig.PetFarmDLib.dont_update_pets_to_exclude = true
     else
       _G.pet_farm_update = false
+      _G.InternalConfig.PetFarmDLib.dont_update_pets_to_exclude = false
+      PetsToExcludeInstantUpdate()
       GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
       GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, {})
       GUI.DropdownUpdateOptionList(PetAutoFarmFarmPriorityDropdown, {"pets", "eggs"})
@@ -3318,7 +3352,7 @@ local _script = coroutine.create(function()
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetsToExclude = function(v) 
     WriteConsoleLog("Pets to exclude triggered", nil, "DEBUG")
     WriteFileLog("Pets to exclude triggered", "DEBUG")
-    if #v == 0 then
+    if #v == 0 or tostring(v[1]):match("set <Farm Type> to automated") then
       _G.InternalConfig.PetFarmDLib.PetsToExclude = nil
       return
     end
@@ -4294,6 +4328,18 @@ local _script = coroutine.create(function()
       GUI.ToggleButtonSetValue(AutoGivePotionToggleButton, false)
       GUI.DropdownUpdateOptionList(AutoGivePotionSetHigherPriorityForDropdown, {})
       GUI.DropdownSetValue(AutoGivePotionSetHigherPriorityForDropdown, {"set <Mode> to automated"})
+
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedRaritiesDropdown, {})
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedAgesDropdown, {})
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedPropertiesDropdown, {})
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, {})
+      
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedRaritiesDropdown, {"set <Mode> to automated"})
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedAgesDropdown, {"set <Mode> to automated"})
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedPropertiesDropdown, {"set <Mode> to automated"})
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, {"set <Mode> to automated"})
+      _G.InternalConfig.AutoGivePotionDLib.dont_update_exclude_pets = true
+
       InstantListPetToGivePotion()
       _G.pets_to_give_potion_should_be_updated = true
     else
@@ -4301,6 +4347,13 @@ local _script = coroutine.create(function()
       GUI.DropdownUpdateOptionList(AutoGivePotionSetHigherPriorityForDropdown, {"common", "uncommon", "rare", "ultra-rare", "legendary"})
       GUI.DropdownSetValue(AutoGivePotionSetHigherPriorityForDropdown, {})
       GUI.DropdownUpdateOptionList(AutoGivePotionPetToGivePotionDropdown, {})
+      
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedRaritiesDropdown, {"common", "uncommon", "rare", "ultra-rare", "legendary"})
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedAgesDropdown, {{"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}})
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedPropertiesDropdown, {"rideable", "flyable", "neon", "meganeon"})
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, {})
+      _G.InternalConfig.AutoGivePotionDLib.dont_update_exclude_pets = false 
+
       GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, {"set <Mode> to manual"})
       _G.pets_to_give_potion_should_be_updated = false
     end
@@ -5656,19 +5709,24 @@ local _script = coroutine.create(function()
     Cooldown.Other.Deadline10sUpdates = nil
     local trade_specified_pets = {}
     local recycler_specific_pets = {}
-    local auto_give_potion_specific_pets = {}
     local pet_pen_specific_pets = {}
-    local pet_farm_exclude_pets = {}
-
+    
     local saved_trade_specified_pets = TradeBlacklistSpecificPetsDropdown.CurrentOption
     local saved_recycler_specific_pets = RecyclerPetPenBlacklistedSpecificPetsDropdown.CurrentOption
-    local saved_auto_give_potion_specific_pets = AutoGivePotionBlacklistedSpecificPetsDropdown.CurrentOption
     local saved_meganeon = PetToMegaNeonDropdown.CurrentOption
     local saved_neon = PetToNeonDropdown.CurrentOption
     local saved_pet_pen_specific_pets = PetPenBlacklistedSpecificPetsDropdown.CurrentOption
-    local saved_pet_farm_exclude_pets = PetAutoFarmPetsToExcludeDropdown.CurrentOption
     local saved_pets_to_give_potion = nil
     local pets_to_give_potion = nil
+    
+    local auto_give_potion_specific_pets = nil
+    local saved_auto_give_potion_specific_pets = nil
+
+    if not _G.InternalConfig.AutoGivePotionDLib.dont_update_exclude_pets then
+      auto_give_potion_specific_pets = {}
+      saved_auto_give_potion_specific_pets = AutoGivePotionBlacklistedSpecificPetsDropdown.CurrentOption
+    end
+
     if _G.pets_to_give_potion_should_be_updated then
       saved_pets_to_give_potion = AutoGivePotionPetToGivePotionDropdown.CurrentOption
       pets_to_give_potion = {}
@@ -5680,6 +5738,13 @@ local _script = coroutine.create(function()
       pet_to_manual_farm = {} 
     end
 
+    local pet_farm_exclude_pets = nil
+    local saved_pet_farm_exclude_pets = nil
+    if not _G.InternalConfig.PetFarmDLib.dont_update_pets_to_exclude then
+      pet_farm_exclude_pets = {}
+      saved_pet_farm_exclude_pets = PetAutoFarmPetsToExcludeDropdown.CurrentOption
+    end
+      
     local __neon_temp = {}
     local __meganeon_temp = {}
     local neon = {}
@@ -5689,18 +5754,22 @@ local _script = coroutine.create(function()
       if v.remote == "practice_dog" then continue end
       table.insert(trade_specified_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(recycler_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
-      table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      if auto_give_potion_specific_pets then
+        table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      end
       table.insert(pet_pen_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       if pet_to_manual_farm then
         table.insert(pet_to_manual_farm, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       end
-      if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then
-        if not (v.name:lower()):match("egg") then
-          table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
-        end
-      else
-        if (v.name:lower()):match("egg") then
-          table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      if pet_farm_exclude_pets then
+        if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then
+          if not (v.name:lower()):match("egg") then
+            table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+          end
+        else
+          if (v.name:lower()):match("egg") then
+            table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+          end
         end
       end
 
@@ -5774,12 +5843,14 @@ local _script = coroutine.create(function()
         end
       end
     end
-    for k,v in ipairs(saved_pet_farm_exclude_pets) do
-      local unique = v:split("unique: ")[2]
-      if unique then
-        if not owned[unique] then
-          GUI.Notify("Warning", string.format("[PetAutoFarm Blacklist] Pet %s is no longer available.", saved_pet_farm_exclude_pets[k]), "WARNING", "triangle-alert")
-          saved_pet_farm_exclude_pets[k] = nil
+    if pet_farm_exclude_pets then
+      for k,v in ipairs(saved_pet_farm_exclude_pets) do
+        local unique = v:split("unique: ")[2]
+        if unique then
+          if not owned[unique] then
+            GUI.Notify("Warning", string.format("[PetAutoFarm Blacklist] Pet %s is no longer available.", saved_pet_farm_exclude_pets[k]), "WARNING", "triangle-alert")
+            saved_pet_farm_exclude_pets[k] = nil
+          end
         end
       end
     end
@@ -5801,12 +5872,14 @@ local _script = coroutine.create(function()
         end
       end
     end
-    for k,v in ipairs(saved_auto_give_potion_specific_pets) do
-      local unique = v:split("unique: ")[2]
-      if unique then
-        if not owned[unique] then 
-          GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
-          saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+    if auto_give_potion_specific_pets then
+      for k,v in ipairs(saved_auto_give_potion_specific_pets) do
+        local unique = v:split("unique: ")[2]
+        if unique then
+          if not owned[unique] then 
+            GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
+            saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+          end
         end
       end
     end
@@ -5820,8 +5893,10 @@ local _script = coroutine.create(function()
       end
     end
 
-    GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, pet_farm_exclude_pets)
-    GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, saved_pet_farm_exclude_pets)
+    if pet_farm_exclude_pets and not _G.InternalConfig.PetFarmDLib.dont_update_pets_to_exclude then
+      GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, pet_farm_exclude_pets)
+      GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, saved_pet_farm_exclude_pets)
+    end
 
     if saved_pet_to_manual_farm and _G.pet_farm_update then
       GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, pet_to_manual_farm)
@@ -5839,9 +5914,11 @@ local _script = coroutine.create(function()
       GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, saved_pets_to_give_potion)
     end
 
-    GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, auto_give_potion_specific_pets)
-    GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, saved_auto_give_potion_specific_pets)
-    
+    if auto_give_potion_specific_pets and not _G.InternalConfig.AutoGivePotionDLib.dont_update_exclude_pets then
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, auto_give_potion_specific_pets)
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, saved_auto_give_potion_specific_pets)
+    end
+      
     GUI.DropdownUpdateOptionList(RecyclerPetPenBlacklistedSpecificPetsDropdown, recycler_specific_pets)
     GUI.DropdownSetValue(RecyclerPetPenBlacklistedSpecificPetsDropdown, saved_recycler_specific_pets)
     
