@@ -3947,12 +3947,12 @@ local _script = coroutine.create(function()
     WriteConsoleLog("Blacklisted rarities triggered", nil, "DEBUG")
     WriteFileLog("Blacklisted rarities triggered", "DEBUG")
     if count(v) == 0 then
-      _G.InternalConfig.RecyclerDLib.BlacklistedSRarities = nil
+      _G.InternalConfig.RecyclerDLib.BlacklistedRarities = nil
       return
     end
-    _G.InternalConfig.RecyclerDLib.BlacklistedSRarities = {}
+    _G.InternalConfig.RecyclerDLib.BlacklistedRarities = {}
     for _, v in ipairs(v) do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSRarities[PetRarities[v]] = true
+      _G.InternalConfig.RecyclerDLib.BlacklistedRarities[PetRarities[v]] = true
     end
   end
   
@@ -3960,12 +3960,12 @@ local _script = coroutine.create(function()
     WriteConsoleLog("Blacklisted ages triggered", nil, "DEBUG")
     WriteFileLog("Blacklisted ages triggered", "DEBUG")
     if count(v) == 0 then
-      _G.InternalConfig.RecyclerDLib.BlacklistedSAges = nil
+      _G.InternalConfig.RecyclerDLib.BlacklistedAges = nil
       return
     end
-    _G.InternalConfig.RecyclerDLib.BlacklistedSAges = {}
+    _G.InternalConfig.RecyclerDLib.BlacklistedAges = {}
     for _,v in ipairs(v) do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSAges[PetAges[v]] = true
+      _G.InternalConfig.RecyclerDLib.BlacklistedAges[PetAges[v]] = true
     end
   end
   
@@ -3973,12 +3973,12 @@ local _script = coroutine.create(function()
     WriteConsoleLog("Blacklisted properties triggered", nil, "DEBUG")
     WriteFileLog("Blacklisted properties triggered", "DEBUG")
     if count(v) == 0 then
-      _G.InternalConfig.RecyclerDLib.BlacklistedSProperties= nil
+      _G.InternalConfig.RecyclerDLib.BlacklistedProperties= nil
       return
     end
-    _G.InternalConfig.RecyclerDLib.BlacklistedSProperties = {}
+    _G.InternalConfig.RecyclerDLib.BlacklistedProperties = {}
     for _,v in ipairs(v) do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSProperties[v] = true
+      _G.InternalConfig.RecyclerDLib.BlacklistedProperties[v] = true
     end
   end
   
@@ -4024,7 +4024,7 @@ local _script = coroutine.create(function()
             Cooldown.Cooldown.TryUsePotionAfter = 180
             return
           end	
-
+          print('1')
           local pet_to_grow = {}
           local owned_pets = GetOwnedPets()
 
@@ -4040,6 +4040,7 @@ local _script = coroutine.create(function()
             if _G.InternalConfig.AutoGivePotionDLib.BlacklistedRarities and _G.InternalConfig.AutoGivePotionDLib.BlacklistedSpecificPets[k] then continue end
             table.insert(pet_to_grow, { k, v.age, v.rarity, v.remote, })
           end
+          print('2')
 
           if #pet_to_grow == 0 then 
             WriteConsoleLog("[AutoGivePotion]: No pets to grow up. Cooldown [180]s", "🧪 No pets to grow up. Cooldown: [180]s.", "DEBUG")
@@ -4048,6 +4049,7 @@ local _script = coroutine.create(function()
             Cooldown.Cooldown.TryUsePotionAfter = 180
             return
           end
+          print('3')
 
           if _G.InternalConfig.AutoGivePotionDLib.HigherPriority then
             local _temp = {} 
@@ -4067,6 +4069,7 @@ local _script = coroutine.create(function()
             end
             pet_to_grow = _temp
           end
+          print('4')
 
           local equiped_pet = ClientData.get("pet_char_wrappers")[1]
           local _task = TaskQueue.Enqueue(function()
