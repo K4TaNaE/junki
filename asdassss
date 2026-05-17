@@ -18,7 +18,7 @@ local function __Notify(text)
 end
 
 local function IntegrityCheck(func_set :table, on_fallback :Callback, replace :Callback, on_success)
-  for _,v in ipairs(func_set) do
+  for _,v in pairs(func_set) do
     if v then 
       pcall(on_success)
       return v 
@@ -30,14 +30,14 @@ end
 
 print("[+] Starting sUNC integrity check..")
 
-local crypt = rawget(_G, "crypt")
-local syn = rawget(_G, "syn")
-local http = rawget(_G, "http")
-local debug = rawget(_G, "debug")
+local crypt = crypt or {}
+local syn = syn or {}
+local http = http or {}
+local debug = debug or {}
 
 local getupvalue = IntegrityCheck({getupvalue, debug.getupvalue, syn.getupvalue, get_upvalue, debug.get_upvalue, syn.get_upvalue}, function() __Notify("getupvalue function is not supported by executor. Script may work unstable.") print("[❌] [getupvalue] function failed integrity check.") end, function(...) return end, function() print("[✅] [getupvalue] function successfully completed integrity check.") end)
 local request = IntegrityCheck({request, syn.request, http_request, http.request}, function() __Notify("request function is not supported by executor. Options: {Auto Reconnect & Discord Webhook} won't work.") print("[❌] [request] function failed integrity check.") end, function(...) return end, function() print("[✅] [request] function successfully completed integrity check.") end)
-local makefolder = IntegrityCheck({makefolder, syn.makefolder, syn.make_folder, make_folder}, function() __Notify("makefolder function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [makefolder] function failed integrity check.") end, function(...) return end, function() print("[✅] [makefolder] function successfully completed integrity check.") end)
+local makefolder = IntegrityCheck({syn.makefolder, makefolder, syn.make_folder, make_folder}, function() __Notify("makefolder function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [makefolder] function failed integrity check.") end, function(...) return end, function() print("[✅] [makefolder] function successfully completed integrity check.") end)
 local isfile = IntegrityCheck({isfile, syn.isfile, is_file, syn.is_file}, function() __Notify("isfile function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [isfile] function failed integrity check.") end, function(...) return end, function() print("[✅] [isfile] function successfully completed integrity check.") end)
 local writefile = IntegrityCheck({writefile, syn.writefile, syn.write_file, write_file}, function() __Notify("writefile function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [writefile] function failed integrity check.") end, function(...) return end, function() print("[✅] [writefile] function successfully completed integrity check.") end)
 local appendfile = IntegrityCheck({appendfile, append_file, syn.appendfile, syn.append_file}, function() __Notify("appendfile function is not supported by executor. Options: {Write File Logs} won't work.") print("[❌] [appendfile] function failed integrity check.") end, function(...) return end, function() print("[✅] [appendfile] function successfully completed integrity check.") end)
@@ -46,7 +46,7 @@ local gethui = IntegrityCheck({gethui, get_hui, syn.gethui, syn.get_hui}, functi
 local setfpscap = IntegrityCheck({setfpscap, set_fps_cap, syn.setfpscap, syn.set_fps_cap, set_fpscap, syn.set_fpscap}, function() __Notify("setfpscap function is not supported by executor. Options: {FPS Cap} won't work.") print("[❌] [setfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [setfpscap] function successfully completed integrity check.") end)
 local getfpscap = IntegrityCheck({get_fps_cap, getfpscap, syn.getfpscap, syn.get_fps_cap, get_fpscap, syn.get_fpscap}, function() __Notify("getfpscap function is not supported by executor. Options: {FPS Counter (label)} won't work.") print("[❌] [getfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [getfpscap] function successfully completed integrity check.") end)
 local setthreadidentity = IntegrityCheck({setthreadidentity, set_thread_identity, setthreadcontext, set_thread_context, syn.setthreadidentity, syn.setthreadcontext}, function() __Notify("setthreadidentity function is not supported by executor. Script may or may not work depending on your executor.") print("[❌] [setthreadidentity] function failed integrity check.") end, function(...) return end, function() print("[✅] [setthreadidentity] function successfully completed integrity check.") end)
-local queue_on_teleport = IntegrityCheck({queue_on_teleport, queueonteleport, syn.queue_on_teleport, syn.queueonteleport}, function() __Notify("queue_on_teleport function is not supported by executor. Option: {Auto Reconnect} will not run script after rejoin, you will be just teleported.") print("[❌] [queue_on_teleport] function failed integrity check, but script has own implementation of function") end, nil, function() print("[✅] [queue_on_teleport] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
+local queue_on_teleport = IntegrityCheck({queue_onsetthreadidentity_teleport, queueonteleport, syn.queue_on_teleport, syn.queueonteleport}, function() __Notify("queue_on_teleport function is not supported by executor. Option: {Auto Reconnect} will not run script after rejoin, you will be just teleported.") print("[❌] [queue_on_teleport] function failed integrity check, but script has own implementation of function") end, nil, function() print("[✅] [queue_on_teleport] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
 local setclipboard = IntegrityCheck({setclipboard, set_clipboard, syn.setclipboard, copyclipboard, copy_clipboard, syn.copyclipboard, syn.set_clipboard, syn.copyclipboard}, function() __Notify("setclipboard function is not supported by executor. Options: {Join Discord} won't work.") print("[❌] [setclipboard] function failed integrity check.") end, function(...) end, function() print("[✅] [setclipboard] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
 local hash = IntegrityCheck({hash, crypt.hash, syn.hash}, function() __Notify("hash function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [hash] function failed integrity check.") end, function(...) return end, function() print("[✅] [hash] function successfully completed integrity check.") end)
 local readfile = IntegrityCheck({readfile, read_file, syn.readfile, syn.read_file}, function() print("readfile function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [readfile] function failed integrity check.") end, function(...) return end, function() print("[✅] [readfile] function successfully completed integrity check.") end)
@@ -55,15 +55,17 @@ local _script = coroutine.create(function()
 
   pcall(function()
     makefolder("Arcanic")
-    local _h1 = hash(request({Url="https://i.imageupload.app/e901851cc995659ba1cb.png"}).Body, "sha256") 
+    local _h1 = hash(request({Url="https://i.imageupload.app/c9bee1997f3764331ed4.png"}).Body, "sha256") 
     local _h2
     if isfile("Arcanic/arcsrcplate.png") then 
       _h2 = hash(readfile("Arcanic/arcsrcplate.png"), "sha256")
+      if _h1 ~= _h2 then
+        writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/c9bee1997f3764331ed4.png"))
+      end
+    else
+      writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/c9bee1997f3764331ed4.png"))
     end
-    if not _h1 == _h2 then
-      writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/e901851cc995659ba1cb.png"))
-    end
-    _G.asset = getcustomasset("Arcanic/arcsrcplate.png")
+    _G.asset = getcustomasset("Arcanic/arcsrcplate.png") or ""
   end)
 
 
@@ -1235,37 +1237,38 @@ local _script = coroutine.create(function()
     end)
     _G.HeadCashed = decoded.data[1].imageUrl
   end
-local function telegram_webhook(msg) -- logs and prints (for change)
-  local body = HttpService:JSONEncode({
-    chat_id=_G.InternalConfig.TelegramChatId,
-    text = msg,
-    parse_mode = "HMTL"
-  })
-  local ok, res = pcall(function() 
-    return request({
-      Url = "https://api.telegram.org/bot" .. _G.InternalConfig.TelegramBotApi .. "/sendMessage",
-	  Method = "POST",
-	  Headers = { ["Content-Type"] = "application/json" },
-	  Body = body
-	})
-  end)
-  if not ok then
-    WriteConsoleLog("❌ Unsuccessed to send telegram webhook", "❌ Unsuccessed to send telegram webhook.", "DEBUG")
-    WriteFileLog("❌ Unsuccessed to send telegram webhook", "DEBUG")
-    Cooldown.Webhooks.TelegramWebhookSendDelay = 60
+  local function telegram_webhook(msg) -- logs and prints (for change)
+    local body = HttpService:JSONEncode({
+      chat_id=_G.InternalConfig.TelegramChatId,
+      text = msg,
+      parse_mode = "HTML"
+    })
+    local ok, res = pcall(function() 
+      return request({
+        Url = "https://api.telegram.org/bot" .. _G.InternalConfig.TelegramBotApi .. "/sendMessage",
+        Method = "POST",
+        Headers = { ["Content-Type"] = "application/json" },
+        Body = body
+      })
+    end)
+    if not ok then
+      WriteConsoleLog("Unsuccessed to send telegram webhook", "❌ Unsuccessed to send telegram webhook.", "DEBUG")
+      WriteFileLog("Unsuccessed to send telegram webhook", "DEBUG")
+      Cooldown.Webhooks.TelegramWebhookSendDelay = 60
+    end
+    local data
+    pcall(function() 
+      data = HttpService:JSONDecode(res.Body)
+    end)
+    if data and data.ok then
+      WriteConsoleLog("Telegram webhook sent", "☑️ Telegram webhook sent.", "DEBUG")
+      WriteFileLog("Telegram webhook sent", "DEBUG")
+    else
+      WriteConsoleLog(string.format("Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), "DEBUG")
+      WriteFileLog("Unsuccessed to send telegram webhook", "DEBUG")
+    end
+    return data and data.ok
   end
-  local data
-  pcall(function() 
-	data = HttpService:JSONDecode(res.Body)
-  end)
-  if data and data.ok then
-    WriteConsoleLog("Telegram webhook sent", "☑️ Telegram webhook sent.", "DEBUG")
-    WriteFileLog("Telegram webhook sent", "DEBUG")
-  else
-    WriteConsoleLog(string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), "DEBUG")
-    WriteFileLog("❌ Unsuccessed to send telegram webhook", "DEBUG")
-  end
-end
   local function Webhook(title, description)
     local url = _G.InternalConfig.DiscordWebhookUrl
     if not _G.HeadCashed then
@@ -1625,9 +1628,9 @@ end
   local AutoGivePotionSetHigherPriorityForDropdown = GUI.InitDropdown(AutofarmTab, "Set Higher Priority For (optional)", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionsethigherpriorityfordropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionHigherPriority(v) end)
   local AutoGivePotionPetToGivePotionDropdown = GUI.InitDropdown(AutofarmTab, "Pets To Give Potion", {}, {"set <Mode> to manual"}, true, "autogivepotionpettogivepotiondropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandlePetToGivePotion(v) end)
   GUI.InitDivider(AutofarmTab)
-  GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedRarities(v) end)
-  GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {}, true, "autogivepotionblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedAges(v) end)
-  GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedProperties(v) end)
+  local AutoGivePotionBlacklistedRaritiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Rarities", {"common", "uncommon", "rare", "ultra-rare", "legendary"}, {}, true, "autogivepotionblacklistedraritiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedRarities(v) end)
+  local AutoGivePotionBlacklistedAgesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Ages", {"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}, {}, true, "autogivepotionblacklistedagesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedAges(v) end)
+  local AutoGivePotionBlacklistedPropertiesDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Properties", {"rideable", "flyable", "neon", "meganeon"}, {}, true, "autogivepotionblacklistedpropertiesdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedProperties(v) end)
   local AutoGivePotionBlacklistedSpecificPetsDropdown = GUI.InitDropdown(AutofarmTab, "Blacklisted Specific Pets", {}, {}, true, "autogivepotionblacklistedspecificpetsdropdown", function(v) GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionBlacklistedSpecificPets(v) end)
   GUI.InitDivider(AutofarmTab)
 
@@ -1769,11 +1772,14 @@ end
         UpdateGui("pet_needs", farmed.ailments)
         GUI.LabelUpdate(RuntimeStatsEggsHatchedLabel, string.format("Eggs hatched : %d", farmed.eggs_hatched), "egg", Color3.fromRGB(203, 92, 255), false)
         GUI.LabelUpdate(RuntimeStatsPetNeedsCompletedLabel, string.format("Pet needs completed : %d", farmed.ailments), "cat", Color3.fromRGB(203, 92, 255), false)
-        if not _G.InternalConfig.PetFarmDLib.PotionFarm or table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) == "manual" then 
+        if not _G.InternalConfig.PetFarmDLib.PotionFarm then 
           actual_pet.unique = false 
           ClearPetFarmCache()
         else
-          task.wait(.3)
+          task.wait(.8)
+          local _pet = GetOwnedPets()[actual_pet.unique]
+          _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = _pet.unique
+          GUI.DropdownSetValue(PetAutoFarmPetToFarmDropdown, {_pet.name .. " | age: " .. _pet.age .. " | unique: " .. _pet.unique})
           PetUpdate()
         end
       else
@@ -1938,10 +1944,10 @@ end
         end
         if money > 20 then
           SafeInvoke("ShopAPI/BuyItem",
-              "food",
+            "food",
             "water",
             {
-            buy_count = 20
+              buy_count = 20
             }
           )
         else 
@@ -1949,7 +1955,7 @@ end
             "food",
             "water",
             {
-            buy_count = money / 2
+              buy_count = money / 2
             }
           )
         end
@@ -2406,7 +2412,7 @@ end
       local money = ClientData.get("money")
       local deadline = os.clock() + 5
       repeat 
-        SafeFire("ToolAPI/ServerUseTool",
+        SafeInvoke("ToolAPI/ServerUseTool",
         InvGetCategoryUnique("food", "apple"),
           "END"
         )
@@ -2434,7 +2440,7 @@ end
             "food",
             "water",
             {
-            buy_count = 20
+              buy_count = 20
             }
           )
         else 
@@ -2450,7 +2456,7 @@ end
       local money = ClientData.get("money")
       local deadline = os.clock() + 5
       repeat			
-        SafeFire("ToolAPI/ServerUseTool",
+        SafeInvoke("ToolAPI/ServerUseTool",
           InvGetCategoryUnique("food", "water"),
           "END"
           )
@@ -2697,6 +2703,23 @@ end
     GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, {})
   end
 
+  local function PetsToExcludeInstantUpdate() 
+    local list = {}
+    for k,v in pairs(GetOwnedPets()) do
+      if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then
+        if not (v.name:lower()):match("egg") then
+          table.insert(list, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+        end
+      else
+        if (v.name:lower()):match("egg") then
+          table.insert(list, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+        end
+      end
+    end
+    GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, list)
+    GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, {})
+  end
+
   local function NeonAndMegaNeonInstantListUpdate()
     local __neon_temp = {}
     local __meganeon_temp = {}
@@ -2860,7 +2883,7 @@ end
           end
           local _task = TaskQueue.Enqueue(function()
             local flag = false
-            local kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")
+            local kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")                    
             if _G.InternalConfig.PetFarmDLib.Detect2DKitty then
               if kitty_unique == actual_pet.unique and kitty_unique == ClientData.get("pet_char_wrappers")[1].pet_unique then
                 flag = true
@@ -2901,6 +2924,7 @@ end
                 task.wait(.5)
               end
             end
+            
             if not actual_pet.unique or _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
               local owned_pets = GetOwnedPets()
               if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then	
@@ -3073,6 +3097,10 @@ end
                   WriteFileLog(string.format("New pet to farm detected: %s", actual_pet.remote), "DEBUG")
                   GUI.Notify("Info", string.format("New pet to farm detected: %s", actual_pet.remote), "INFO", "info")
                 end
+              end
+              if not flag and not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then -- если пет не найден, не разрешить коду идти дальше, чтобы просто так не запускать таск детектор
+                Cooldown.AutoFarm.PetAutoFarm = 25
+                return
               end
             end
             local eqailments = GetEquipedPetAilments()
@@ -3272,6 +3300,10 @@ end
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmPriority = function(v) 
     WriteConsoleLog("Farm priority triggered", nil, "DEBUG")
     WriteFileLog("Farm priority triggered", "DEBUG")
+    if tostring(v[1]):match("set <Farm Type> to automated") then
+      return
+    end
+    PetsToExcludeInstantUpdate()
   end
 
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandleFarmType = function(v) 
@@ -3287,10 +3319,15 @@ end
       GUI.ToggleButtonSetValue(PetAutoFarmDetect2DKittyToggleButton, false)
       GUI.ToggleButtonSetValue(PetAutoFarmOpoositeFarmToggleButton, false)
       GUI.DropdownUpdateOptionList(PetAutoFarmFarmPriorityDropdown, {})
-      GUI.DropdownSetValue(PetAutoFarmFarmPriorityDropdown, {""})
+      GUI.DropdownSetValue(PetAutoFarmFarmPriorityDropdown, {"set <Farm Type> to automated"})
+      GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, {})
+      GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, {"set <Farm Type> to automated"})
       PetFarmPetToFarmInstantListUpdate()
+      _G.InternalConfig.PetFarmDLib.dont_update_pets_to_exclude = true
     else
       _G.pet_farm_update = false
+      _G.InternalConfig.PetFarmDLib.dont_update_pets_to_exclude = false
+      PetsToExcludeInstantUpdate()
       GUI.ToggleButtonSetValue(PetAutoFarmToggleButton, false)
       GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, {})
       GUI.DropdownUpdateOptionList(PetAutoFarmFarmPriorityDropdown, {"pets", "eggs"})
@@ -3312,7 +3349,7 @@ end
   GUI.Tabs.AutoFarm.Sections.PetAutoFarm.Callbacks.HandlePetsToExclude = function(v) 
     WriteConsoleLog("Pets to exclude triggered", nil, "DEBUG")
     WriteFileLog("Pets to exclude triggered", "DEBUG")
-    if #v == 0 then
+    if #v == 0 or tostring(v[1]):match("set <Farm Type> to automated") then
       _G.InternalConfig.PetFarmDLib.PetsToExclude = nil
       return
     end
@@ -3910,12 +3947,12 @@ end
     WriteConsoleLog("Blacklisted rarities triggered", nil, "DEBUG")
     WriteFileLog("Blacklisted rarities triggered", "DEBUG")
     if count(v) == 0 then
-      _G.InternalConfig.RecyclerDLib.BlacklistedSRarities = nil
+      _G.InternalConfig.RecyclerDLib.BlacklistedRarities = nil
       return
     end
-    _G.InternalConfig.RecyclerDLib.BlacklistedSRarities = {}
+    _G.InternalConfig.RecyclerDLib.BlacklistedRarities = {}
     for _, v in ipairs(v) do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSRarities[PetRarities[v]] = true
+      _G.InternalConfig.RecyclerDLib.BlacklistedRarities[PetRarities[v]] = true
     end
   end
   
@@ -3923,12 +3960,12 @@ end
     WriteConsoleLog("Blacklisted ages triggered", nil, "DEBUG")
     WriteFileLog("Blacklisted ages triggered", "DEBUG")
     if count(v) == 0 then
-      _G.InternalConfig.RecyclerDLib.BlacklistedSAges = nil
+      _G.InternalConfig.RecyclerDLib.BlacklistedAges = nil
       return
     end
-    _G.InternalConfig.RecyclerDLib.BlacklistedSAges = {}
+    _G.InternalConfig.RecyclerDLib.BlacklistedAges = {}
     for _,v in ipairs(v) do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSAges[PetAges[v]] = true
+      _G.InternalConfig.RecyclerDLib.BlacklistedAges[PetAges[v]] = true
     end
   end
   
@@ -3936,12 +3973,12 @@ end
     WriteConsoleLog("Blacklisted properties triggered", nil, "DEBUG")
     WriteFileLog("Blacklisted properties triggered", "DEBUG")
     if count(v) == 0 then
-      _G.InternalConfig.RecyclerDLib.BlacklistedSProperties= nil
+      _G.InternalConfig.RecyclerDLib.BlacklistedProperties= nil
       return
     end
-    _G.InternalConfig.RecyclerDLib.BlacklistedSProperties = {}
+    _G.InternalConfig.RecyclerDLib.BlacklistedProperties = {}
     for _,v in ipairs(v) do
-      _G.InternalConfig.RecyclerDLib.BlacklistedSProperties[v] = true
+      _G.InternalConfig.RecyclerDLib.BlacklistedProperties[v] = true
     end
   end
   
@@ -3987,7 +4024,6 @@ end
             Cooldown.Cooldown.TryUsePotionAfter = 180
             return
           end	
-
           local pet_to_grow = {}
           local owned_pets = GetOwnedPets()
 
@@ -4033,6 +4069,7 @@ end
 
           local equiped_pet = ClientData.get("pet_char_wrappers")[1]
           local _task = TaskQueue.Enqueue(function()
+            print("in task")
             for _,v in ipairs(pet_to_grow) do
               local potions = get_potions()
               if not potions[1] and not potions[2] then 
@@ -4041,6 +4078,7 @@ end
                 GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s", "INFO", "info")
                 return
               end	
+              print('1')
               local owned = GetOwnedPets()
               local potions_to_give = calculate_optimal_potions_by_rarity(v[2], v[3], potions)
               WriteConsoleLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), string.format("⚙️ Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions].", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
@@ -4052,6 +4090,7 @@ end
                   equip_as_last = false
                 }
               )
+              print("2")
               if count(potions_to_give[1]) > 0 then
                 local main = nil
                 local others = {}
@@ -4074,6 +4113,7 @@ end
                 )
                 task.wait(12)
               end
+              print("3")
               if count(potions_to_give[2]) > 0 then
                 local main = nil
                 local others = {}
@@ -4096,6 +4136,7 @@ end
                 )
                 task.wait(12)
               end
+              print("4")
               WriteConsoleLog(string.format("[Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], pet_to_grow[1][4]), string.format("🧪 [Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], pet_to_grow[1][4]), "DEBUG")
               WriteFileLog(string.format("[Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], pet_to_grow[1][4]), "DEBUG")
               GUI.Notify("Info", string.format("[Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], pet_to_grow[1][4]), "INFO", "info")
@@ -4107,6 +4148,7 @@ end
               WriteConsoleLog(string.format("%s age: %d -> %d\n", v[4], v[2], owned[v[1]].age), string.format("[🧪]:[✅] %s age: %d -> %d\n", v[4], v[2], owned[v[1]].age), "DEBUG")
               WriteFileLog(string.format("%s age: %d -> %d\n", v[4], v[2], owned[v[1]].age), "DEBUG")
               GUI.Notify("Info", string.format("%s age: %d -> %d\n", v[4], v[2], owned[v[1]].age), "INFO", "info")
+              print("6")
               if owned[v[1]].age == 6 then
                 farmed.pets_fullgrown += 1
                 farmed.agp.count_of_pets_fullgrowned += 1
@@ -4118,8 +4160,10 @@ end
                   str = str .. string.format("\n%s", v)
                 end
                 GUI.LabelUpdate(AutoGivePotionPetsFullgrownedLabel, str, "coffee", Color3.fromRGB(203, 92, 255), false)
+                print("7")
               end
             end 
+                print("finish suka")
             Cooldown.AutoFarm.TryUsePotionAfter = 180
           end)
           while not _task.completed do
@@ -4283,11 +4327,22 @@ end
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionMode = function(v)
     WriteConsoleLog("Mode triggered", nil, "DEBUG")
     WriteFileLog("Mode triggered", "DEBUG")
-    local mode = table.unpack(v)
-    if mode == "manual" then
+    if v[1] then
       GUI.ToggleButtonSetValue(AutoGivePotionToggleButton, false)
       GUI.DropdownUpdateOptionList(AutoGivePotionSetHigherPriorityForDropdown, {})
       GUI.DropdownSetValue(AutoGivePotionSetHigherPriorityForDropdown, {"set <Mode> to automated"})
+
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedRaritiesDropdown, {})
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedAgesDropdown, {})
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedPropertiesDropdown, {})
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, {})
+      
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedRaritiesDropdown, {"set <Mode> to automated"})
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedAgesDropdown, {"set <Mode> to automated"})
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedPropertiesDropdown, {"set <Mode> to automated"})
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, {"set <Mode> to automated"})
+      _G.InternalConfig.AutoGivePotionDLib.dont_update_exclude_pets = true
+
       InstantListPetToGivePotion()
       _G.pets_to_give_potion_should_be_updated = true
     else
@@ -4295,6 +4350,19 @@ end
       GUI.DropdownUpdateOptionList(AutoGivePotionSetHigherPriorityForDropdown, {"common", "uncommon", "rare", "ultra-rare", "legendary"})
       GUI.DropdownSetValue(AutoGivePotionSetHigherPriorityForDropdown, {})
       GUI.DropdownUpdateOptionList(AutoGivePotionPetToGivePotionDropdown, {})
+      
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedRaritiesDropdown, {"common", "uncommon", "rare", "ultra-rare", "legendary"})
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedAgesDropdown, {{"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}})
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedPropertiesDropdown, {"rideable", "flyable", "neon", "meganeon"})
+
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedRaritiesDropdown, {})
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedAgesDropdown, {})
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedPropertiesDropdown, {})
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, {})
+
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, {})
+      _G.InternalConfig.AutoGivePotionDLib.dont_update_exclude_pets = false 
+
       GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, {"set <Mode> to manual"})
       _G.pets_to_give_potion_should_be_updated = false
     end
@@ -4394,6 +4462,7 @@ end
       if Registry.Exists("pet_pen_progression_collection_handler") then
         GUI.ToggleButtonSetValue(PetPenJustAutoCollectProgressionToggleButton, false)
       end
+      Cooldown.AutoFarm.AutoCollectProgression = 0
       Registry.RegisterTask("pet_pen_progression_collection_handler_2", function()
         -- ==============
         Cooldown.AutoFarm.AutoCollectProgression = nil
@@ -4440,6 +4509,10 @@ end
               table.insert(pets_to_place, {k, v.rarity})
             end
           end
+        else
+          GUI.Notify("Warning", "[PetPen]: No free places to put pets to pet pen.", "WARNING", "triangle-alert")
+          Cooldown.AutoFarm.PetPenCheckAfter = 500
+          return
         end
         if #pets_to_place == 0 then
           GUI.Notify("Warning", "[PetPen]: No pets to place to pet pen.", "WARNING", "triangle-alert")
@@ -4495,8 +4568,8 @@ end
         Cooldown.AutoFarm.PetPenCheckAfter = 5 
       end)
     else
-      WriteConsoleLog("Pet Pen disabled", nil, "DEBUG")
-      WriteFileLog("Pet Pen disabled", "DEBUG")
+      WriteConsoleLog("Pet pen disabled", nil, "DEBUG")
+      WriteFileLog("Pet pen disabled", "DEBUG")
       Registry.UnregisterTask("pet_pen_handler")
       Registry.UnregisterTask("pet_pen_progression_collection_handler_2")
       Cooldown.AutoFarm.PetPenCheckAfter = nil
@@ -5187,6 +5260,7 @@ end
     if ok then      
       WriteConsoleLog(string.format("Discord webhook url value set: {%s}", url), nil, "DEBUG")
       WriteFileLog(string.format("Discord webhook url value set: {%s}", url), "DEBUG")
+      GUI.Notify("Info", "Discord webhook URL is valid.", "INFO", "mail-plus")
       _G.InternalConfig.DiscordWebhookUrl = url
     else
       GUI.TextFieldSetValue(DiscordWebhookUrlTextField, "")
@@ -5229,28 +5303,30 @@ end
       return
     end
     Registry.RunTask("discord_webhook_send_manually_handler", function() 
-    local desc = string.format([[
-      > 💸 Money Earned - [ **%d** ]
-      > 📈 Pets Full-grown - [ **%d** ]
-      > 🐶 Pet Needs Completed - [ **%d** ]
-      > 🧪 Potions Farmed - [ **%d** ]
-      > 🧸 Friendship Levels Farmed - [ **%d** ]
-      > 👶 Baby Needs Completed - [ **%d** ]
-      > 🥚 Eggs Hatched - [ **%d** ]
-      ---------------------------------------
-      > 💸 Total Bucks - [ **%d** ]
-      ---------------------------------------
-      > ⏰ Runtime - [ **%s** ]
-      ]],
-      farmed.money,
-      farmed.pets_fullgrown,
-      farmed.ailments,
-      farmed.potions,
-      farmed.friendship_levels,
-      farmed.baby_ailments,
-      farmed.eggs_hatched,
-      ClientData.get("money"),
-      FormatTime(farmed.time)
+      WriteConsoleLog("[Registry]: {discord_webhook_send_manually_handler} runned", nil, "DEBUG")
+      WriteFileLog("[Registry]: {discord_webhook_send_manually_handler} runned", "DEBUG")
+      local desc = string.format([[
+        > 💸 Money Earned - [ **%d** ]
+        > 📈 Pets Full-grown - [ **%d** ]
+        > 🐶 Pet Needs Completed - [ **%d** ]
+        > 🧪 Potions Farmed - [ **%d** ]
+        > 🧸 Friendship Levels Farmed - [ **%d** ]
+        > 👶 Baby Needs Completed - [ **%d** ]
+        > 🥚 Eggs Hatched - [ **%d** ]
+        ---------------------------------------
+        > 💸 Total Bucks - [ **%d** ]
+        ---------------------------------------
+        > ⏰ Runtime - [ **%s** ]
+        ]],
+        farmed.money,
+        farmed.pets_fullgrown,
+        farmed.ailments,
+        farmed.potions,
+        farmed.friendship_levels,
+        farmed.baby_ailments,
+        farmed.eggs_hatched,
+        ClientData.get("money"),
+        FormatTime(farmed.time)
       )
       local ok, _ = pcall(Webhook, "Farm-Log", desc)
       if ok then
@@ -5355,34 +5431,43 @@ end
         WriteConsoleLog("[Registry]: {telegram_webhook_send_handler} runned", nil, "DEBUG")
         WriteFileLog("[Registry]: {telegram_webhook_send_handler} runned", "DEBUG")
         local msg = string.format([[
-        **Farm-Log**
-        <code>%s</code>
-        <b>💸 Money Earned</b> – <code>%d</code>
-        <b>📈 Pets Full-grown</b> – <code>%d</code>
-        <b>🐶 Pet Needs Completed</b> – <code>%d</code>
-        <b>🧪 Potions Farmed</b> – <code>%d</code>
-        <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
-        <b>👶 Baby Needs Completed</b> – <code>%d</code>
-        <b>🥚 Eggs Hatched</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>💸 Total Bucks</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>⏰ Runtime</b> – <code>%s</code>
-        ]],
-        LocalPlayer.Name,
-        farmed.money,
-        farmed.pets_fullgrown,
-        farmed.ailments,
-        farmed.potions,
-        farmed.friendship_levels,
-        farmed.baby_ailments,
-        farmed.eggs_hatched,
-        ClientData.get("money"),
-        FormatTime(farmed.time)
+          **Farm-Log**
+          <code>%s</code>
+          <b>💸 Money Earned</b> – <code>%d</code>
+          <b>📈 Pets Full-grown</b> – <code>%d</code>
+          <b>🐶 Pet Needs Completed</b> – <code>%d</code>
+          <b>🧪 Potions Farmed</b> – <code>%d</code>
+          <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
+          <b>👶 Baby Needs Completed</b> – <code>%d</code>
+          <b>🥚 Eggs Hatched</b> – <code>%d</code>
+          -----------------------------------------------
+          <b>💸 Total Bucks</b> – <code>%d</code>
+          -----------------------------------------------
+          <b>⏰ Runtime</b> – <code>%s</code>
+          ]],
+          LocalPlayer.Name,
+          farmed.money,
+          farmed.pets_fullgrown,
+          farmed.ailments,
+          farmed.potions,
+          farmed.friendship_levels,
+          farmed.baby_ailments,
+          farmed.eggs_hatched,
+          ClientData.get("money"),
+          FormatTime(farmed.time)
         )
-        telegram_webhook(msg)
-        GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
-        Cooldown.Webhooks.TelegramWebhookSendDelay = tonumber(TelegramWebhookSendDelayTextField.CurrentValue)
+        local ok = telegram_webhook(msg)
+        if ok then
+          GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
+          WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
+          WriteFileLog("Telegram webhook sent", "DEBUG")
+          Cooldown.Webhooks.TelegramWebhookSendDelay = tonumber(TelegramWebhookSendDelayTextField.CurrentValue)
+        else
+          WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
+          WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
+          GUI.Notify("Error", "Something went wrong while trying to send telegram webhook.", "ERROR", "mail-minus")
+          error("", 0)
+        end
       end,
       function()
         return _G.InternalConfig.TelegramWebhookSendDelay == 0
@@ -5430,57 +5515,57 @@ end
     WriteFileLog(string.format("Telegram webhook send delay value set: {%s}", v), "DEBUG")
   end
 
-  GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually = function(v) 
+  GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually = function() 
     WriteConsoleLog("Send manually triggered", nil, "DEBUG")
     WriteFileLog("Send manually triggered", "DEBUG") 
-    if v then
-      if not _G.InternalConfig.TelegramBotApi then
-        GUI.Notify("Warning", "Set <Bot API Key> at first.", "WARNING", "triangle-alert")
-        return
-      end
-      if not _G.InternalConfig.TelegramChatId then
-        GUI.Notify("Warning", "Set <Chat Id> at first.", "WARNING", "triangle-alert")
-        return
-      end
-      Registry.RunTask("telegram_webhook_send_manually_handler", function(v)
-        local msg = string.format([[
-        **Farm-Log**
-        <code>%s</code>
-        <b>💸 Money Earned</b> – <code>%d</code>
-        <b>📈 Pets Full-grown</b> – <code>%d</code>
-        <b>🐶 Pet Needs Completed</b> – <code>%d</code>
-        <b>🧪 Potions Farmed</b> – <code>%d</code>
-        <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
-        <b>👶 Baby Needs Completed</b> – <code>%d</code>
-        <b>🥚 Eggs Hatched</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>💸 Total Bucks</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>⏰ Runtime</b> – <code>%s</code>
-        ]],
-        LocalPlayer.Name,
-        farmed.money,
-        farmed.pets_fullgrown,
-        farmed.ailments,
-        farmed.potions,
-        farmed.friendship_levels,
-        farmed.baby_ailments,
-        farmed.eggs_hatched,
-        ClientData.get("money"),
-        FormatTime(farmed.time)
-        )
-        local ok, _ = pcall(telegram_webhook, msg)
-        if ok then
-          GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
-          WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
-          WriteFileLog("Telegram webhook sent", "DEBUG")
-        else
-          WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
-          WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
-          GUI.Notify("Error", "Something went wrong while trying to send telegram webhook.", "ERROR", "mail-minus")
-        end
-      end)
+    if not _G.InternalConfig.TelegramBotApi then
+      GUI.Notify("Warning", "Set <Bot API Key> at first.", "WARNING", "triangle-alert")
+      return
     end
+    if not _G.InternalConfig.TelegramChatId then
+      GUI.Notify("Warning", "Set <Chat Id> at first.", "WARNING", "triangle-alert")
+      return
+    end
+    Registry.RunTask("telegram_webhook_send_manually_handler", function()
+      WriteConsoleLog("[Registry]: {telegram_webhook_send_manually_handler} runned", nil, "DEBUG")
+      WriteFileLog("[Registry]: {telegram_webhook_send_manually_handler} runned", "DEBUG")
+      local msg = string.format([[
+      **Farm-Log**
+      <code>%s</code>
+      <b>💸 Money Earned</b> – <code>%d</code>
+      <b>📈 Pets Full-grown</b> – <code>%d</code>
+      <b>🐶 Pet Needs Completed</b> – <code>%d</code>
+      <b>🧪 Potions Farmed</b> – <code>%d</code>
+      <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
+      <b>👶 Baby Needs Completed</b> – <code>%d</code>
+      <b>🥚 Eggs Hatched</b> – <code>%d</code>
+      -----------------------------------------------
+      <b>💸 Total Bucks</b> – <code>%d</code>
+      -----------------------------------------------
+      <b>⏰ Runtime</b> – <code>%s</code>
+      ]],
+      LocalPlayer.Name,
+      farmed.money,
+      farmed.pets_fullgrown,
+      farmed.ailments,
+      farmed.potions,
+      farmed.friendship_levels,
+      farmed.baby_ailments,
+      farmed.eggs_hatched,
+      ClientData.get("money"),
+      FormatTime(farmed.time)
+      )
+      local ok = telegram_webhook(msg)
+      if ok then
+        GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
+        WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
+        WriteFileLog("Telegram webhook sent", "DEBUG")
+      else
+        WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
+        WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
+        GUI.Notify("Error", "Something went wrong while trying to send telegram webhook.", "ERROR", "mail-minus")
+      end
+    end)
   end
 
   GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramBotApiKey = function(v) 
@@ -5501,7 +5586,7 @@ end
 		if not ok then
       WriteConsoleLog("Telegram HTTP error while checking bot API", "[-] Telegram HTTP error while checking bot API.", "ERROR")
       WriteFileLog("Telegram HTTP error while checking bot API", "ERROR")
-      GUI.Notify("Warning", string.format("Telegram HTTP error while checking bot API. Setting value to {%s}", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
+      GUI.Notify("Warning", string.format("Telegram HTTP error while checking bot API. Setting value to %s", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
       GUI.TextFieldSetValue(TelegramBotApiKeyTextField, _G.InternalConfig.TelegramBotApi or "") 
       return
 		end
@@ -5517,7 +5602,7 @@ end
 		  end
       WriteConsoleLog("Invalid bot API key: " .. desc, "[-] Invalid bot API key: " .. desc .. ".", "ERROR")
       WriteFileLog("Invalid bot API key: " .. desc, "ERROR")
-      GUI.Notify("Warning", "Invalid bot API key: " .. desc .. string.format(". Setting value to {%s}", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
+      GUI.Notify("Warning", "Invalid bot API key: " .. desc .. string.format(". Setting value to %s", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
       GUI.TextFieldSetValue(TelegramBotApiKeyTextField, _G.InternalConfig.TelegramBotApi or "") 
 	  else
       _G.InternalConfig.TelegramBotApi = v
@@ -5556,7 +5641,7 @@ end
 		if not ok then
       WriteConsoleLog("Telegram HTTP error while trying to send message to chat", "[-] Telegram HTTP error while trying to send message to chat.", "DEBUG")
       WriteFileLog("Telegram HTTP error while trying to send message to chat", "DEBUG")
-      GUI.Notify("Warning", string.format("Telegram HTTP error while trying to send message to chat. Setting value to {%s}", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "mail-warning")
+      GUI.Notify("Warning", string.format("Telegram HTTP error while trying to send message to chat. Setting value to %s", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "mail-warning")
 			GUI.TextFieldSetValue(TelegramChatIdTextField, (_G.InternalConfig.TelegramChatid or ""))
       return
 		end
@@ -5574,7 +5659,7 @@ end
       WriteConsoleLog("Error while trying to send message to chat: " .. data.description or "Unknown Error", "[-] Error while trying to send message to chat: " .. data.description or "Unknown Error.", "ERROR")
       WriteFileLog("Error while trying to send message to chat: " .. data.description or "Unknown Error", "ERROR")
       GUI.TextFieldSetValue(TelegramChatIdTextField, (_G.InternalConfig.TelegramChatid or ""))
-      GUI.Notify("Warning", string.format("Error while trying to send message to chat: " .. data.description or "Unknown Error. " .. "Setting value to {%s}", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "triangle-alert")
+      GUI.Notify("Warning", string.format("Error while trying to send message to chat: " .. data.description or "Unknown Error. " .. "Setting value to %s", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "triangle-alert")
 		end
   end
 
@@ -5638,19 +5723,24 @@ end
     Cooldown.Other.Deadline10sUpdates = nil
     local trade_specified_pets = {}
     local recycler_specific_pets = {}
-    local auto_give_potion_specific_pets = {}
     local pet_pen_specific_pets = {}
-    local pet_farm_exclude_pets = {}
-
+    
     local saved_trade_specified_pets = TradeBlacklistSpecificPetsDropdown.CurrentOption
     local saved_recycler_specific_pets = RecyclerPetPenBlacklistedSpecificPetsDropdown.CurrentOption
-    local saved_auto_give_potion_specific_pets = AutoGivePotionBlacklistedSpecificPetsDropdown.CurrentOption
     local saved_meganeon = PetToMegaNeonDropdown.CurrentOption
     local saved_neon = PetToNeonDropdown.CurrentOption
     local saved_pet_pen_specific_pets = PetPenBlacklistedSpecificPetsDropdown.CurrentOption
-    local saved_pet_farm_exclude_pets = PetAutoFarmPetsToExcludeDropdown.CurrentOption
     local saved_pets_to_give_potion = nil
     local pets_to_give_potion = nil
+    
+    local auto_give_potion_specific_pets = nil
+    local saved_auto_give_potion_specific_pets = nil
+
+    if not _G.InternalConfig.AutoGivePotionDLib.dont_update_exclude_pets then
+      auto_give_potion_specific_pets = {}
+      saved_auto_give_potion_specific_pets = AutoGivePotionBlacklistedSpecificPetsDropdown.CurrentOption
+    end
+
     if _G.pets_to_give_potion_should_be_updated then
       saved_pets_to_give_potion = AutoGivePotionPetToGivePotionDropdown.CurrentOption
       pets_to_give_potion = {}
@@ -5662,6 +5752,13 @@ end
       pet_to_manual_farm = {} 
     end
 
+    local pet_farm_exclude_pets = nil
+    local saved_pet_farm_exclude_pets = nil
+    if not _G.InternalConfig.PetFarmDLib.dont_update_pets_to_exclude then
+      pet_farm_exclude_pets = {}
+      saved_pet_farm_exclude_pets = PetAutoFarmPetsToExcludeDropdown.CurrentOption
+    end
+      
     local __neon_temp = {}
     local __meganeon_temp = {}
     local neon = {}
@@ -5671,18 +5768,22 @@ end
       if v.remote == "practice_dog" then continue end
       table.insert(trade_specified_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       table.insert(recycler_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
-      table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      if auto_give_potion_specific_pets then
+        table.insert(auto_give_potion_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      end
       table.insert(pet_pen_specific_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       if pet_to_manual_farm then
         table.insert(pet_to_manual_farm, v.name .. " | age: " .. v.age .. " | unique: " .. k)
       end
-      if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then
-        if not (v.name:lower()):match("egg") then
-          table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
-        end
-      else
-        if (v.name:lower()):match("egg") then
-          table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+      if pet_farm_exclude_pets then
+        if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then
+          if not (v.name:lower()):match("egg") then
+            table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+          end
+        else
+          if (v.name:lower()):match("egg") then
+            table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+          end
         end
       end
 
@@ -5756,12 +5857,14 @@ end
         end
       end
     end
-    for k,v in ipairs(saved_pet_farm_exclude_pets) do
-      local unique = v:split("unique: ")[2]
-      if unique then
-        if not owned[unique] then
-          GUI.Notify("Warning", string.format("[PetAutoFarm Blacklist] Pet %s is no longer available.", saved_pet_farm_exclude_pets[k]), "WARNING", "triangle-alert")
-          saved_pet_farm_exclude_pets[k] = nil
+    if pet_farm_exclude_pets then
+      for k,v in ipairs(saved_pet_farm_exclude_pets) do
+        local unique = v:split("unique: ")[2]
+        if unique then
+          if not owned[unique] then
+            GUI.Notify("Warning", string.format("[PetAutoFarm Blacklist] Pet %s is no longer available.", saved_pet_farm_exclude_pets[k]), "WARNING", "triangle-alert")
+            saved_pet_farm_exclude_pets[k] = nil
+          end
         end
       end
     end
@@ -5783,12 +5886,14 @@ end
         end
       end
     end
-    for k,v in ipairs(saved_auto_give_potion_specific_pets) do
-      local unique = v:split("unique: ")[2]
-      if unique then
-        if not owned[unique] then 
-          GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
-          saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+    if auto_give_potion_specific_pets then
+      for k,v in ipairs(saved_auto_give_potion_specific_pets) do
+        local unique = v:split("unique: ")[2]
+        if unique then
+          if not owned[unique] then 
+            GUI.Notify("Warning", string.format("[AutoGivePotion Blacklist] Pet %s is no longer available.", saved_auto_give_potion_specific_pets[k]), "WARNING", "triangle-alert")
+            saved_auto_give_potion_specific_pets[k] = nil -- ne fakt chto znahenie ne budet dobavleno
+          end
         end
       end
     end
@@ -5802,8 +5907,10 @@ end
       end
     end
 
-    GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, pet_farm_exclude_pets)
-    GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, saved_pet_farm_exclude_pets)
+    if pet_farm_exclude_pets and not _G.InternalConfig.PetFarmDLib.dont_update_pets_to_exclude then
+      GUI.DropdownUpdateOptionList(PetAutoFarmPetsToExcludeDropdown, pet_farm_exclude_pets)
+      GUI.DropdownSetValue(PetAutoFarmPetsToExcludeDropdown, saved_pet_farm_exclude_pets)
+    end
 
     if saved_pet_to_manual_farm and _G.pet_farm_update then
       GUI.DropdownUpdateOptionList(PetAutoFarmPetToFarmDropdown, pet_to_manual_farm)
@@ -5821,9 +5928,11 @@ end
       GUI.DropdownSetValue(AutoGivePotionPetToGivePotionDropdown, saved_pets_to_give_potion)
     end
 
-    GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, auto_give_potion_specific_pets)
-    GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, saved_auto_give_potion_specific_pets)
-    
+    if auto_give_potion_specific_pets and not _G.InternalConfig.AutoGivePotionDLib.dont_update_exclude_pets then
+      GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, auto_give_potion_specific_pets)
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, saved_auto_give_potion_specific_pets)
+    end
+      
     GUI.DropdownUpdateOptionList(RecyclerPetPenBlacklistedSpecificPetsDropdown, recycler_specific_pets)
     GUI.DropdownSetValue(RecyclerPetPenBlacklistedSpecificPetsDropdown, saved_recycler_specific_pets)
     
