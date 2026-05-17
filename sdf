@@ -1395,6 +1395,7 @@ local _script = coroutine.create(function()
     if remaining <= 0 then
       return { {}, {}, }
     end
+    print('s1')
     local _age = potions[1] and shallow_keys_copy(potions[1]) or {}  
     local _tiny = potions[2] and shallow_keys_copy(potions[2]) or {}
     local big_up = count(_age)
@@ -1409,6 +1410,7 @@ local _script = coroutine.create(function()
         use_age += 1
       end
     end
+    print('s2')
     local original_age = use_age
     use_age = math.min(use_age, big_up)
     if use_age < original_age and tiny_up > 0 then
@@ -1416,6 +1418,7 @@ local _script = coroutine.create(function()
       local tiny_needed = math.ceil((missing_age * 30) / 3)
       use_tiny = math.min(tiny_needed, tiny_up)
     end
+    print('s3')
     use_tiny = math.min(use_tiny, tiny_up)
     if use_age > 0 and big_up > use_age then
       for k,_ in pairs(_age) do 
@@ -1425,6 +1428,7 @@ local _script = coroutine.create(function()
         end
       end
     end
+    print('s4')
     if use_tiny > 0 and tiny_up > use_tiny then
       for k,_ in pairs(_tiny) do 
         _tiny[k] = nil
@@ -4069,7 +4073,6 @@ local _script = coroutine.create(function()
 
           local equiped_pet = ClientData.get("pet_char_wrappers")[1]
           local _task = TaskQueue.Enqueue(function()
-            print("in task")
             for _,v in ipairs(pet_to_grow) do
               local potions = get_potions()
               if not potions[1] and not potions[2] then 
@@ -4079,7 +4082,21 @@ local _script = coroutine.create(function()
                 return
               end	
               local owned = GetOwnedPets()
-              local potions_to_give = calculate_optimal_potions_by_rarity(v[2], v[3], potions)
+              print(v[2], v[3], potions)
+              -- local potions_to_give = calculate_optimal_potions_by_rarity(v[2], v[3], potions)
+              
+local ok, result = xpcall(function()
+    return calculate_optimal_potions_by_rarity(v[2], v[3], potions)
+end, debug.traceback)
+
+if not ok then
+    print("Ошибка в calculate_optimal_potions_by_rarity:")
+    print(result) -- здесь будет строка, номер строки, стек вызовов
+else
+    potions_to_give = result
+end
+
+              
               WriteConsoleLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), string.format("⚙️ Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions].", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
               WriteFileLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
               SafeInvoke("ToolAPI/Equip",
@@ -4089,6 +4106,7 @@ local _script = coroutine.create(function()
                   equip_as_last = false
                 }
               )
+              print("2")
               if count(potions_to_give[1]) > 0 then
                 local main = nil
                 local others = {}
@@ -4111,6 +4129,7 @@ local _script = coroutine.create(function()
                 )
                 task.wait(12)
               end
+              print("3")
               if count(potions_to_give[2]) > 0 then
                 local main = nil
                 local others = {}
@@ -4133,6 +4152,7 @@ local _script = coroutine.create(function()
                 )
                 task.wait(12)
               end
+              print("4")
               WriteConsoleLog(string.format("[Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], pet_to_grow[1][4]), string.format("🧪 [Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], pet_to_grow[1][4]), "DEBUG")
               WriteFileLog(string.format("[Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], pet_to_grow[1][4]), "DEBUG")
               GUI.Notify("Info", string.format("[Age potions - %d] & [Tiny age potions - %d] used on: %s", potions_to_give[1], potions_to_give[2], pet_to_grow[1][4]), "INFO", "info")
@@ -4144,6 +4164,7 @@ local _script = coroutine.create(function()
               WriteConsoleLog(string.format("%s age: %d -> %d\n", v[4], v[2], owned[v[1]].age), string.format("[🧪]:[✅] %s age: %d -> %d\n", v[4], v[2], owned[v[1]].age), "DEBUG")
               WriteFileLog(string.format("%s age: %d -> %d\n", v[4], v[2], owned[v[1]].age), "DEBUG")
               GUI.Notify("Info", string.format("%s age: %d -> %d\n", v[4], v[2], owned[v[1]].age), "INFO", "info")
+              print("6")
               if owned[v[1]].age == 6 then
                 farmed.pets_fullgrown += 1
                 farmed.agp.count_of_pets_fullgrowned += 1
@@ -4155,16 +4176,14 @@ local _script = coroutine.create(function()
                   str = str .. string.format("\n%s", v)
                 end
                 GUI.LabelUpdate(AutoGivePotionPetsFullgrownedLabel, str, "coffee", Color3.fromRGB(203, 92, 255), false)
+                print("7")
               end
             end 
-            print("after task")
             Cooldown.AutoFarm.TryUsePotionAfter = 180
           end)
-          print("1")
           while not _task.completed do
             task.wait(1)
           end
-          print("2")
           SafeInvoke("ToolAPI/Equip",
             equiped_pet.pet_unique or actual_pet.unique or "",
             {
@@ -4172,7 +4191,6 @@ local _script = coroutine.create(function()
               equip_as_last = false
             }
           )
-          print("3")
           if not Cooldown.AutoFarm.TryUsePotionAfter then
             error("", 0)
           end
