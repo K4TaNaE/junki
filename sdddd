@@ -2708,11 +2708,11 @@ local _script = coroutine.create(function()
     for k,v in pairs(GetOwnedPets()) do
       if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then
         if not (v.name:lower()):match("egg") then
-          table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+          table.insert(list, v.name .. " | age: " .. v.age .. " | unique: " .. k)
         end
       else
         if (v.name:lower()):match("egg") then
-          table.insert(pet_farm_exclude_pets, v.name .. " | age: " .. v.age .. " | unique: " .. k)
+          table.insert(list, v.name .. " | age: " .. v.age .. " | unique: " .. k)
         end
       end
     end
@@ -2884,7 +2884,6 @@ local _script = coroutine.create(function()
           local _task = TaskQueue.Enqueue(function()
             local flag = false
             local kitty_unique = InvGetCategoryUnique("pets", "2d_kitty")                    
-            print("before 1 flag_if_not_one_to_farm:", _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm)
             if _G.InternalConfig.PetFarmDLib.Detect2DKitty then
               if kitty_unique == actual_pet.unique and kitty_unique == ClientData.get("pet_char_wrappers")[1].pet_unique then
                 flag = true
@@ -2969,7 +2968,6 @@ local _script = coroutine.create(function()
                 end 
                 if not flag then 
                   if _G.InternalConfig.PetFarmDLib.OppositeFarm then
-                    print("before 2 flag_if_not_one_to_farm:", _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm)
                     if not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
                       WriteConsoleLog("No pets to farm depending on filter. Running opposite farm filter", "⚙️ No pets to farm depending on filter. Running opposite farm filter.", "DEBUG")
                       WriteFileLog("No pets to farm depending on filter. Running opposite farm filter", "DEBUG")
@@ -2987,7 +2985,6 @@ local _script = coroutine.create(function()
                             flag = true
                             _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm = true
                             _G.InternalConfig.PetFarmDLib.random_farm = true
-                            print("detected where expected")
                             break             
                           end
                         end
@@ -3101,7 +3098,7 @@ local _script = coroutine.create(function()
                   GUI.Notify("Info", string.format("New pet to farm detected: %s", actual_pet.remote), "INFO", "info")
                 end
               end
-              if not flag then 
+              if not flag and not _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then -- если пет не найден, не разрешить коду идти дальше, чтобы просто так не запускать таск детектор
                 Cooldown.AutoFarm.PetAutoFarm = 25
                 return
               end
@@ -4323,8 +4320,7 @@ local _script = coroutine.create(function()
   GUI.Tabs.AutoFarm.Sections.OtherAutoFarm.Callbacks.HandleAutoGivePotionMode = function(v)
     WriteConsoleLog("Mode triggered", nil, "DEBUG")
     WriteFileLog("Mode triggered", "DEBUG")
-    local mode = table.unpack(v)
-    if mode == "manual" then
+    if v[1] then
       GUI.ToggleButtonSetValue(AutoGivePotionToggleButton, false)
       GUI.DropdownUpdateOptionList(AutoGivePotionSetHigherPriorityForDropdown, {})
       GUI.DropdownSetValue(AutoGivePotionSetHigherPriorityForDropdown, {"set <Mode> to automated"})
@@ -4351,6 +4347,12 @@ local _script = coroutine.create(function()
       GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedRaritiesDropdown, {"common", "uncommon", "rare", "ultra-rare", "legendary"})
       GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedAgesDropdown, {{"newborn", "junior", "pre-teen", "teen", "post-teen", "fullgrown"}})
       GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedPropertiesDropdown, {"rideable", "flyable", "neon", "meganeon"})
+
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedRaritiesDropdown, {})
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedAgesDropdown, {})
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedPropertiesDropdown, {})
+      GUI.DropdownSetValue(AutoGivePotionBlacklistedSpecificPetsDropdown, {})
+
       GUI.DropdownUpdateOptionList(AutoGivePotionBlacklistedSpecificPetsDropdown, {})
       _G.InternalConfig.AutoGivePotionDLib.dont_update_exclude_pets = false 
 
@@ -4453,6 +4455,7 @@ local _script = coroutine.create(function()
       if Registry.Exists("pet_pen_progression_collection_handler") then
         GUI.ToggleButtonSetValue(PetPenJustAutoCollectProgressionToggleButton, false)
       end
+      Cooldown.AutoFarm.AutoCollectProgression = 0
       Registry.RegisterTask("pet_pen_progression_collection_handler_2", function()
         -- ==============
         Cooldown.AutoFarm.AutoCollectProgression = nil
@@ -4499,6 +4502,10 @@ local _script = coroutine.create(function()
               table.insert(pets_to_place, {k, v.rarity})
             end
           end
+        else
+          GUI.Notify("Warning", "[PetPen]: No free places to put pets to pet pen.", "WARNING", "triangle-alert")
+          Cooldown.AutoFarm.PetPenCheckAfter = 500
+          return
         end
         if #pets_to_place == 0 then
           GUI.Notify("Warning", "[PetPen]: No pets to place to pet pen.", "WARNING", "triangle-alert")
@@ -4554,8 +4561,8 @@ local _script = coroutine.create(function()
         Cooldown.AutoFarm.PetPenCheckAfter = 5 
       end)
     else
-      WriteConsoleLog("Pet Pen disabled", nil, "DEBUG")
-      WriteFileLog("Pet Pen disabled", "DEBUG")
+      WriteConsoleLog("Pet pen disabled", nil, "DEBUG")
+      WriteFileLog("Pet pen disabled", "DEBUG")
       Registry.UnregisterTask("pet_pen_handler")
       Registry.UnregisterTask("pet_pen_progression_collection_handler_2")
       Cooldown.AutoFarm.PetPenCheckAfter = nil
