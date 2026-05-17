@@ -18,7 +18,7 @@ local function __Notify(text)
 end
 
 local function IntegrityCheck(func_set :table, on_fallback :Callback, replace :Callback, on_success)
-  for _,v in ipairs(func_set) do
+  for _,v in pairs(func_set) do
     if v then 
       pcall(on_success)
       return v 
@@ -46,7 +46,7 @@ local gethui = IntegrityCheck({gethui, get_hui, syn.gethui, syn.get_hui}, functi
 local setfpscap = IntegrityCheck({setfpscap, set_fps_cap, syn.setfpscap, syn.set_fps_cap, set_fpscap, syn.set_fpscap}, function() __Notify("setfpscap function is not supported by executor. Options: {FPS Cap} won't work.") print("[❌] [setfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [setfpscap] function successfully completed integrity check.") end)
 local getfpscap = IntegrityCheck({get_fps_cap, getfpscap, syn.getfpscap, syn.get_fps_cap, get_fpscap, syn.get_fpscap}, function() __Notify("getfpscap function is not supported by executor. Options: {FPS Counter (label)} won't work.") print("[❌] [getfpscap] function failed integrity check.") end, function(...) return end, function() print("[✅] [getfpscap] function successfully completed integrity check.") end)
 local setthreadidentity = IntegrityCheck({setthreadidentity, set_thread_identity, setthreadcontext, set_thread_context, syn.setthreadidentity, syn.setthreadcontext}, function() __Notify("setthreadidentity function is not supported by executor. Script may or may not work depending on your executor.") print("[❌] [setthreadidentity] function failed integrity check.") end, function(...) return end, function() print("[✅] [setthreadidentity] function successfully completed integrity check.") end)
-local queue_on_teleport = IntegrityCheck({queue_on_teleport, queueonteleport, syn.queue_on_teleport, syn.queueonteleport}, function() __Notify("queue_on_teleport function is not supported by executor. Option: {Auto Reconnect} will not run script after rejoin, you will be just teleported.") print("[❌] [queue_on_teleport] function failed integrity check, but script has own implementation of function") end, nil, function() print("[✅] [queue_on_teleport] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
+local queue_on_teleport = IntegrityCheck({queue_onsetthreadidentity_teleport, queueonteleport, syn.queue_on_teleport, syn.queueonteleport}, function() __Notify("queue_on_teleport function is not supported by executor. Option: {Auto Reconnect} will not run script after rejoin, you will be just teleported.") print("[❌] [queue_on_teleport] function failed integrity check, but script has own implementation of function") end, nil, function() print("[✅] [queue_on_teleport] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
 local setclipboard = IntegrityCheck({setclipboard, set_clipboard, syn.setclipboard, copyclipboard, copy_clipboard, syn.copyclipboard, syn.set_clipboard, syn.copyclipboard}, function() __Notify("setclipboard function is not supported by executor. Options: {Join Discord} won't work.") print("[❌] [setclipboard] function failed integrity check.") end, function(...) end, function() print("[✅] [setclipboard] function successfully completed integrity check.") end) -- dla proverok est li funkcija v dalnejsem
 local hash = IntegrityCheck({hash, crypt.hash, syn.hash}, function() __Notify("hash function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [hash] function failed integrity check.") end, function(...) return end, function() print("[✅] [hash] function successfully completed integrity check.") end)
 local readfile = IntegrityCheck({readfile, read_file, syn.readfile, syn.read_file}, function() print("readfile function is not supported by executor. Doesn't impact on script proper work.") print("[❌] [readfile] function failed integrity check.") end, function(...) return end, function() print("[✅] [readfile] function successfully completed integrity check.") end)
@@ -55,15 +55,17 @@ local _script = coroutine.create(function()
 
   pcall(function()
     makefolder("Arcanic")
-    local _h1 = hash(request({Url="https://i.imageupload.app/e901851cc995659ba1cb.png"}).Body, "sha256") 
+    local _h1 = hash(request({Url="https://i.imageupload.app/c9bee1997f3764331ed4.png"}).Body, "sha256") 
     local _h2
     if isfile("Arcanic/arcsrcplate.png") then 
       _h2 = hash(readfile("Arcanic/arcsrcplate.png"), "sha256")
+      if _h1 ~= _h2 then
+        writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/c9bee1997f3764331ed4.png"))
+      end
+    else
+      writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/c9bee1997f3764331ed4.png"))
     end
-    if not _h1 == _h2 then
-      writefile("Arcanic/arcsrcplate.png", game:HttpGet("https://i.imageupload.app/e901851cc995659ba1cb.png"))
-    end
-    _G.asset = getcustomasset("Arcanic/arcsrcplate.png")
+    _G.asset = getcustomasset("Arcanic/arcsrcplate.png") or ""
   end)
 
 
@@ -1235,37 +1237,38 @@ local _script = coroutine.create(function()
     end)
     _G.HeadCashed = decoded.data[1].imageUrl
   end
-local function telegram_webhook(msg) -- logs and prints (for change)
-  local body = HttpService:JSONEncode({
-    chat_id=_G.InternalConfig.TelegramChatId,
-    text = msg,
-    parse_mode = "HMTL"
-  })
-  local ok, res = pcall(function() 
-    return request({
-      Url = "https://api.telegram.org/bot" .. _G.InternalConfig.TelegramBotApi .. "/sendMessage",
-	  Method = "POST",
-	  Headers = { ["Content-Type"] = "application/json" },
-	  Body = body
-	})
-  end)
-  if not ok then
-    WriteConsoleLog("❌ Unsuccessed to send telegram webhook", "❌ Unsuccessed to send telegram webhook.", "DEBUG")
-    WriteFileLog("❌ Unsuccessed to send telegram webhook", "DEBUG")
-    Cooldown.Webhooks.TelegramWebhookSendDelay = 60
+  local function telegram_webhook(msg) -- logs and prints (for change)
+    local body = HttpService:JSONEncode({
+      chat_id=_G.InternalConfig.TelegramChatId,
+      text = msg,
+      parse_mode = "HTML"
+    })
+    local ok, res = pcall(function() 
+      return request({
+        Url = "https://api.telegram.org/bot" .. _G.InternalConfig.TelegramBotApi .. "/sendMessage",
+        Method = "POST",
+        Headers = { ["Content-Type"] = "application/json" },
+        Body = body
+      })
+    end)
+    if not ok then
+      WriteConsoleLog("Unsuccessed to send telegram webhook", "❌ Unsuccessed to send telegram webhook.", "DEBUG")
+      WriteFileLog("Unsuccessed to send telegram webhook", "DEBUG")
+      Cooldown.Webhooks.TelegramWebhookSendDelay = 60
+    end
+    local data
+    pcall(function() 
+      data = HttpService:JSONDecode(res.Body)
+    end)
+    if data and data.ok then
+      WriteConsoleLog("Telegram webhook sent", "☑️ Telegram webhook sent.", "DEBUG")
+      WriteFileLog("Telegram webhook sent", "DEBUG")
+    else
+      WriteConsoleLog(string.format("Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), "DEBUG")
+      WriteFileLog("Unsuccessed to send telegram webhook", "DEBUG")
+    end
+    return data and data.ok
   end
-  local data
-  pcall(function() 
-	data = HttpService:JSONDecode(res.Body)
-  end)
-  if data and data.ok then
-    WriteConsoleLog("Telegram webhook sent", "☑️ Telegram webhook sent.", "DEBUG")
-    WriteFileLog("Telegram webhook sent", "DEBUG")
-  else
-    WriteConsoleLog(string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), string.format("❌ Telegram error while trying to send webhook: %s", data and data.description or "Unknown error"), "DEBUG")
-    WriteFileLog("❌ Unsuccessed to send telegram webhook", "DEBUG")
-  end
-end
   local function Webhook(title, description)
     local url = _G.InternalConfig.DiscordWebhookUrl
     if not _G.HeadCashed then
@@ -1769,11 +1772,14 @@ end
         UpdateGui("pet_needs", farmed.ailments)
         GUI.LabelUpdate(RuntimeStatsEggsHatchedLabel, string.format("Eggs hatched : %d", farmed.eggs_hatched), "egg", Color3.fromRGB(203, 92, 255), false)
         GUI.LabelUpdate(RuntimeStatsPetNeedsCompletedLabel, string.format("Pet needs completed : %d", farmed.ailments), "cat", Color3.fromRGB(203, 92, 255), false)
-        if not _G.InternalConfig.PetFarmDLib.PotionFarm or table.unpack(PetAutoFarmFarmTypeDropdown.CurrentOption) == "manual" then 
+        if not _G.InternalConfig.PetFarmDLib.PotionFarm then 
           actual_pet.unique = false 
           ClearPetFarmCache()
         else
-          task.wait(.3)
+          task.wait(.8)
+          local _pet = GetOwnedPets()[actual_pet.unique]
+          _G.InternalConfig.PetFarmDLib.ManualPetsToFarm = _pet.unique
+          GUI.DropdownSetValue(PetAutoFarmPetToFarmDropdown, {_pet.name .. " | age: " .. _pet.age .. " | unique: " .. _pet.unique})
           PetUpdate()
         end
       else
@@ -1938,10 +1944,10 @@ end
         end
         if money > 20 then
           SafeInvoke("ShopAPI/BuyItem",
-              "food",
+            "food",
             "water",
             {
-            buy_count = 20
+              buy_count = 20
             }
           )
         else 
@@ -1949,7 +1955,7 @@ end
             "food",
             "water",
             {
-            buy_count = money / 2
+              buy_count = money / 2
             }
           )
         end
@@ -2406,7 +2412,7 @@ end
       local money = ClientData.get("money")
       local deadline = os.clock() + 5
       repeat 
-        SafeFire("ToolAPI/ServerUseTool",
+        SafeInvoke("ToolAPI/ServerUseTool",
         InvGetCategoryUnique("food", "apple"),
           "END"
         )
@@ -2434,7 +2440,7 @@ end
             "food",
             "water",
             {
-            buy_count = 20
+              buy_count = 20
             }
           )
         else 
@@ -2450,7 +2456,7 @@ end
       local money = ClientData.get("money")
       local deadline = os.clock() + 5
       repeat			
-        SafeFire("ToolAPI/ServerUseTool",
+        SafeInvoke("ToolAPI/ServerUseTool",
           InvGetCategoryUnique("food", "water"),
           "END"
           )
@@ -2902,6 +2908,7 @@ end
               end
             end
             if not actual_pet.unique or _G.InternalConfig.PetFarmDLib.flag_if_no_one_to_farm then
+              print("in cycle")
               local owned_pets = GetOwnedPets()
               if table.unpack(PetAutoFarmFarmPriorityDropdown.CurrentOption) == "pets" then	
                 if _G.InternalConfig.PetFarmDLib.PotionFarm then
@@ -5187,6 +5194,7 @@ end
     if ok then      
       WriteConsoleLog(string.format("Discord webhook url value set: {%s}", url), nil, "DEBUG")
       WriteFileLog(string.format("Discord webhook url value set: {%s}", url), "DEBUG")
+      GUI.Notify("Info", "Discord webhook URL is valid.", "INFO", "mail-plus")
       _G.InternalConfig.DiscordWebhookUrl = url
     else
       GUI.TextFieldSetValue(DiscordWebhookUrlTextField, "")
@@ -5229,28 +5237,30 @@ end
       return
     end
     Registry.RunTask("discord_webhook_send_manually_handler", function() 
-    local desc = string.format([[
-      > 💸 Money Earned - [ **%d** ]
-      > 📈 Pets Full-grown - [ **%d** ]
-      > 🐶 Pet Needs Completed - [ **%d** ]
-      > 🧪 Potions Farmed - [ **%d** ]
-      > 🧸 Friendship Levels Farmed - [ **%d** ]
-      > 👶 Baby Needs Completed - [ **%d** ]
-      > 🥚 Eggs Hatched - [ **%d** ]
-      ---------------------------------------
-      > 💸 Total Bucks - [ **%d** ]
-      ---------------------------------------
-      > ⏰ Runtime - [ **%s** ]
-      ]],
-      farmed.money,
-      farmed.pets_fullgrown,
-      farmed.ailments,
-      farmed.potions,
-      farmed.friendship_levels,
-      farmed.baby_ailments,
-      farmed.eggs_hatched,
-      ClientData.get("money"),
-      FormatTime(farmed.time)
+      WriteConsoleLog("[Registry]: {discord_webhook_send_manually_handler} runned", nil, "DEBUG")
+      WriteFileLog("[Registry]: {discord_webhook_send_manually_handler} runned", "DEBUG")
+      local desc = string.format([[
+        > 💸 Money Earned - [ **%d** ]
+        > 📈 Pets Full-grown - [ **%d** ]
+        > 🐶 Pet Needs Completed - [ **%d** ]
+        > 🧪 Potions Farmed - [ **%d** ]
+        > 🧸 Friendship Levels Farmed - [ **%d** ]
+        > 👶 Baby Needs Completed - [ **%d** ]
+        > 🥚 Eggs Hatched - [ **%d** ]
+        ---------------------------------------
+        > 💸 Total Bucks - [ **%d** ]
+        ---------------------------------------
+        > ⏰ Runtime - [ **%s** ]
+        ]],
+        farmed.money,
+        farmed.pets_fullgrown,
+        farmed.ailments,
+        farmed.potions,
+        farmed.friendship_levels,
+        farmed.baby_ailments,
+        farmed.eggs_hatched,
+        ClientData.get("money"),
+        FormatTime(farmed.time)
       )
       local ok, _ = pcall(Webhook, "Farm-Log", desc)
       if ok then
@@ -5355,34 +5365,43 @@ end
         WriteConsoleLog("[Registry]: {telegram_webhook_send_handler} runned", nil, "DEBUG")
         WriteFileLog("[Registry]: {telegram_webhook_send_handler} runned", "DEBUG")
         local msg = string.format([[
-        **Farm-Log**
-        <code>%s</code>
-        <b>💸 Money Earned</b> – <code>%d</code>
-        <b>📈 Pets Full-grown</b> – <code>%d</code>
-        <b>🐶 Pet Needs Completed</b> – <code>%d</code>
-        <b>🧪 Potions Farmed</b> – <code>%d</code>
-        <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
-        <b>👶 Baby Needs Completed</b> – <code>%d</code>
-        <b>🥚 Eggs Hatched</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>💸 Total Bucks</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>⏰ Runtime</b> – <code>%s</code>
-        ]],
-        LocalPlayer.Name,
-        farmed.money,
-        farmed.pets_fullgrown,
-        farmed.ailments,
-        farmed.potions,
-        farmed.friendship_levels,
-        farmed.baby_ailments,
-        farmed.eggs_hatched,
-        ClientData.get("money"),
-        FormatTime(farmed.time)
+          **Farm-Log**
+          <code>%s</code>
+          <b>💸 Money Earned</b> – <code>%d</code>
+          <b>📈 Pets Full-grown</b> – <code>%d</code>
+          <b>🐶 Pet Needs Completed</b> – <code>%d</code>
+          <b>🧪 Potions Farmed</b> – <code>%d</code>
+          <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
+          <b>👶 Baby Needs Completed</b> – <code>%d</code>
+          <b>🥚 Eggs Hatched</b> – <code>%d</code>
+          -----------------------------------------------
+          <b>💸 Total Bucks</b> – <code>%d</code>
+          -----------------------------------------------
+          <b>⏰ Runtime</b> – <code>%s</code>
+          ]],
+          LocalPlayer.Name,
+          farmed.money,
+          farmed.pets_fullgrown,
+          farmed.ailments,
+          farmed.potions,
+          farmed.friendship_levels,
+          farmed.baby_ailments,
+          farmed.eggs_hatched,
+          ClientData.get("money"),
+          FormatTime(farmed.time)
         )
-        telegram_webhook(msg)
-        GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
-        Cooldown.Webhooks.TelegramWebhookSendDelay = tonumber(TelegramWebhookSendDelayTextField.CurrentValue)
+        local ok = telegram_webhook(msg)
+        if ok then
+          GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
+          WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
+          WriteFileLog("Telegram webhook sent", "DEBUG")
+          Cooldown.Webhooks.TelegramWebhookSendDelay = tonumber(TelegramWebhookSendDelayTextField.CurrentValue)
+        else
+          WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
+          WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
+          GUI.Notify("Error", "Something went wrong while trying to send telegram webhook.", "ERROR", "mail-minus")
+          error("", 0)
+        end
       end,
       function()
         return _G.InternalConfig.TelegramWebhookSendDelay == 0
@@ -5430,57 +5449,57 @@ end
     WriteFileLog(string.format("Telegram webhook send delay value set: {%s}", v), "DEBUG")
   end
 
-  GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually = function(v) 
+  GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.TelegramSendManually = function() 
     WriteConsoleLog("Send manually triggered", nil, "DEBUG")
     WriteFileLog("Send manually triggered", "DEBUG") 
-    if v then
-      if not _G.InternalConfig.TelegramBotApi then
-        GUI.Notify("Warning", "Set <Bot API Key> at first.", "WARNING", "triangle-alert")
-        return
-      end
-      if not _G.InternalConfig.TelegramChatId then
-        GUI.Notify("Warning", "Set <Chat Id> at first.", "WARNING", "triangle-alert")
-        return
-      end
-      Registry.RunTask("telegram_webhook_send_manually_handler", function(v)
-        local msg = string.format([[
-        **Farm-Log**
-        <code>%s</code>
-        <b>💸 Money Earned</b> – <code>%d</code>
-        <b>📈 Pets Full-grown</b> – <code>%d</code>
-        <b>🐶 Pet Needs Completed</b> – <code>%d</code>
-        <b>🧪 Potions Farmed</b> – <code>%d</code>
-        <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
-        <b>👶 Baby Needs Completed</b> – <code>%d</code>
-        <b>🥚 Eggs Hatched</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>💸 Total Bucks</b> – <code>%d</code>
-        -----------------------------------------------
-        <b>⏰ Runtime</b> – <code>%s</code>
-        ]],
-        LocalPlayer.Name,
-        farmed.money,
-        farmed.pets_fullgrown,
-        farmed.ailments,
-        farmed.potions,
-        farmed.friendship_levels,
-        farmed.baby_ailments,
-        farmed.eggs_hatched,
-        ClientData.get("money"),
-        FormatTime(farmed.time)
-        )
-        local ok, _ = pcall(telegram_webhook, msg)
-        if ok then
-          GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
-          WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
-          WriteFileLog("Telegram webhook sent", "DEBUG")
-        else
-          WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
-          WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
-          GUI.Notify("Error", "Something went wrong while trying to send telegram webhook.", "ERROR", "mail-minus")
-        end
-      end)
+    if not _G.InternalConfig.TelegramBotApi then
+      GUI.Notify("Warning", "Set <Bot API Key> at first.", "WARNING", "triangle-alert")
+      return
     end
+    if not _G.InternalConfig.TelegramChatId then
+      GUI.Notify("Warning", "Set <Chat Id> at first.", "WARNING", "triangle-alert")
+      return
+    end
+    Registry.RunTask("telegram_webhook_send_manually_handler", function()
+      WriteConsoleLog("[Registry]: {telegram_webhook_send_manually_handler} runned", nil, "DEBUG")
+      WriteFileLog("[Registry]: {telegram_webhook_send_manually_handler} runned", "DEBUG")
+      local msg = string.format([[
+      **Farm-Log**
+      <code>%s</code>
+      <b>💸 Money Earned</b> – <code>%d</code>
+      <b>📈 Pets Full-grown</b> – <code>%d</code>
+      <b>🐶 Pet Needs Completed</b> – <code>%d</code>
+      <b>🧪 Potions Farmed</b> – <code>%d</code>
+      <b>🧸 Friendship Levels Farmed</b> – <code>%d</code>
+      <b>👶 Baby Needs Completed</b> – <code>%d</code>
+      <b>🥚 Eggs Hatched</b> – <code>%d</code>
+      -----------------------------------------------
+      <b>💸 Total Bucks</b> – <code>%d</code>
+      -----------------------------------------------
+      <b>⏰ Runtime</b> – <code>%s</code>
+      ]],
+      LocalPlayer.Name,
+      farmed.money,
+      farmed.pets_fullgrown,
+      farmed.ailments,
+      farmed.potions,
+      farmed.friendship_levels,
+      farmed.baby_ailments,
+      farmed.eggs_hatched,
+      ClientData.get("money"),
+      FormatTime(farmed.time)
+      )
+      local ok = telegram_webhook(msg)
+      if ok then
+        GUI.Notify("Success", "Telegram webhook sent.", "SUCCESS", "mail-check")
+        WriteConsoleLog("Telegram webhook sent", nil, "DEBUG")
+        WriteFileLog("Telegram webhook sent", "DEBUG")
+      else
+        WriteConsoleLog("Something went wrong while trying to send telegram webhook", nil, "ERROR")
+        WriteFileLog("Something went wrong while trying to send telegram webhook", "ERROR")
+        GUI.Notify("Error", "Something went wrong while trying to send telegram webhook.", "ERROR", "mail-minus")
+      end
+    end)
   end
 
   GUI.Tabs.Webhooks.Sections.Telegram.Callbacks.HandleTelegramBotApiKey = function(v) 
@@ -5501,7 +5520,7 @@ end
 		if not ok then
       WriteConsoleLog("Telegram HTTP error while checking bot API", "[-] Telegram HTTP error while checking bot API.", "ERROR")
       WriteFileLog("Telegram HTTP error while checking bot API", "ERROR")
-      GUI.Notify("Warning", string.format("Telegram HTTP error while checking bot API. Setting value to {%s}", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
+      GUI.Notify("Warning", string.format("Telegram HTTP error while checking bot API. Setting value to %s", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
       GUI.TextFieldSetValue(TelegramBotApiKeyTextField, _G.InternalConfig.TelegramBotApi or "") 
       return
 		end
@@ -5517,7 +5536,7 @@ end
 		  end
       WriteConsoleLog("Invalid bot API key: " .. desc, "[-] Invalid bot API key: " .. desc .. ".", "ERROR")
       WriteFileLog("Invalid bot API key: " .. desc, "ERROR")
-      GUI.Notify("Warning", "Invalid bot API key: " .. desc .. string.format(". Setting value to {%s}", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
+      GUI.Notify("Warning", "Invalid bot API key: " .. desc .. string.format(". Setting value to %s", (_G.InternalConfig.TelegramBotApi or "")), "WARNING", "mail-warning")
       GUI.TextFieldSetValue(TelegramBotApiKeyTextField, _G.InternalConfig.TelegramBotApi or "") 
 	  else
       _G.InternalConfig.TelegramBotApi = v
@@ -5556,7 +5575,7 @@ end
 		if not ok then
       WriteConsoleLog("Telegram HTTP error while trying to send message to chat", "[-] Telegram HTTP error while trying to send message to chat.", "DEBUG")
       WriteFileLog("Telegram HTTP error while trying to send message to chat", "DEBUG")
-      GUI.Notify("Warning", string.format("Telegram HTTP error while trying to send message to chat. Setting value to {%s}", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "mail-warning")
+      GUI.Notify("Warning", string.format("Telegram HTTP error while trying to send message to chat. Setting value to %s", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "mail-warning")
 			GUI.TextFieldSetValue(TelegramChatIdTextField, (_G.InternalConfig.TelegramChatid or ""))
       return
 		end
@@ -5574,7 +5593,7 @@ end
       WriteConsoleLog("Error while trying to send message to chat: " .. data.description or "Unknown Error", "[-] Error while trying to send message to chat: " .. data.description or "Unknown Error.", "ERROR")
       WriteFileLog("Error while trying to send message to chat: " .. data.description or "Unknown Error", "ERROR")
       GUI.TextFieldSetValue(TelegramChatIdTextField, (_G.InternalConfig.TelegramChatid or ""))
-      GUI.Notify("Warning", string.format("Error while trying to send message to chat: " .. data.description or "Unknown Error. " .. "Setting value to {%s}", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "triangle-alert")
+      GUI.Notify("Warning", string.format("Error while trying to send message to chat: " .. data.description or "Unknown Error. " .. "Setting value to %s", (_G.InternalConfig.TelegramChatid or "")), "WARNING", "triangle-alert")
 		end
   end
 
