@@ -374,6 +374,13 @@ local _script = coroutine.create(function()
       pets_fullgrowned = {},
     },
   }
+  local TASKS_BY_RARITY = {
+    common = 25,
+    uncommon = 36,
+    rare = 54,
+    ultra_rare = 107,
+    legendary = 183,
+  }
   local furn = {}
   local parts = {
       ["main"] = {0,100,0},
@@ -1395,7 +1402,6 @@ local _script = coroutine.create(function()
     if remaining <= 0 then
       return { {}, {}, }
     end
-    print('s1')
     local _age = potions[1] and shallow_keys_copy(potions[1]) or {}  
     local _tiny = potions[2] and shallow_keys_copy(potions[2]) or {}
     local big_up = count(_age)
@@ -1410,7 +1416,6 @@ local _script = coroutine.create(function()
         use_age += 1
       end
     end
-    print('s2')
     local original_age = use_age
     use_age = math.min(use_age, big_up)
     if use_age < original_age and tiny_up > 0 then
@@ -1418,7 +1423,6 @@ local _script = coroutine.create(function()
       local tiny_needed = math.ceil((missing_age * 30) / 3)
       use_tiny = math.min(tiny_needed, tiny_up)
     end
-    print('s3')
     use_tiny = math.min(use_tiny, tiny_up)
     if use_age > 0 and big_up > use_age then
       for k,_ in pairs(_age) do 
@@ -1428,7 +1432,6 @@ local _script = coroutine.create(function()
         end
       end
     end
-    print('s4')
     if use_tiny > 0 and tiny_up > use_tiny then
       for k,_ in pairs(_tiny) do 
         _tiny[k] = nil
@@ -4082,9 +4085,8 @@ local _script = coroutine.create(function()
                 return
               end	
               local owned = GetOwnedPets()
-              print(v[2], v[3], potions)
               -- local potions_to_give = calculate_optimal_potions_by_rarity(v[2], v[3], potions)
-              
+              local potions_to_give
 local ok, result = xpcall(function()
     return calculate_optimal_potions_by_rarity(v[2], v[3], potions)
 end, debug.traceback)
@@ -4099,6 +4101,7 @@ end
               
               WriteConsoleLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), string.format("⚙️ Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions].", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
               WriteFileLog(string.format("Optimal count of potions to give has been calculated for [%s]: [%d Age potions] and [%d Tiny age potions]", v[4], potions_to_give[1], potions_to_give[2]), "DEBUG")
+              print("1")
               SafeInvoke("ToolAPI/Equip",
                 v[1],
                 {
