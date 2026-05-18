@@ -4017,10 +4017,10 @@ local _script = coroutine.create(function()
     if v then
       WriteConsoleLog("Auto give potion enabled", nil, "DEBUG")
       WriteFileLog("Auto give potion enabled", "DEBUG")
-      Cooldown.AutoFarm.TryUsePotionAfter = 0
+      Cooldown.OtherAutoFarm.TryUsePotionAfter = 0
       if table.unpack(AutoGivePotionModeDropdown.CurrentOption) == "automated" then
         Registry.RegisterTask("automated_auto_give_potion_handler", function()
-          Cooldown.AutoFarm.TryUsePotionAfter = nil
+          Cooldown.OtherAutoFarm.TryUsePotionAfter = nil
           WriteConsoleLog("[Registry]: {automated_auto_give_potion_handler} runned", nil, "DEBUG")
           WriteFileLog("[Registry]: {automated_auto_give_potion_handler} runned", "DEBUG")
           local potions = get_potions()
@@ -4028,7 +4028,7 @@ local _script = coroutine.create(function()
             WriteConsoleLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "🧪 No potions detected. Cooldown: [180]s.", "DEBUG")
             WriteFileLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "DEBUG")
             GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s.", "INFO", "info")
-            Cooldown.Cooldown.TryUsePotionAfter = 180
+            Cooldown.OtherAutoFarm.TryUsePotionAfter = 180
             return
           end	
           local pet_to_grow = {}
@@ -4054,7 +4054,7 @@ local _script = coroutine.create(function()
             WriteConsoleLog("[AutoGivePotion]: No pets to grow up. Cooldown [180]s", "🧪 No pets to grow up. Cooldown: [180]s.", "DEBUG")
             WriteFileLog("[AutoGivePotion]: No pets to grow up. Cooldown [180]s", "DEBUG")
             GUI.Notify("Info", "[AutoGivePotion]: No pets to grow up. Cooldown [180]s.", "INFO", "info")
-            Cooldown.Cooldown.TryUsePotionAfter = 180
+            Cooldown.OtherAutoFarm.TryUsePotionAfter = 180
             return
           end
 
@@ -4173,7 +4173,7 @@ local _script = coroutine.create(function()
                 print("7")
               end
             end 
-            Cooldown.AutoFarm.TryUsePotionAfter = 180
+            Cooldown.OtherAutoFarm.TryUsePotionAfter = 180
           end)
           while not _task.completed do
             task.wait(1)
@@ -4185,15 +4185,15 @@ local _script = coroutine.create(function()
               equip_as_last = false
             }
           )
-          if not Cooldown.AutoFarm.TryUsePotionAfter then
+          if not Cooldown.OtherAutoFarm.TryUsePotionAfter then
             error("", 0)
           end
         end,
         function()
-          return Cooldown.AutoFarm.TryUsePotionAfter == 0
+          return Cooldown.OtherAutoFarm.TryUsePotionAfter == 0
         end,
         function()
-          Cooldown.AutoFarm.TryUsePotionAfter = 5
+          Cooldown.OtherAutoFarm.TryUsePotionAfter = 5
         end)
       else
         if not _G.InternalConfig.AutoGivePotionDLib.PetsToGivePotion then
@@ -4202,7 +4202,7 @@ local _script = coroutine.create(function()
           return
         end
         Registry.RegisterTask("manual_auto_give_potion_handler", function()
-          Cooldown.AutoFarm.TryUsePotionAfter = nil
+          Cooldown.OtherAutoFarm.TryUsePotionAfter = nil
           WriteConsoleLog("[Registry]: {manual_auto_give_potion_handler} runned", nil, "DEBUG")
           WriteFileLog("[Registry]: {manual_auto_give_potion_handler} runned", "DEBUG")
           local potions = get_potions()
@@ -4210,7 +4210,7 @@ local _script = coroutine.create(function()
             WriteConsoleLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "🧪 No potions detected. Cooldown: [180]s.", "DEBUG")
             WriteFileLog("[AutoGivePotion]: No potions detected. Cooldown [180]s", "DEBUG")
             GUI.Notify("Info", "[AutoGivePotion]: No potions detected. Cooldown [180]s.", "INFO", "info")
-            Cooldown.Cooldown.TryUsePotionAfter = 180
+            Cooldown.OtherAutoFarm.TryUsePotionAfter = 180
             return
           end	
 
@@ -4315,13 +4315,13 @@ local _script = coroutine.create(function()
               equip_as_last = false
             }
           )
-          Cooldown.AutoFarm.TryUsePotionAfter = 180
+          Cooldown.OtherAutoFarm.TryUsePotionAfter = 180
         end,
         function()
-          return Cooldown.AutoFarm.TryUsePotionAfter == 0
+          return Cooldown.OtherAutoFarm.TryUsePotionAfter == 0
         end,
         function()
-          Cooldown.AutoFarm.TryUsePotionAfter = 5
+          Cooldown.OtherAutoFarm.TryUsePotionAfter = 5
         end)
       end
     else
@@ -4329,7 +4329,7 @@ local _script = coroutine.create(function()
       WriteFileLog("Auto give potion disabled", "DEBUG")
       Registry.UnregisterTask("manual_auto_give_potion_handler")
       Registry.UnregisterTask("automated_auto_give_potion_handler")
-      Cooldown.AutoFarm.TryUsePotionAfter = nil
+      Cooldown.OtherAutoFarm.TryUsePotionAfter = nil
     end
   end
   
@@ -4471,25 +4471,25 @@ local _script = coroutine.create(function()
       if Registry.Exists("pet_pen_progression_collection_handler") then
         GUI.ToggleButtonSetValue(PetPenJustAutoCollectProgressionToggleButton, false)
       end
-      Cooldown.AutoFarm.AutoCollectProgression = 0
+      Cooldown.OtherAutoFarm.AutoCollectProgression = 0
       Registry.RegisterTask("pet_pen_progression_collection_handler_2", function()
         -- ==============
-        Cooldown.AutoFarm.AutoCollectProgression = nil
+        Cooldown.OtherAutoFarm.AutoCollectProgression = nil
         WriteConsoleLog("[Registry]: {pet_pen_handler} runned", nil, "DEBUG")
         WriteFileLog("[Registry]: {pet_pen_handler} runned", "DEBUG")
         SafeFire("IdleProgressionAPI/CommitAllProgression", true)
-        Cooldown.AutoFarm.AutoCollectProgression = 300
+        Cooldown.OtherAutoFarm.AutoCollectProgression = 300
         -- ==============
       end,
       function()
-        return Cooldown.AutoFarm.AutoCollectProgression == 0
+        return Cooldown.OtherAutoFarm.AutoCollectProgression == 0
       end,
       function()
-        Cooldown.AutoFarm.AutoCollectProgression = 5
+        Cooldown.OtherAutoFarm.AutoCollectProgression = 5
       end)
-      Cooldown.AutoFarm.PetPenCheckAfter = 0
+      Cooldown.OtherAutoFarm.PetPenCheckAfter = 0
       Registry.RegisterTask("pet_pen_handler", function()
-        Cooldown.AutoFarm.PetPenCheckAfter = nil
+        Cooldown.OtherAutoFarm.PetPenCheckAfter = nil
         WriteConsoleLog("[Registry]: {pet_pen_handler} runned", nil, "DEBUG")
         WriteFileLog("[Registry]: {pet_pen_handler} runned", "DEBUG")
 
@@ -4520,12 +4520,12 @@ local _script = coroutine.create(function()
           end
         else
           GUI.Notify("Warning", "[PetPen]: No free places to put pets to pet pen.", "WARNING", "triangle-alert")
-          Cooldown.AutoFarm.PetPenCheckAfter = 500
+          Cooldown.OtherAutoFarm.PetPenCheckAfter = 500
           return
         end
         if #pets_to_place == 0 then
           GUI.Notify("Warning", "[PetPen]: No pets to place to pet pen.", "WARNING", "triangle-alert")
-          Cooldown.AutoFarm.PetPenCheckAfter = 300
+          Cooldown.OtherAutoFarm.PetPenCheckAfter = 300
           return
         end
         if _G.InternalConfig.PetPenDLib.PrioritizedRarities then
@@ -4568,21 +4568,21 @@ local _script = coroutine.create(function()
           WriteConsoleLog(string.format("%s placed into pet pen!", InvGetNameFromUnique("pets",v [1])), string.format("%s placed into pet pen!", InvGetNameFromUnique("pets",v [1])), "DEBUG")
           WriteFileLog(string.format("%s placed into pet pen!", InvGetNameFromUnique("pets",v [1])), "DEBUG")
         end   
-        Cooldown.AutoFarm.PetPenCheckAfter = 300
+        Cooldown.OtherAutoFarm.PetPenCheckAfter = 300
       end,
       function()
-        return Cooldown.AutoFarm.PetPenCheckAfter == 0
+        return Cooldown.OtherAutoFarm.PetPenCheckAfter == 0
       end,
       function()
-        Cooldown.AutoFarm.PetPenCheckAfter = 5 
+        Cooldown.OtherAutoFarm.PetPenCheckAfter = 5 
       end)
     else
       WriteConsoleLog("Pet pen disabled", nil, "DEBUG")
       WriteFileLog("Pet pen disabled", "DEBUG")
       Registry.UnregisterTask("pet_pen_handler")
       Registry.UnregisterTask("pet_pen_progression_collection_handler_2")
-      Cooldown.AutoFarm.PetPenCheckAfter = nil
-      Cooldown.Autofarm.AutoCollectProgression = nil
+      Cooldown.OtherAutoFarm.PetPenCheckAfter = nil
+      Cooldown.OtherAutoFarm.AutoCollectProgression = nil
     end
   end 
   
@@ -4615,27 +4615,27 @@ local _script = coroutine.create(function()
         GUI.ToggleButtonSetValue(PetPenJustAutoCollectProgressionToggleButton, false)
         return
       end
-      Cooldown.AutoFarm.AutoCollectProgression = 0
+      Cooldown.OtherAutoFarm.AutoCollectProgression = 0
       Registry.RegisterTask("pet_pen_progression_collection_handler", function()
         -- ==============
-        Cooldown.AutoFarm.AutoCollectProgression = nil
+        Cooldown.OtherAutoFarm.AutoCollectProgression = nil
         WriteConsoleLog("[Registry]: {pet_pen_progression_collection_handler} runned", nil, "DEBUG")
         WriteFileLog("[Registry]: {pet_pen_progression_collection_handler} runned", "DEBUG")
         SafeFire("IdleProgressionAPI/CommitAllProgression", true)
-        Cooldown.AutoFarm.AutoCollectProgression = 300
+        Cooldown.OtherAutoFarm.AutoCollectProgression = 300
         -- ==============
       end,
       function()
-        return Cooldown.AutoFarm.AutoCollectProgression == 0
+        return Cooldown.OtherAutoFarm.AutoCollectProgression == 0
       end,
       function()
-        Cooldown.AutoFarm.AutoCollectProgression = 5
+        Cooldown.OtherAutoFarm.AutoCollectProgression = 5
       end)
     else
       WriteConsoleLog("Just auto collect progression disabled", nil, "DEBUG")
       WriteFileLog("Just auto collect progression disabled", "DEBUG")
       Registry.UnregisterTask("pet_pen_progression_collection_handler")
-      Cooldown.AutoFarm.AutoCollectProgression = nil
+      Cooldown.OtherAutoFarm.AutoCollectProgression = nil
     end
   end
 
